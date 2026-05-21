@@ -24,6 +24,7 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://assessorialpha.com"), // atualizar se domínio mudar
   title: "Assessoria Alpha — Marketing Gastronômico para Restaurantes",
   description:
     "A maior assessoria de marketing gastronômico da América Latina. +600 clientes ativos, +500M em vendas geradas. Estruture o marketing do seu restaurante.",
@@ -33,6 +34,8 @@ export const metadata: Metadata = {
       "A maior assessoria de marketing gastronômico da América Latina. +600 clientes ativos, +500M em vendas geradas. Estruture o marketing do seu restaurante.",
     locale: "pt_BR",
     type: "website",
+    // TODO: substituir por imagem raster 1200×630 antes do go-live (assets pendentes do cliente)
+    // images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Assessoria Alpha" }],
   },
 };
 

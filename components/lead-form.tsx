@@ -397,6 +397,7 @@ export default function LeadForm() {
                 value={opt}
                 required
                 aria-invalid={!!errors.investiria}
+                aria-describedby={errors.investiria ? "erro-investiria" : undefined}
                 className="sr-only"
                 checked={values.investiria === opt}
                 onChange={() => set("investiria", opt)}
