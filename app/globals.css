@@ -36,3 +36,14 @@ body {
   color: var(--text);
   font-family: var(--font-archivo), sans-serif;
 }
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation-play-state: paused !important;
+  }
+}

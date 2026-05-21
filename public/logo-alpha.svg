@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 56" role="img" aria-label="Alpha Assessoria">
+  <!-- Double-arrow symbol -->
+  <g fill="white">
+    <!-- Arrow 1 (left) -->
+    <polygon points="4,28 18,10 18,19 30,19 30,10 44,28 30,46 30,37 18,37 18,46" />
+    <!-- Arrow 2 (right, offset) -->
+    <polygon points="20,28 34,10 34,19 46,19 46,10 60,28 46,46 46,37 34,37 34,46" opacity="0.65"/>
+  </g>
+  <!-- "alpha" wordmark -->
+  <text
+    x="72"
+    y="40"
+    font-family="Arial, sans-serif"
+    font-size="34"
+    font-weight="800"
+    letter-spacing="-1"
+    fill="white"
+  >alpha</text>
+</svg>
