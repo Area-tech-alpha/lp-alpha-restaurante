@@ -1,26 +1,38 @@
 @import "tailwindcss";
 
+/* ⚠️ Cores provisórias — ver aviso em docs/SPEC.md §Design System. Centralizar aqui para troca fácil. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0A0A0A;
+  --bg-card: #1A1A1A;
+  --accent: #F5A623;
+  --accent-hi: #FFB800;
+  --brand-orange: #FFA500;
+  --cta: #3DF000;
+  --cta-hover: #34D400;
+  --text: #FFFFFF;
+  --text-muted: #A0A0A0;
+  --text-on-light: #0A0A0A;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-bg: var(--bg);
+  --color-bg-card: var(--bg-card);
+  --color-accent: var(--accent);
+  --color-accent-hi: var(--accent-hi);
+  --color-brand-orange: var(--brand-orange);
+  --color-cta: var(--cta);
+  --color-cta-hover: var(--cta-hover);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-on-light: var(--text-on-light);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-anton);
+  --font-heading: var(--font-oswald);
+  --font-body: var(--font-archivo);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-archivo), sans-serif;
 }
