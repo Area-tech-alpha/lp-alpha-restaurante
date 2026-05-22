@@ -177,6 +177,8 @@ export default function LeadForm() {
     setErrors((prev) => ({ ...prev, cnpj: undefined, investiria: undefined }));
   }
 
+  const tracker = () => (typeof window !== "undefined" ? window.__tracker : null);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -198,6 +200,8 @@ export default function LeadForm() {
       }),
     };
 
+    tracker()?.trackSubmitAttempt();
+
     const result = leadSchema.safeParse(payload);
     if (!result.success) {
       const fieldErrors: Partial<Record<keyof FormValues, string>> = {};
@@ -206,6 +210,7 @@ export default function LeadForm() {
         if (!fieldErrors[field]) fieldErrors[field] = issue.message;
       });
       setErrors(fieldErrors);
+      tracker()?.trackValidationError(Object.keys(fieldErrors));
       return;
     }
 
@@ -213,8 +218,10 @@ export default function LeadForm() {
     setGlobalError("");
 
     try {
-      const res = await submitLead(result.data);
+      const sessionId = tracker()?.sessionId() ?? undefined;
+      const res = await submitLead(result.data, sessionId);
       if (res.success) {
+        tracker()?.trackSubmitSuccess("", result.data.investiria === "Sim");
         window.location.href = res.redirectTo;
       } else {
         setStatus("error");
@@ -255,6 +262,8 @@ export default function LeadForm() {
           aria-describedby={errors.nome ? "erro-nome" : undefined}
           value={values.nome}
           onChange={(e) => set("nome", e.target.value)}
+          onFocus={() => tracker()?.trackFieldFocus("nome")}
+          onBlur={(e) => tracker()?.trackFieldBlur("nome", e.target.value.trim().length > 0)}
           className={inputClass}
         />
         {errors.nome && (
@@ -279,6 +288,8 @@ export default function LeadForm() {
           aria-describedby={errors.email ? "erro-email" : undefined}
           value={values.email}
           onChange={(e) => set("email", e.target.value)}
+          onFocus={() => tracker()?.trackFieldFocus("email")}
+          onBlur={(e) => tracker()?.trackFieldBlur("email", e.target.value.trim().length > 0)}
           className={inputClass}
         />
         {errors.email && (
@@ -289,7 +300,10 @@ export default function LeadForm() {
       </div>
 
       {/* Telefone com seletor de país */}
-      <div>
+      <div
+        onFocus={() => tracker()?.trackFieldFocus("telefone")}
+        onBlur={() => tracker()?.trackFieldBlur("telefone", !!values.telefone)}
+      >
         <label htmlFor="telefone" className="sr-only">
           {c.fields.telefone.label}
         </label>
@@ -326,6 +340,8 @@ export default function LeadForm() {
           aria-describedby={errors.empresa ? "erro-empresa" : undefined}
           value={values.empresa}
           onChange={(e) => set("empresa", e.target.value)}
+          onFocus={() => tracker()?.trackFieldFocus("empresa")}
+          onBlur={(e) => tracker()?.trackFieldBlur("empresa", e.target.value.trim().length > 0)}
           className={inputClass}
         />
         {errors.empresa && (
@@ -348,6 +364,8 @@ export default function LeadForm() {
             aria-describedby={errors.segmento ? "erro-segmento" : undefined}
             value={values.segmento}
             onChange={(e) => set("segmento", e.target.value)}
+            onFocus={() => tracker()?.trackFieldFocus("segmento")}
+            onBlur={(e) => tracker()?.trackFieldBlur("segmento", e.target.value.length > 0)}
             className={`${selectClass} ${!values.segmento ? "text-text-muted" : ""}`}
           >
             <option value="" disabled hidden>
@@ -383,6 +401,8 @@ export default function LeadForm() {
             aria-describedby={errors.faturamento ? "erro-faturamento" : undefined}
             value={values.faturamento}
             onChange={(e) => handleFaturamentoChange(e.target.value)}
+            onFocus={() => tracker()?.trackFieldFocus("faturamento")}
+            onBlur={(e) => tracker()?.trackFieldBlur("faturamento", e.target.value.length > 0)}
             className={`${selectClass} ${!values.faturamento ? "text-text-muted" : ""}`}
           >
             <option value="" disabled hidden>
@@ -423,6 +443,8 @@ export default function LeadForm() {
               aria-describedby={errors.cnpj ? "erro-cnpj" : undefined}
               value={values.cnpj}
               onChange={(e) => set("cnpj", maskCNPJ(e.target.value))}
+              onFocus={() => tracker()?.trackFieldFocus("cnpj")}
+              onBlur={(e) => tracker()?.trackFieldBlur("cnpj", e.target.value.trim().length > 0)}
               className={inputClass}
             />
             {errors.cnpj && (
@@ -456,7 +478,11 @@ export default function LeadForm() {
                     aria-describedby={errors.investiria ? "erro-investiria" : undefined}
                     className="sr-only"
                     checked={values.investiria === opt}
-                    onChange={() => set("investiria", opt)}
+                    onChange={() => {
+                      set("investiria", opt);
+                      tracker()?.trackFieldFocus("investiria");
+                      tracker()?.trackFieldBlur("investiria", true);
+                    }}
                   />
                   <span className="font-semibold">{opt}</span>
                 </label>

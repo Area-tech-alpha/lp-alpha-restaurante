@@ -19,6 +19,7 @@ export default function TeamCta() {
     <section
       id="time-exclusivo"
       aria-label="Receba um time exclusivo"
+      data-section="team-cta"
       className="bg-brand-orange py-20 px-6"
     >
       <div className="max-w-3xl mx-auto text-center">

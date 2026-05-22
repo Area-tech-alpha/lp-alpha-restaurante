@@ -13,7 +13,7 @@ export default function Method() {
   } as const;
 
   return (
-    <section id="metodo" aria-label="O Método Alpha" className="bg-black py-20 px-6">
+    <section id="metodo" aria-label="O Método Alpha" data-section="method" className="bg-black py-20 px-6">
       <div className="max-w-4xl mx-auto text-center">
 
         <p className="text-accent text-xs font-bold uppercase tracking-widest mb-5">

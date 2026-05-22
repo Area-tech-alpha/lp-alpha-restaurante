@@ -6,7 +6,7 @@ export default function About() {
   const { sectionLabel } = content.about;
 
   return (
-    <section id="quem-somos" aria-label="Quem somos" className="bg-bg py-28 px-6">
+    <section id="quem-somos" aria-label="Quem somos" data-section="about" className="bg-bg py-28 px-6">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-12 items-center">
 
         {/* Imagem */}

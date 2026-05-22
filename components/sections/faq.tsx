@@ -79,7 +79,7 @@ export default function Faq() {
   const toggle = (i: number) => setOpenIndex((prev) => (prev === i ? null : i));
 
   return (
-    <section aria-label="Perguntas frequentes" style={{ background: "var(--bg)" }} className="py-20 px-4">
+    <section aria-label="Perguntas frequentes" data-section="faq" style={{ background: "var(--bg)" }} className="py-20 px-4">
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-12 lg:grid-cols-2">
           <div>

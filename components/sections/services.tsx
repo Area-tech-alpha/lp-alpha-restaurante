@@ -49,7 +49,7 @@ export default function Services() {
   const translateX = PEEK - current * SLOT;
 
   return (
-    <section aria-label="O que fazemos" style={{ background: "var(--bg)" }} className="py-20 px-4">
+    <section aria-label="O que fazemos" data-section="services" style={{ background: "var(--bg)" }} className="py-20 px-4">
       <div className="mx-auto max-w-5xl">
         <p
           className="mb-4 text-center text-xs font-bold uppercase tracking-widest"

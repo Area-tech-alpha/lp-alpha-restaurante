@@ -9,10 +9,12 @@ import Plans from "@/components/sections/plans";
 import TeamCta from "@/components/sections/team-cta";
 import Faq from "@/components/sections/faq";
 import Footer from "@/components/sections/footer";
+import Tracker from "@/components/analytics/tracker";
 
 export default function Home() {
   return (
     <main>
+      <Tracker />
       <Hero />
       <Marquee />
       <FormSection />

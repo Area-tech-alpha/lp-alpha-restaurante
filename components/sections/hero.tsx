@@ -9,6 +9,7 @@ export default function Hero() {
     <section
       id="hero"
       aria-label="Hero"
+      data-section="hero"
       className="relative overflow-hidden flex flex-col items-center pb-20"
     >
       {/* Background image */}

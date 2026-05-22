@@ -8,6 +8,7 @@ export default function FormSection() {
   return (
     <section
       aria-label="Formulário de contato"
+      data-section="form"
       className="bg-bg py-20 px-4"
     >
       <div className="mx-auto max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">

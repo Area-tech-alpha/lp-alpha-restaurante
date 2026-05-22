@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Session {
+  id             String   @id @default(uuid())
+  startedAt      DateTime @default(now())
+  lastSeenAt     DateTime @default(now()) @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  referrer       String?
+  landingUrl     String?
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmContent     String?
+  utmTerm        String?
+  maxScrollDepth Int      @default(0)
+  timeOnPageSec  Int?
+  deviceType     String?
+
+  lead   Lead?
+  events Event[]
+
+  @@map("sessions")
+}
+
+model Lead {
+  id             String    @id @default(uuid())
+  sessionId      String?   @unique
+  session        Session?  @relation(fields: [sessionId], references: [id])
+
+  nome           String
+  email          String
+  telefone       String
+  empresa        String
+  segmento       String
+  faturamento    String
+  cnpj           String?
+  investiria     String?
+  qualified      Boolean   @default(false)
+
+  webhookSentAt  DateTime?
+  webhookStatus  Int?
+  whatsappSentAt DateTime?
+
+  redirectUrl    String?
+  ipAddress      String?
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmContent     String?
+  utmTerm        String?
+  referrer       String?
+
+  createdAt      DateTime  @default(now())
+
+  @@map("leads")
+}
+
+model Event {
+  id        String   @id @default(uuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id])
+
+  type      String
+  data      Json?
+  ts        DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([type])
+  @@map("events")
+}

@@ -6,7 +6,7 @@ export default function Plans() {
   const { sectionLabel, paragraph } = content.plans;
 
   return (
-    <section id="planos" aria-label="Planos personalizados" className="bg-bg py-20 px-6">
+    <section id="planos" aria-label="Planos personalizados" data-section="plans" className="bg-bg py-20 px-6">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
         {/* Text */}

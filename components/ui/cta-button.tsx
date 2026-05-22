@@ -6,6 +6,7 @@ interface CtaButtonProps {
   disabled?: boolean;
   onClick?: () => void;
   className?: string;
+  "data-cta"?: string;
   children: React.ReactNode;
 }
 
@@ -15,6 +16,7 @@ export default function CtaButton({
   disabled,
   onClick,
   className = "",
+  "data-cta": dataCta,
   children,
 }: CtaButtonProps) {
   const base =
@@ -25,6 +27,7 @@ export default function CtaButton({
     return (
       <button
         type="button"
+        data-cta={dataCta ?? "cta"}
         onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" })}
         className={`${base} ${className}`}
       >
@@ -36,7 +39,7 @@ export default function CtaButton({
 
   if (href) {
     return (
-      <a href={href} className={`${base} ${className}`}>
+      <a href={href} data-cta={dataCta ?? "cta"} className={`${base} ${className}`}>
         {children}
         <span aria-hidden="true">↗</span>
       </a>
@@ -48,6 +51,7 @@ export default function CtaButton({
       type={type}
       disabled={disabled}
       onClick={onClick}
+      data-cta={dataCta ?? "cta"}
       className={`${base} ${className}`}
     >
       {children}

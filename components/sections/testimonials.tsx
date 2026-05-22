@@ -6,7 +6,7 @@ const { testimonials } = content;
 
 export default function Testimonials() {
   return (
-    <section aria-label="Depoimentos" className="py-20 px-4" style={{ background: "#FFFFFF" }}>
+    <section aria-label="Depoimentos" data-section="testimonials" className="py-20 px-4" style={{ background: "#FFFFFF" }}>
       <div className="mx-auto max-w-6xl">
         <ScrollFade>
           <div className="mb-12 text-center">
