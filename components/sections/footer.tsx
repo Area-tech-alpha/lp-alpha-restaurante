@@ -41,7 +41,7 @@ export default function Footer() {
           {/* Logo */}
           <Link href="#hero" aria-label="Voltar ao topo — Alpha Assessoria">
             <Image
-              src="/logo-alpha.svg"
+              src="/logo-footer.svg"
               alt="Alpha Assessoria"
               width={120}
               height={32}
