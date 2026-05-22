@@ -1,4 +1,5 @@
 import CtaButton from "@/components/ui/cta-button";
+import ScrollFade from "@/components/ui/scroll-fade";
 import { content } from "@/lib/content";
 
 /** Pulsing green dot — CSS only, respects prefers-reduced-motion via motion-safe. */
@@ -23,34 +24,42 @@ export default function TeamCta() {
       <div className="max-w-3xl mx-auto text-center">
 
         {/* Section label */}
-        <p className="text-white text-xs font-bold uppercase tracking-widest mb-5">
-          {sectionLabel}
-        </p>
+        <ScrollFade>
+          <p className="text-white text-xs font-bold uppercase tracking-widest mb-5">
+            {sectionLabel}
+          </p>
+        </ScrollFade>
 
         {/* Headline */}
-        <h2 className="font-heading uppercase leading-tight text-3xl sm:text-4xl lg:text-5xl text-text-on-light mb-6">
-          <span className="font-light">A </span>
-          <span className="font-bold">ASSESSORIA ALPHA </span>
-          <span className="font-light">
-            ESTRUTURA O MARKETING DO SEU RESTAURANTE COM BASE NA SUA{" "}
-          </span>
-          <span className="font-bold">NECESSIDADE</span>
-        </h2>
+        <ScrollFade>
+          <h2 className="font-heading uppercase leading-tight text-4xl sm:text-5xl lg:text-6xl text-text-on-light mb-6">
+            <span className="font-light">A </span>
+            <span className="font-bold">ASSESSORIA ALPHA </span>
+            <span className="font-light">
+              ESTRUTURA O MARKETING DO SEU RESTAURANTE COM BASE NA SUA{" "}
+            </span>
+            <span className="font-bold">NECESSIDADE</span>
+          </h2>
+        </ScrollFade>
 
         {/* Body */}
-        <p className="text-text-on-light/80 text-base sm:text-lg leading-relaxed mb-10 max-w-2xl mx-auto">
-          {paragraph}
-        </p>
+        <ScrollFade>
+          <p className="text-text-on-light/80 text-base sm:text-lg leading-relaxed mb-10 max-w-2xl mx-auto">
+            {paragraph}
+          </p>
+        </ScrollFade>
 
         {/* CTA + online indicator */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <CtaButton href="#formulario">{cta}</CtaButton>
+        <ScrollFade>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <CtaButton href="#formulario">{cta}</CtaButton>
 
-          <span className="flex items-center gap-2 text-text-on-light font-semibold text-sm">
-            <OnlineDot />
-            {onlineIndicator}
-          </span>
-        </div>
+            <span className="flex items-center gap-2 text-text-on-light font-semibold text-sm">
+              <OnlineDot />
+              {onlineIndicator}
+            </span>
+          </div>
+        </ScrollFade>
 
       </div>
     </section>
