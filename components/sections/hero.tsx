@@ -9,7 +9,7 @@ export default function Hero() {
     <section
       id="hero"
       aria-label="Hero"
-      className="relative overflow-hidden flex flex-col items-center pb-16"
+      className="relative overflow-hidden flex flex-col items-center pb-20"
     >
       {/* Background image */}
       <Image
@@ -21,7 +21,7 @@ export default function Hero() {
       />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 pt-14 pb-20 max-w-5xl mx-auto w-full">
+      <div className="relative z-10 flex flex-col items-center text-center px-6 pt-24 pb-32 max-w-5xl mx-auto w-full">
         {/* Logo */}
         <Image
           src="/Logo-Alpha.png.webp"
