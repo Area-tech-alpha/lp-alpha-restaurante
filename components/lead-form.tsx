@@ -1,32 +1,109 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import PhoneInput, { getCountryCallingCode } from "react-phone-number-input";
+import type { Value as PhoneValue, Country } from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 import { leadSchema } from "@/lib/validation";
 import { submitLead } from "@/app/actions/submit-lead";
 import CtaButton from "@/components/ui/cta-button";
 import { content } from "@/lib/content";
 
+type CountryOption = { value?: Country; label: string; divider?: boolean };
+type FlagComponent = React.ComponentType<{ country?: Country; label: string }>;
+
+function CountrySelect({
+  value,
+  onChange,
+  options,
+  iconComponent: Flag,
+}: {
+  value?: Country;
+  onChange: (v?: Country) => void;
+  options: CountryOption[];
+  iconComponent: FlagComponent;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setSearch("");
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  const filtered = options.filter(
+    (o) => !o.divider && o.label.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const dialCode = value ? `+${getCountryCallingCode(value)}` : "";
+
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 h-full px-3 py-3 bg-[#111] border border-white/10 rounded-lg focus:outline-none focus:border-accent transition-colors cursor-pointer"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <Flag country={value} label="" />
+        <span className="text-white text-sm font-medium">{dialCode}</span>
+        <span className="text-white/50 text-[10px]">▾</span>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full mt-1 z-50 w-64 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+          <div className="p-2 border-b border-white/10">
+            <input
+              type="text"
+              placeholder="Buscar país..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoFocus
+              className="w-full bg-[#111] text-white text-sm px-3 py-1.5 rounded-lg focus:outline-none border border-white/10 focus:border-accent transition-colors placeholder:text-white/40"
+            />
+          </div>
+          <ul role="listbox" className="max-h-52 overflow-y-auto">
+            {filtered.map((opt) => (
+              <li key={opt.value ?? "intl"} role="option" aria-selected={opt.value === value}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                    setSearch("");
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors hover:bg-white/5 ${
+                    opt.value === value ? "bg-accent/10 text-accent" : "text-white"
+                  }`}
+                >
+                  <Flag country={opt.value} label="" />
+                  <span className="flex-1 truncate">{opt.label}</span>
+                  {opt.value && (
+                    <span className="text-white/40 text-xs shrink-0">
+                      +{getCountryCallingCode(opt.value)}
+                    </span>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const { form: c } = content;
 
-const COUNTRY_CODES = [
-  { code: "+55", flag: "🇧🇷", label: "Brasil" },
-  { code: "+351", flag: "🇵🇹", label: "Portugal" },
-  { code: "+1", flag: "🇺🇸", label: "EUA" },
-  { code: "+54", flag: "🇦🇷", label: "Argentina" },
-  { code: "+56", flag: "🇨🇱", label: "Chile" },
-  { code: "+57", flag: "🇨🇴", label: "Colômbia" },
-];
-
-function maskPhone(value: string, countryCode: string): string {
-  if (countryCode !== "+55") return value.replace(/[^\d\s\-+()]/g, "");
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-  if (digits.length === 0) return "";
-  if (digits.length <= 2) return `(${digits}`;
-  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  if (digits.length <= 10)
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-}
+const FATURAMENTO_CNPJ_REQUIRED = "Até 30 mil";
 
 function maskCNPJ(value: string): string {
   const d = value.replace(/\D/g, "").slice(0, 14);
@@ -43,8 +120,7 @@ type Status = "idle" | "sending" | "success" | "error";
 type FormValues = {
   nome: string;
   email: string;
-  telefoneCountry: string;
-  telefone: string;
+  telefone: PhoneValue | undefined;
   empresa: string;
   segmento: string;
   faturamento: string;
@@ -55,8 +131,7 @@ type FormValues = {
 const initial: FormValues = {
   nome: "",
   email: "",
-  telefoneCountry: "+55",
-  telefone: "",
+  telefone: undefined,
   empresa: "",
   segmento: "",
   faturamento: "",
@@ -78,15 +153,33 @@ export default function LeadForm() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
   const [values, setValues] = useState<FormValues>(initial);
 
+  const needsExtraFields = values.faturamento === FATURAMENTO_CNPJ_REQUIRED;
+
   function set(field: keyof FormValues, value: string) {
     setValues((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   }
 
+  function setPhone(value: PhoneValue) {
+    setValues((prev) => ({ ...prev, telefone: value }));
+    if (errors.telefone) setErrors((prev) => ({ ...prev, telefone: undefined }));
+  }
+
+  function handleFaturamentoChange(value: string) {
+    setValues((prev) => ({
+      ...prev,
+      faturamento: value,
+      // limpa os campos extras ao trocar para faturamento que não os exige
+      cnpj: value === FATURAMENTO_CNPJ_REQUIRED ? prev.cnpj : "",
+      investiria: value === FATURAMENTO_CNPJ_REQUIRED ? prev.investiria : "",
+    }));
+    if (errors.faturamento) setErrors((prev) => ({ ...prev, faturamento: undefined }));
+    setErrors((prev) => ({ ...prev, cnpj: undefined, investiria: undefined }));
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    // honeypot — bots preenchem este campo oculto
     const honeypot = (
       e.currentTarget.elements.namedItem("website") as HTMLInputElement | null
     )?.value;
@@ -95,12 +188,14 @@ export default function LeadForm() {
     const payload = {
       nome: values.nome.trim(),
       email: values.email.trim(),
-      telefone: `${values.telefoneCountry} ${values.telefone}`,
+      telefone: values.telefone ?? "",
       empresa: values.empresa.trim(),
       segmento: values.segmento,
       faturamento: values.faturamento,
-      cnpj: values.cnpj,
-      investiria: values.investiria as "Sim" | "Não",
+      ...(needsExtraFields && {
+        cnpj: values.cnpj,
+        investiria: values.investiria as "Sim" | "Não",
+      }),
     };
 
     const result = leadSchema.safeParse(payload);
@@ -150,7 +245,7 @@ export default function LeadForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-      {/* honeypot — oculto de usuários, armadilha para bots */}
+      {/* honeypot */}
       <input
         type="text"
         name="website"
@@ -213,37 +308,17 @@ export default function LeadForm() {
         <label htmlFor="telefone" className="sr-only">
           {c.fields.telefone.label}
         </label>
-        <div className="flex gap-2">
-          <select
-            aria-label="Código do país"
-            value={values.telefoneCountry}
-            onChange={(e) => {
-              set("telefoneCountry", e.target.value);
-              set("telefone", "");
-            }}
-            className="bg-[#111] border border-white/10 rounded-lg px-3 py-3 text-white focus:outline-none focus:border-accent transition-colors shrink-0 w-[5.5rem]"
-          >
-            {COUNTRY_CODES.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.flag} {c.code}
-              </option>
-            ))}
-          </select>
-          <input
-            id="telefone"
-            type="tel"
-            placeholder={c.fields.telefone.placeholder}
-            autoComplete="tel"
-            required
-            aria-invalid={!!errors.telefone}
-            aria-describedby={errors.telefone ? "erro-telefone" : undefined}
-            value={values.telefone}
-            onChange={(e) =>
-              set("telefone", maskPhone(e.target.value, values.telefoneCountry))
-            }
-            className={`${inputClass} flex-1`}
-          />
-        </div>
+        <PhoneInput
+          id="telefone"
+          defaultCountry="BR"
+          value={values.telefone}
+          onChange={setPhone}
+          placeholder={c.fields.telefone.placeholder}
+          aria-invalid={!!errors.telefone}
+          aria-describedby={errors.telefone ? "erro-telefone" : undefined}
+          className="phone-input-wrapper"
+          countrySelectComponent={CountrySelect as never}
+        />
         {errors.telefone && (
           <p id="erro-telefone" className={errorClass} role="alert">
             {errors.telefone}
@@ -322,7 +397,7 @@ export default function LeadForm() {
             aria-invalid={!!errors.faturamento}
             aria-describedby={errors.faturamento ? "erro-faturamento" : undefined}
             value={values.faturamento}
-            onChange={(e) => set("faturamento", e.target.value)}
+            onChange={(e) => handleFaturamentoChange(e.target.value)}
             className={`${selectClass} ${!values.faturamento ? "text-text-muted" : ""}`}
           >
             <option value="" disabled hidden>
@@ -345,73 +420,71 @@ export default function LeadForm() {
         )}
       </div>
 
-      {/* CNPJ */}
-      <div>
-        <label htmlFor="cnpj" className="sr-only">
-          {c.fields.cnpj.label}
-        </label>
-        <input
-          id="cnpj"
-          type="text"
-          placeholder={c.fields.cnpj.placeholder}
-          inputMode="numeric"
-          required
-          aria-invalid={!!errors.cnpj}
-          aria-describedby={errors.cnpj ? "erro-cnpj" : undefined}
-          value={values.cnpj}
-          onChange={(e) => set("cnpj", maskCNPJ(e.target.value))}
-          className={inputClass}
-        />
-        {errors.cnpj && (
-          <p id="erro-cnpj" className={errorClass} role="alert">
-            {errors.cnpj}
-          </p>
-        )}
-      </div>
-
-      {/* Investiria */}
-      <div>
-        <p
-          id="label-investiria"
-          className="text-white text-sm font-medium mb-2"
-        >
-          {c.fields.investiria.label}
-        </p>
-        <div
-          role="radiogroup"
-          aria-labelledby="label-investiria"
-          className="flex gap-3"
-        >
-          {c.fields.investiria.options.map((opt) => (
-            <label
-              key={opt}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border cursor-pointer transition-colors ${
-                values.investiria === opt
-                  ? "border-accent bg-accent/10 text-white"
-                  : "border-white/10 text-text-muted hover:border-white/30"
-              }`}
-            >
-              <input
-                type="radio"
-                name="investiria"
-                value={opt}
-                required
-                aria-invalid={!!errors.investiria}
-                aria-describedby={errors.investiria ? "erro-investiria" : undefined}
-                className="sr-only"
-                checked={values.investiria === opt}
-                onChange={() => set("investiria", opt)}
-              />
-              <span className="font-semibold">{opt}</span>
+      {/* CNPJ e Investiria — só aparecem para faturamento "Até 30 mil" */}
+      {needsExtraFields && (
+        <>
+          {/* CNPJ */}
+          <div>
+            <label htmlFor="cnpj" className="sr-only">
+              {c.fields.cnpj.label}
             </label>
-          ))}
-        </div>
-        {errors.investiria && (
-          <p id="erro-investiria" className={errorClass} role="alert">
-            {errors.investiria}
-          </p>
-        )}
-      </div>
+            <input
+              id="cnpj"
+              type="text"
+              placeholder={c.fields.cnpj.placeholder}
+              inputMode="numeric"
+              required
+              aria-invalid={!!errors.cnpj}
+              aria-describedby={errors.cnpj ? "erro-cnpj" : undefined}
+              value={values.cnpj}
+              onChange={(e) => set("cnpj", maskCNPJ(e.target.value))}
+              className={inputClass}
+            />
+            {errors.cnpj && (
+              <p id="erro-cnpj" className={errorClass} role="alert">
+                {errors.cnpj}
+              </p>
+            )}
+          </div>
+
+          {/* Investiria */}
+          <div>
+            <p id="label-investiria" className="text-white text-sm font-medium mb-2">
+              {c.fields.investiria.label}
+            </p>
+            <div role="radiogroup" aria-labelledby="label-investiria" className="flex gap-3">
+              {c.fields.investiria.options.map((opt) => (
+                <label
+                  key={opt}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border cursor-pointer transition-colors ${
+                    values.investiria === opt
+                      ? "border-accent bg-accent/10 text-white"
+                      : "border-white/10 text-text-muted hover:border-white/30"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="investiria"
+                    value={opt}
+                    required
+                    aria-invalid={!!errors.investiria}
+                    aria-describedby={errors.investiria ? "erro-investiria" : undefined}
+                    className="sr-only"
+                    checked={values.investiria === opt}
+                    onChange={() => set("investiria", opt)}
+                  />
+                  <span className="font-semibold">{opt}</span>
+                </label>
+              ))}
+            </div>
+            {errors.investiria && (
+              <p id="erro-investiria" className={errorClass} role="alert">
+                {errors.investiria}
+              </p>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Erro global */}
       {status === "error" && globalError && (

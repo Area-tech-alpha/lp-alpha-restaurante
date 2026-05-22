@@ -21,18 +21,37 @@ function isValidCNPJ(value: string): boolean {
   );
 }
 
-export const leadSchema = z.object({
-  nome: z.string().min(2, "Nome obrigatório"),
-  email: z.string().email("E-mail inválido"),
-  telefone: z
-    .string()
-    .min(1, "Telefone obrigatório")
-    .refine((v) => v.replace(/\D/g, "").length >= 8, "Telefone inválido"),
-  empresa: z.string().min(2, "Nome da empresa obrigatório"),
-  segmento: z.string().min(1, "Selecione um segmento"),
-  faturamento: z.string().min(1, "Selecione uma faixa de faturamento"),
-  cnpj: z.string().refine(isValidCNPJ, "CNPJ inválido"),
-  investiria: z.enum(["Sim", "Não"]),
-});
+export const leadSchema = z
+  .object({
+    nome: z.string().min(2, "Nome obrigatório"),
+    email: z.string().email("E-mail inválido"),
+    telefone: z
+      .string()
+      .min(1, "Telefone obrigatório")
+      .refine((v) => v.replace(/\D/g, "").length >= 8, "Telefone inválido"),
+    empresa: z.string().min(2, "Nome da empresa obrigatório"),
+    segmento: z.string().min(1, "Selecione um segmento"),
+    faturamento: z.string().min(1, "Selecione uma faixa de faturamento"),
+    cnpj: z.string().optional(),
+    investiria: z.enum(["Sim", "Não"], { message: "Selecione uma opção" }).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.faturamento === "Até 30 mil") {
+      if (!data.cnpj || !isValidCNPJ(data.cnpj)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "CNPJ inválido",
+          path: ["cnpj"],
+        });
+      }
+      if (!data.investiria) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Selecione uma opção",
+          path: ["investiria"],
+        });
+      }
+    }
+  });
 
 export type LeadFormData = z.infer<typeof leadSchema>;

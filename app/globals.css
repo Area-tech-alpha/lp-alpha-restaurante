@@ -87,3 +87,34 @@ body {
     transition: none;
   }
 }
+
+/* react-phone-number-input — tema escuro */
+.phone-input-wrapper {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.phone-input-wrapper .PhoneInputCountry {
+  display: contents; /* o CountrySelect customizado já renderiza o botão */
+}
+
+.phone-input-wrapper .PhoneInputInput {
+  flex: 1;
+  background: #111;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.phone-input-wrapper .PhoneInputInput::placeholder {
+  color: var(--text-muted);
+}
+
+.phone-input-wrapper .PhoneInputInput:focus {
+  border-color: var(--accent);
+}

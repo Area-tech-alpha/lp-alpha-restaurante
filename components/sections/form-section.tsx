@@ -11,7 +11,7 @@ export default function FormSection() {
       aria-label="Formulário de contato"
       className="bg-bg py-20 px-4"
     >
-      <div className="mx-auto max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+      <div className="mx-auto max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
         {/* Coluna esquerda — copy */}
         <div className="flex flex-col gap-8">
           {/* Label + Título */}
@@ -59,7 +59,7 @@ export default function FormSection() {
         </div>
 
         {/* Coluna direita — formulário */}
-        <div className="bg-bg-card rounded-2xl p-6 lg:p-8">
+        <div className="bg-bg-card rounded-2xl p-6 lg:p-8 flex flex-col justify-center">
           <LeadForm />
         </div>
       </div>
