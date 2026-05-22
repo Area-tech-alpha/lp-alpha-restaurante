@@ -1,8 +1,11 @@
 import { content } from "@/lib/content";
 
-/** Repete o texto 8× para garantir loop contínuo sem gaps visíveis. */
-function buildTrack(text: string, reps = 8) {
-  return Array.from({ length: reps }, () => text).join("  ");
+/**
+ * Cada item termina com o separador, então a junção entre as duas cópias
+ * (span 1 → span 2 no loop) fica idêntica às junções internas — sem seam visível.
+ */
+function buildTrack(text: string, reps = 10) {
+  return Array.from({ length: reps }, () => `${text}  ★  `).join("");
 }
 
 export default function Marquee() {
@@ -11,27 +14,26 @@ export default function Marquee() {
 
   return (
     /*
-     * Posicionamento: margem negativa puxa a faixa para cima, sobrepondo o rodapé
-     * do Hero — efeito visual de "borda diagonal cruzando o hero".
+     * Margem negativa puxa as faixas para cima, sobrepondo o rodapé do Hero.
+     * rotate-2 / -rotate-2 criam o efeito de "X" diagonal cruzado.
      */
-    <div aria-hidden="true" className="relative -mt-10 z-20 overflow-hidden">
-      {/* Faixa 1 — preta, rotação leve */}
-      <div className="-rotate-2 bg-text-on-light py-3 overflow-hidden">
+    <div aria-hidden="true" className="relative -mt-20 z-20">
+      {/* Faixa 1 — preta, inclinação positiva */}
+      <div className="rotate-2 bg-text-on-light py-4 overflow-hidden w-[110vw] ml-[-5vw]">
         <div
-          className="marquee-track flex gap-12 whitespace-nowrap text-sm sm:text-base font-bold text-white tracking-widest uppercase"
-          style={{ animation: "marquee 28s linear infinite" }}
+          className="marquee-track flex whitespace-nowrap text-sm sm:text-base font-bold text-white tracking-widest uppercase"
+          style={{ animation: "marquee 28s linear infinite reverse" }}
         >
           <span>{track}</span>
-          {/* Cópia idêntica para loop perfeito */}
           <span aria-hidden="true">{track}</span>
         </div>
       </div>
 
-      {/* Faixa 2 — cinza-escuro, ângulo e velocidade ligeiramente diferentes */}
-      <div className="-rotate-1 bg-[#1a1a1a] py-3 overflow-hidden mt-1">
+      {/* Faixa 2 — branca, inclinação negativa (oposta à faixa 1) */}
+      <div className="-rotate-2 bg-white py-4 overflow-hidden w-[110vw] ml-[-5vw]">
         <div
-          className="marquee-track flex gap-12 whitespace-nowrap text-sm sm:text-base font-semibold text-text-muted tracking-widest uppercase"
-          style={{ animation: "marquee 38s linear infinite reverse" }}
+          className="marquee-track flex whitespace-nowrap text-sm sm:text-base font-bold tracking-widest uppercase"
+          style={{ color: "#0A0A0A", animation: "marquee 38s linear infinite" }}
         >
           <span>{track}</span>
           <span aria-hidden="true">{track}</span>
