@@ -102,6 +102,7 @@ export async function submitLead(
     faturamento: parsed.data.faturamento,
     cnpj: parsed.data.cnpj,
     investiria: parsed.data.investiria,
+    origem: 'alpha-restaurante'
   };
 
   try {
@@ -117,7 +118,7 @@ export async function submitLead(
       await db.lead.update({
         where: { id: leadId },
         data: { webhookSentAt: new Date(), webhookStatus },
-      }).catch(() => {});
+      }).catch(() => { });
     }
 
     if (!res.ok) {
