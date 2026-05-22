@@ -91,11 +91,10 @@ export const content = {
       suffix: "ISSO É",
       brand: "ALPHA.",
     },
-    // TODO: substituir por assets reais hospedados fora do WordPress
     videos: [
-      { badge: "ads 01 / Alpha Assessoria", poster: "" },
-      { badge: "ads 02 / Alpha Assessoria", poster: "" },
-      { badge: "ads 03 / Alpha Assessoria", poster: "" },
+      { videoId: "aoDx_HTLaWA" },
+      { videoId: "5A264VtPKEs" },
+      { videoId: "oSDQUXjzd7Y" },
     ],
   },
 
