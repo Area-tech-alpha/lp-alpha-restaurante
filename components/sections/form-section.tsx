@@ -7,7 +7,6 @@ const { form: c } = content;
 export default function FormSection() {
   return (
     <section
-      id="formulario"
       aria-label="Formulário de contato"
       className="bg-bg py-20 px-4"
     >
@@ -59,7 +58,7 @@ export default function FormSection() {
         </div>
 
         {/* Coluna direita — formulário */}
-        <div className="bg-bg-card rounded-2xl p-6 lg:p-8 flex flex-col justify-center">
+        <div id="formulario" className="bg-bg-card rounded-2xl p-6 lg:p-8 flex flex-col justify-center">
           <LeadForm />
         </div>
       </div>

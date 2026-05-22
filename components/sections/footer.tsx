@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { content } from "@/lib/content";
+import ScrollToTop from "@/components/ui/scroll-to-top";
 
 function IconInstagram() {
   return (
@@ -39,14 +39,7 @@ export default function Footer() {
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
 
           {/* Logo */}
-          <Link href="#hero" aria-label="Voltar ao topo — Alpha Assessoria">
-            <Image
-              src="/logo-footer.svg"
-              alt="Alpha Assessoria"
-              width={120}
-              height={32}
-            />
-          </Link>
+          <ScrollToTop />
 
           {/* Social icons */}
           <nav aria-label="Redes sociais">
