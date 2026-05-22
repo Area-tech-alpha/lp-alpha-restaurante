@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 type EventInput = {
   type: string;
   data?: Record<string, unknown>;
