@@ -115,7 +115,7 @@ function maskCNPJ(value: string): string {
   return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
 }
 
-type Status = "idle" | "sending" | "success" | "error";
+type Status = "idle" | "sending" | "error";
 
 type FormValues = {
   nome: string;
@@ -215,7 +215,7 @@ export default function LeadForm() {
     try {
       const res = await submitLead(result.data);
       if (res.success) {
-        setStatus("success");
+        window.location.href = res.redirectTo;
       } else {
         setStatus("error");
         setGlobalError(res.error);
@@ -224,21 +224,6 @@ export default function LeadForm() {
       setStatus("error");
       setGlobalError("Erro ao enviar. Tente novamente.");
     }
-  }
-
-  if (status === "success") {
-    return (
-      <div
-        role="status"
-        className="flex flex-col items-center justify-center gap-4 py-16 text-center"
-      >
-        <div className="text-5xl">✅</div>
-        <p className="text-xl font-bold text-white">{c.successMessage}</p>
-        <p className="text-text-muted text-sm">
-          Fique de olho no seu telefone — nosso time já está vendo sua solicitação.
-        </p>
-      </div>
-    );
   }
 
   const isSending = status === "sending";

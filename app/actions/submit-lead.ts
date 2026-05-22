@@ -2,7 +2,12 @@
 
 import { leadSchema, LeadFormData } from "@/lib/validation";
 
-type ActionResult = { success: true } | { success: false; error: string };
+const REDIRECT_QUALIFIED = "https://assessorialpha.com/obrigado-c/";
+const REDIRECT_UNQUALIFIED = "https://assessorialpha.com/agradecimento/";
+
+type ActionResult =
+  | { success: true; redirectTo: string }
+  | { success: false; error: string };
 
 export async function submitLead(data: LeadFormData): Promise<ActionResult> {
   const parsed = leadSchema.safeParse(data);
@@ -39,7 +44,10 @@ export async function submitLead(data: LeadFormData): Promise<ActionResult> {
       return { success: false, error: "Erro ao enviar. Tente novamente em instantes." };
     }
 
-    return { success: true };
+    const redirectTo =
+      parsed.data.investiria === "Não" ? REDIRECT_UNQUALIFIED : REDIRECT_QUALIFIED;
+
+    return { success: true, redirectTo };
   } catch (err) {
     console.error("[submit-lead] Erro de rede:", err);
     return { success: false, error: "Erro de conexão. Verifique sua internet e tente novamente." };
