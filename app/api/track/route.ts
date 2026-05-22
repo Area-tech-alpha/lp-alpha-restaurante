@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
         data: events.map((e) => ({
           sessionId,
           type: e.type,
-          data: e.data ?? Prisma.JsonNull,
+          data: e.data != null ? (e.data as Prisma.InputJsonValue) : Prisma.JsonNull,
           ts: e.ts ? new Date(e.ts) : new Date(),
         })),
         skipDuplicates: true,
