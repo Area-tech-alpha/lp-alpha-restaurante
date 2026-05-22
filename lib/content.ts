@@ -105,12 +105,6 @@ export const content = {
       "Com uma estrutura 100% presencial e uma equipe de mais de 80 profissionais altamente qualificados, a Alpha Assessoria é a parceira estratégica que seu restaurante precisa.",
       "Nosso time multidisciplinar, composto por gestores de tráfego, designers e especialistas em marketing digital, trabalha em sinergia para garantir que cada aspecto da sua presença online e offline seja otimizado.",
     ],
-    // TODO: substituir por fotos reais fornecidas pelo cliente
-    polaroids: [
-      { label: "TIME ALPHA", alt: "Time Alpha" },
-      { label: "ESCRITÓRIO", alt: "Escritório Alpha" },
-      { label: "NOSSA CULTURA", alt: "Nossa Cultura Alpha" },
-    ],
   },
 
   method: {
