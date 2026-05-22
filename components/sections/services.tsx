@@ -1,38 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { content } from "@/lib/content";
 
 const { services } = content;
 
-function CheckItem({ text }: { text: string }) {
-  return (
-    <li className="flex items-start gap-3">
-      <span
-        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-sm text-xs font-bold"
-        style={{ background: "var(--accent)", color: "var(--bg)" }}
-        aria-hidden="true"
-      >
-        ✓
-      </span>
-      <span className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
-        {text}
-      </span>
-    </li>
-  );
-}
+const slides = [
+  { src: "/oquefazemos-Card-Cardapio-Digital-2.webp", alt: "Cardápio Digital" },
+  { src: "/oquefazemos-Card-Disparo-de-Mensagens-Inteligente.webp", alt: "Disparo de Mensagens Inteligente" },
+  { src: "/oquefazemos-Card-Gestao-e-Atendimento.webp", alt: "Gestão e Atendimento" },
+  { src: "/oquefazemos-Card-Midia-Paga.webp", alt: "Mídia Paga" },
+  { src: "/oquefazemos-Card-Solucoes-Comerciais.webp", alt: "Soluções Comerciais" },
+  { src: "/oquefazemos-Acompanhamento.webp", alt: "Acompanhamento" },
+  { src: "/oquefazemos-Videos.webp", alt: "Vídeos" },
+];
+
+// Each slide = 80% of the container; 10% of each neighbor peeks from the sides.
+const SLIDE_W = 80;
+const PEEK = 10;
+const GAP = 1.5;
+const SLOT = SLIDE_W + GAP * 2;
+
+const INTERVAL_MS = 3500;
 
 export default function Services() {
   const [current, setCurrent] = useState(0);
-  const cards = services.cards;
-  const total = cards.length;
+  const total = slides.length;
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const prev = () => setCurrent((i) => (i - 1 + total) % total);
-  const next = () => setCurrent((i) => (i + 1) % total);
+  const goTo = (idx: number) => setCurrent((idx + total) % total);
+
+  const resetTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setCurrent((i) => (i + 1) % total);
+    }, INTERVAL_MS);
+  };
+
+  useEffect(() => {
+    resetTimer();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleManual = (fn: () => void) => { fn(); resetTimer(); };
+
+  const translateX = PEEK - current * SLOT;
 
   return (
     <section aria-label="O que fazemos" style={{ background: "var(--bg)" }} className="py-20 px-4">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-5xl">
         <p
           className="mb-4 text-center text-xs font-bold uppercase tracking-widest"
           style={{ color: "var(--accent)" }}
@@ -50,77 +68,70 @@ export default function Services() {
           <strong className="font-bold">NECESSIDADE</strong>
         </h2>
 
-        <div className="relative">
-          <div className="overflow-hidden">
-            <div
-              className="flex transition-transform duration-300 ease-in-out motion-reduce:transition-none"
-              style={{ transform: `translateX(-${current * 100}%)` }}
-            >
-              {cards.map((card, idx) => (
-                <article
-                  key={card.title}
-                  className="min-w-full px-12 sm:px-20"
-                  aria-hidden={idx !== current}
-                >
-                  <div
-                    className="mx-auto max-w-2xl rounded-2xl p-8 sm:p-10"
-                    style={{ background: "var(--bg-card)" }}
-                  >
-                    <h3
-                      className="mb-6 text-xl font-bold uppercase sm:text-2xl"
-                      style={{ fontFamily: "var(--font-heading)", color: "var(--text)" }}
-                    >
-                      {card.title}
-                    </h3>
-
-                    {card.bullets.length > 0 ? (
-                      <ul className="space-y-4">
-                        {card.bullets.map((bullet, bi) => (
-                          <CheckItem key={bi} text={bullet} />
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm italic" style={{ color: "var(--text-muted)" }}>
-                        {/* TODO: bullets a confirmar com o cliente (navegar carrossel da LP original) */}
-                        Conteúdo em breve.
-                      </p>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
+        {/* Carousel */}
+        <div
+          className="relative overflow-hidden"
+          onMouseEnter={() => { if (timerRef.current) clearInterval(timerRef.current); }}
+          onMouseLeave={resetTimer}
+        >
+          <div
+            className="flex transition-transform duration-500 ease-in-out motion-reduce:transition-none"
+            style={{ transform: `translateX(${translateX}%)` }}
+          >
+            {slides.map((slide, idx) => (
+              <div
+                key={slide.src}
+                className="shrink-0 rounded-2xl overflow-hidden transition-opacity duration-500"
+                style={{
+                  width: `${SLIDE_W}%`,
+                  marginInline: `${GAP}%`,
+                  opacity: idx === current ? 1 : 0.45,
+                }}
+                aria-hidden={idx !== current}
+              >
+                <Image
+                  src={slide.src}
+                  alt={slide.alt}
+                  width={900}
+                  height={600}
+                  className="w-full h-auto object-contain"
+                  priority={idx === 0}
+                />
+              </div>
+            ))}
           </div>
 
           <button
-            onClick={prev}
-            aria-label="Card anterior"
-            className="absolute left-0 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full text-xl font-bold transition-colors"
+            onClick={() => handleManual(() => goTo(current - 1))}
+            aria-label="Slide anterior"
+            className="absolute left-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full text-xl font-bold shadow transition-colors"
             style={{ background: "var(--bg-card)", color: "var(--accent)" }}
           >
             ‹
           </button>
           <button
-            onClick={next}
-            aria-label="Próximo card"
-            className="absolute right-0 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full text-xl font-bold transition-colors"
+            onClick={() => handleManual(() => goTo(current + 1))}
+            aria-label="Próximo slide"
+            className="absolute right-2 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full text-xl font-bold shadow transition-colors"
             style={{ background: "var(--bg-card)", color: "var(--accent)" }}
           >
             ›
           </button>
         </div>
 
+        {/* Dots */}
         <div
-          className="mt-8 flex justify-center gap-2"
+          className="mt-6 flex justify-center gap-2"
           role="tablist"
-          aria-label="Navegação dos cards de serviços"
+          aria-label="Navegação dos slides"
         >
-          {cards.map((card, idx) => (
+          {slides.map((slide, idx) => (
             <button
-              key={card.title}
+              key={slide.src}
               role="tab"
               aria-selected={idx === current}
-              aria-label={`Ir para card ${idx + 1}: ${card.title}`}
-              onClick={() => setCurrent(idx)}
+              aria-label={`Ir para slide ${idx + 1}: ${slide.alt}`}
+              onClick={() => handleManual(() => goTo(idx))}
               className="h-2 rounded-full transition-all duration-200"
               style={{
                 width: idx === current ? "1.5rem" : "0.5rem",
@@ -129,10 +140,6 @@ export default function Services() {
             />
           ))}
         </div>
-
-        <p className="mt-4 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-          {current + 1} / {total}
-        </p>
       </div>
     </section>
   );
