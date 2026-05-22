@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 
 type EventInput = {
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
         data: events.map((e) => ({
           sessionId,
           type: e.type,
-          data: e.data ?? null,
+          data: e.data ?? Prisma.JsonNull,
           ts: e.ts ? new Date(e.ts) : new Date(),
         })),
         skipDuplicates: true,
