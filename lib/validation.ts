@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidPhoneNumber } from "react-phone-number-input";
 
 function cnpjDigit(digits: string, length: number): number {
   let sum = 0;
@@ -28,7 +29,7 @@ export const leadSchema = z
     telefone: z
       .string()
       .min(1, "Telefone obrigatório")
-      .refine((v) => v.replace(/\D/g, "").length >= 8, "Telefone inválido"),
+      .refine((v) => isValidPhoneNumber(v), "Telefone inválido"),
     empresa: z.string().min(2, "Nome da empresa obrigatório"),
     segmento: z.string().min(1, "Selecione um segmento"),
     faturamento: z.string().min(1, "Selecione uma faixa de faturamento"),
