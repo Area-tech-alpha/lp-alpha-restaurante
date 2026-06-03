@@ -4,8 +4,8 @@ import { headers } from "next/headers";
 import { leadSchema, LeadFormData } from "@/lib/validation";
 import { db } from "@/lib/db";
 
-const REDIRECT_QUALIFIED = "https://assessorialpha.com/obrigado-c/";
-const REDIRECT_UNQUALIFIED = "https://assessorialpha.com/agradecimento/";
+const REDIRECT_QUALIFIED = "/obrigado";
+const REDIRECT_UNQUALIFIED = "/agradecimento";
 
 type ActionResult =
   | { success: true; redirectTo: string }

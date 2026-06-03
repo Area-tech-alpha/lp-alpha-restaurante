@@ -29,28 +29,25 @@ export async function POST(req: NextRequest) {
 
     const hasSessionEnd = events.some((e) => e.type === "session_end");
 
-    await db.$transaction([
-      db.event.createMany({
-        data: events.map((e) => ({
-          sessionId,
-          type: e.type,
-          data: e.data != null ? (e.data as Prisma.InputJsonValue) : Prisma.JsonNull,
-          ts: e.ts ? new Date(e.ts) : new Date(),
-        })),
-        skipDuplicates: true,
-      }),
-      ...(hasSessionEnd && (maxScrollDepth !== undefined || timeOnPageSec !== undefined)
-        ? [
-            db.session.update({
-              where: { id: sessionId },
-              data: {
-                ...(maxScrollDepth !== undefined ? { maxScrollDepth } : {}),
-                ...(timeOnPageSec !== undefined ? { timeOnPageSec } : {}),
-              },
-            }),
-          ]
-        : []),
-    ]);
+    await db.event.createMany({
+      data: events.map((e) => ({
+        sessionId,
+        type: e.type,
+        data: e.data != null ? (e.data as Prisma.InputJsonValue) : Prisma.JsonNull,
+        ts: e.ts ? new Date(e.ts) : new Date(),
+      })),
+      skipDuplicates: true,
+    });
+
+    if (hasSessionEnd && (maxScrollDepth !== undefined || timeOnPageSec !== undefined)) {
+      await db.session.update({
+        where: { id: sessionId },
+        data: {
+          ...(maxScrollDepth !== undefined ? { maxScrollDepth } : {}),
+          ...(timeOnPageSec !== undefined ? { timeOnPageSec } : {}),
+        },
+      });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

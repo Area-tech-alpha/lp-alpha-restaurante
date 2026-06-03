@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isValidPhoneNumber } from "react-phone-number-input";
+import { isValidPhoneNumber } from "libphonenumber-js";
 
 function cnpjDigit(digits: string, length: number): number {
   let sum = 0;
