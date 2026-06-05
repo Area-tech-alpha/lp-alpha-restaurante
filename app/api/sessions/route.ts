@@ -34,11 +34,22 @@ export async function POST(req: NextRequest) {
       null;
     const userAgent = req.headers.get("user-agent") ?? null;
 
-    // Se sessão já existe (reload ou retorno), só atualiza lastSeenAt
+    // Se sessão já existe: atualiza lastSeenAt. Se chegaram UTMs novos e a sessão
+    // não tinha UTM (primeira vez com parâmetros), persiste — atribuição first-touch.
     if (id) {
       const existing = await db.session.findUnique({ where: { id } });
       if (existing) {
-        await db.session.update({ where: { id }, data: { lastSeenAt: new Date() } });
+        const hasNewUtm = !!utmSource;
+        const sessionMissingUtm = !existing.utmSource;
+        await db.session.update({
+          where: { id },
+          data: {
+            lastSeenAt: new Date(),
+            ...(hasNewUtm && sessionMissingUtm
+              ? { utmSource, utmMedium, utmCampaign, utmContent, utmTerm }
+              : {}),
+          },
+        });
         return NextResponse.json({ sessionId: id });
       }
     }

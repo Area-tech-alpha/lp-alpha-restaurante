@@ -32,7 +32,9 @@ export async function submitLead(
     headersList.get("x-real-ip") ??
     null;
 
-  const qualified = parsed.data.investiria === "Sim";
+  // investiria só é perguntado para faturamento "Até 30 mil".
+  // Para faixas maiores chega undefined → tratado como qualificado (consistente com o redirect).
+  const qualified = parsed.data.investiria !== "Não";
   const redirectTo = parsed.data.investiria === "Não" ? REDIRECT_UNQUALIFIED : REDIRECT_QUALIFIED;
 
   // Busca UTMs da sessão para desnormalizar no lead
