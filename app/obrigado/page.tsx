@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { PixelEvent } from "@/components/pixel-event";
 import YoutubePlayer from "@/components/ui/youtube-player";
+import { PageEvent } from "@/components/analytics/page-event";
 
 export const metadata: Metadata = {
   title: "Cadastro Concluído — Assessoria Alpha",
@@ -14,8 +14,7 @@ const VIDEO_ID = "Bp27LBpMAck";
 export default function ObrigadoPage() {
   return (
     <div className="min-h-screen bg-bg flex flex-col">
-      <PixelEvent event="Lead" />
-
+      <PageEvent event="lead" data={{ qualified: true }} />
       {/* Header */}
       <header className="px-6 py-6 border-b border-white/10 flex justify-center">
         <Image
@@ -57,7 +56,7 @@ export default function ObrigadoPage() {
       {/* Footer */}
       <footer className="border-t border-white/10 px-6 py-6 text-center">
         <p className="text-text-muted text-sm">
-          2024 © Assessoria Alpha. Todos os direitos reservados.
+          {new Date().getFullYear()} © Assessoria Alpha. Todos os direitos reservados.
         </p>
       </footer>
     </div>

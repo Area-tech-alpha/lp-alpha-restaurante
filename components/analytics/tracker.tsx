@@ -57,6 +57,13 @@ function now() {
   return new Date().toISOString();
 }
 
+function pushDataLayer(payload: Record<string, unknown>) {
+  if (typeof window === "undefined") return;
+  const w = window as Window & { dataLayer?: unknown[] };
+  w.dataLayer = w.dataLayer ?? [];
+  w.dataLayer.push(payload);
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -138,6 +145,13 @@ export default function Tracker() {
 
         if (!existing) {
           queue({ type: "session_start", data: { ...utms, device: getDevice() }, ts: now() });
+          pushDataLayer({
+            event: "session_start",
+            device: getDevice(),
+            utm_source: utms.utmSource,
+            utm_medium: utms.utmMedium,
+            utm_campaign: utms.utmCampaign,
+          });
         }
 
         flushPending();
@@ -169,6 +183,9 @@ export default function Tracker() {
           if (!reached.has(milestone) && percent >= milestone) {
             reached.add(milestone);
             queue({ type: "scroll_depth", data: { percent: milestone }, ts: now() });
+            if (milestone === 50 || milestone === 75) {
+              pushDataLayer({ event: `scroll_${milestone}` });
+            }
           }
         }
       });
@@ -194,6 +211,7 @@ export default function Tracker() {
             queue({ type: "section_view", data: { section }, ts: now() });
             if (section === "form") {
               queue({ type: "form_view", ts: now() });
+              pushDataLayer({ event: "form_view" });
             }
           }
         }
@@ -214,16 +232,16 @@ export default function Tracker() {
     function onClick(e: MouseEvent) {
       const target = (e.target as HTMLElement).closest("[data-cta]") as HTMLElement | null;
       if (!target) return;
+      const ctaLabel = target.dataset.cta ?? target.textContent?.trim();
+      const ctaSection = target.closest("[data-section]")
+        ? (target.closest("[data-section]") as HTMLElement).dataset.section
+        : undefined;
       queue({
         type: "cta_click",
-        data: {
-          label: target.dataset.cta ?? target.textContent?.trim(),
-          section: target.closest("[data-section]")
-            ? (target.closest("[data-section]") as HTMLElement).dataset.section
-            : undefined,
-        },
+        data: { label: ctaLabel, section: ctaSection },
         ts: now(),
       });
+      pushDataLayer({ event: "cta_click", cta_label: ctaLabel, section: ctaSection });
     }
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
@@ -250,6 +268,11 @@ export default function Tracker() {
             timeInFormSec,
           },
           ts: now(),
+        });
+        pushDataLayer({
+          event: "form_abandon",
+          last_field: lastFieldRef.current,
+          filled_fields_count: filledFieldsRef.current.size,
         });
       }
 
@@ -299,11 +322,13 @@ export default function Tracker() {
 
       trackSubmitAttempt: () => {
         queue({ type: "form_submit_attempt", ts: now() });
+        pushDataLayer({ event: "form_submit_attempt" });
       },
 
       trackSubmitSuccess: (leadId: string, qualified: boolean) => {
         formSubmittedRef.current = true;
         queue({ type: "form_submit_success", data: { leadId, qualified }, ts: now() });
+        pushDataLayer({ event: "lead", lead_id: leadId, qualified });
       },
     };
   }, []);

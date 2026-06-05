@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { PixelEvent } from "@/components/pixel-event";
-
+import { PageEvent } from "@/components/analytics/page-event";
 export const metadata: Metadata = {
   title: "Agradecimento — Assessoria Alpha",
   description: "Obrigado pelo interesse na Assessoria Alpha.",
@@ -12,8 +11,7 @@ export const metadata: Metadata = {
 export default function AgradecimentoPage() {
   return (
     <main className="min-h-screen bg-bg flex items-center justify-center px-6 py-16">
-      <PixelEvent event="Lead" />
-
+      <PageEvent event="lead" data={{ qualified: false }} />
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
         {/* Left — content */}
         <div className="space-y-6">
