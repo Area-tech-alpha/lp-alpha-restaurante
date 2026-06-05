@@ -1,3 +1,4 @@
+import { FaqJsonLd } from "@/components/json-ld";
 import Hero from "@/components/sections/hero";
 import Marquee from "@/components/sections/marquee";
 import FormSection from "@/components/sections/form-section";
@@ -28,6 +29,7 @@ export default function Home() {
       <TeamCta />
       <Faq />
       <Footer />
+      <FaqJsonLd />
     </main>
   );
 }

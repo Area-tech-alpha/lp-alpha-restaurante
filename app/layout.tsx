@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Anton, Oswald, Archivo } from "next/font/google";
 import Script from "next/script";
+import { OrganizationJsonLd } from "@/components/json-ld";
 import "./globals.css";
 
 const anton = Anton({
@@ -24,19 +25,50 @@ const archivo = Archivo({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#F5A623",
+};
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://assessorialpha.com"), // atualizar se domínio mudar
+  metadataBase: new URL("https://assessorialpha.com"),
   title: "Assessoria Alpha — Marketing Gastronômico para Restaurantes",
   description:
     "A maior assessoria de marketing gastronômico da América Latina. +600 clientes ativos, +500M em vendas geradas. Estruture o marketing do seu restaurante.",
+  keywords: [
+    "marketing gastronômico",
+    "marketing para restaurantes",
+    "assessoria de restaurante",
+    "marketing digital para restaurantes",
+    "marketing iFood",
+    "agência marketing gastronômico",
+  ],
+  authors: [{ name: "Assessoria Alpha", url: "https://assessorialpha.com" }],
+  alternates: {
+    canonical: "https://assessorialpha.com",
+  },
   openGraph: {
     title: "Assessoria Alpha — Marketing Gastronômico para Restaurantes",
     description:
       "A maior assessoria de marketing gastronômico da América Latina. +600 clientes ativos, +500M em vendas geradas. Estruture o marketing do seu restaurante.",
     locale: "pt_BR",
     type: "website",
-    // TODO: substituir por imagem raster 1200×630 antes do go-live (assets pendentes do cliente)
-    // images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Assessoria Alpha" }],
+    url: "https://assessorialpha.com",
+    siteName: "Assessoria Alpha",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Assessoria Alpha — Marketing Gastronômico para Restaurantes",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Assessoria Alpha — Marketing Gastronômico para Restaurantes",
+    description:
+      "A maior assessoria de marketing gastronômico da América Latina. +600 clientes ativos, +500M em vendas geradas.",
+    images: ["/opengraph-image"],
   },
 };
 
@@ -51,6 +83,7 @@ export default function RootLayout({
       className={`${anton.variable} ${oswald.variable} ${archivo.variable}`}
     >
       <head>
+        <OrganizationJsonLd />
         <Script id="gtm" strategy="beforeInteractive">{`
           (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
           new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
