@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Anton, Oswald, Archivo, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import Script from "next/script";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { OrganizationJsonLd } from "@/components/json-ld";
 import "./globals.css";
 
@@ -133,6 +134,7 @@ export default function RootLayout({
           />
         </noscript>
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
