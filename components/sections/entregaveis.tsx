@@ -18,7 +18,7 @@ export default function Entregaveis() {
       id="entregaveis"
       aria-label="O que você recebe"
       data-section="entregaveis"
-      className="py-20"
+      className="bg-lp-white py-20"
     >
       <div className="mx-auto max-w-[1180px] px-6">
         <ScrollFade>

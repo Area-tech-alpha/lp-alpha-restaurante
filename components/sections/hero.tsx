@@ -50,9 +50,16 @@ export default function Hero() {
               </ScrollFade>
 
               <ScrollFade delay={160}>
-                <p className="max-w-[480px] text-[15px] leading-relaxed text-lp-text-muted mb-[22px]">
-                  {hero.subtitle}
-                </p>
+                <div className="max-w-[480px] mb-[22px]">
+                  <p className="text-[15px] leading-relaxed text-lp-text-muted">{hero.subtitle}</p>
+                  <ul className="mt-3 flex flex-col gap-1.5">
+                    {hero.subtitleBullets.map((bullet) => (
+                      <li key={bullet} className="text-[15px] leading-relaxed text-lp-text-muted">
+                        ✅ {bullet}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </ScrollFade>
 
               <ScrollFade delay={240}>

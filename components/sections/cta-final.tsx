@@ -7,7 +7,7 @@ const { ctaFinal } = content;
 
 export default function CtaFinal() {
   return (
-    <section id="cta-final" aria-label="Chamada final" data-section="cta-final" className="pt-5 pb-[90px]">
+    <section id="cta-final" aria-label="Chamada final" data-section="cta-final" className="bg-lp-white pt-5 pb-[90px]">
       <div className="mx-auto max-w-[1180px] px-6">
         <ScrollFade>
           <div

@@ -7,7 +7,8 @@ export const content = {
     headlineHighlight2: "1 real investido",
     headlineSuffix: " em Tráfego Pago.",
     subtitle:
-      "Somos a maior assessoria de marketing para restaurantes da América Latina. Equipe própria, 100% presencial, metodologia validada por mais de 3.000 clientes.",
+      "Agende uma chamada gratuita e descubra como podemos transformar seu marketing em uma máquina de vendas e novos pedidos.",
+    subtitleBullets: ["Marketing focado em VENDAS", "Especialistas no ramo de food"],
     cta: "Quero vender mais",
     formTitle: "Quero vender mais",
     formSubtitle: "Preencha e um especialista da Alpha entra em contato.",
