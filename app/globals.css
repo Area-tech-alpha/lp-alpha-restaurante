@@ -123,6 +123,31 @@ body {
   }
 }
 
+/* Fade-in no load — CSS puro, sem depender de hidratação/JS. Usado no conteúdo
+   acima da dobra (hero), onde ScrollFade (opacity:0 até o IntersectionObserver
+   disparar no client) atrasava o LCP no mobile. */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-load {
+  animation: fade-in-up 0.65s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-load {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 /* react-phone-number-input — tema claro/dourado da home (lead-form.tsx) */
 .phone-input-wrapper {
   display: flex;

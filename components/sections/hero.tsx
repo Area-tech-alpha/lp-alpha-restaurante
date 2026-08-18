@@ -1,7 +1,7 @@
 import Image from "next/image";
 import LeadForm from "@/components/lead-form";
 import LpCtaButton from "@/components/ui/lp-cta-button";
-import ScrollFade from "@/components/ui/scroll-fade";
+import FadeInLoad from "@/components/ui/fade-in-load";
 import { content } from "@/lib/content";
 
 const { hero } = content;
@@ -39,7 +39,7 @@ export default function Hero() {
 
           <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-[1.05fr_.95fr]">
             <div>
-              <ScrollFade delay={80}>
+              <FadeInLoad delay={80}>
                 <h1 className="font-lp-display text-[clamp(2rem,4.4vw,3.1rem)] leading-[1.12] font-semibold text-lp-ink mb-4">
                   {hero.headlinePrefix}
                   <span className="lp-gold-text">{hero.headlineHighlight1}</span>
@@ -47,9 +47,9 @@ export default function Hero() {
                   <span className="lp-gold-text">{hero.headlineHighlight2}</span>
                   {hero.headlineSuffix}
                 </h1>
-              </ScrollFade>
+              </FadeInLoad>
 
-              <ScrollFade delay={160}>
+              <FadeInLoad delay={160}>
                 <div className="max-w-[480px] mb-[22px]">
                   <p className="text-[15px] leading-relaxed text-lp-text-muted">{hero.subtitle}</p>
                   <ul className="mt-3 flex flex-col gap-1.5">
@@ -60,14 +60,14 @@ export default function Hero() {
                     ))}
                   </ul>
                 </div>
-              </ScrollFade>
+              </FadeInLoad>
 
-              <ScrollFade delay={240}>
+              <FadeInLoad delay={240}>
                 <LpCtaButton data-cta="hero-cta">{hero.cta}</LpCtaButton>
-              </ScrollFade>
+              </FadeInLoad>
             </div>
 
-            <ScrollFade delay={160}>
+            <FadeInLoad delay={160}>
               <div id="contato">
                 <div className="rounded-[22px] border border-lp-border bg-lp-panel p-5 sm:p-[26px]">
                   <h2 className="mb-1 text-[17px] font-semibold text-lp-ink">{hero.formTitle}</h2>
@@ -77,7 +77,7 @@ export default function Hero() {
                   <LeadForm />
                 </div>
               </div>
-            </ScrollFade>
+            </FadeInLoad>
           </div>
         </div>
       </div>
