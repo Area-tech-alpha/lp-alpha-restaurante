@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Anton, Oswald, Archivo, Inter } from "next/font/google";
 import localFont from "next/font/local";
-import Script from "next/script";
+import { Partytown } from "@qwik.dev/partytown/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { OrganizationJsonLd } from "@/components/json-ld";
 import "./globals.css";
@@ -116,6 +116,7 @@ export default function RootLayout({
     >
       <head>
         <OrganizationJsonLd />
+        <Partytown debug={false} forward={["dataLayer.push"]} />
       </head>
       <body className="min-h-full bg-bg text-text antialiased" suppressHydrationWarning>
         <noscript>
@@ -128,13 +129,24 @@ export default function RootLayout({
         </noscript>
         {children}
         <SpeedInsights />
-        <Script id="gtm" strategy="afterInteractive">{`
-          (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-          new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-          j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-          'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-          })(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GTM_ID}');
-        `}</Script>
+        {/* next/script's strategy="worker" does not render under the App Router
+            (confirmed against Next's own docs + verified empirically), so the
+            Partytown script is authored as a plain tag: Partytown's runtime
+            (registered above via <Partytown>) scans the DOM for
+            script[type="text/partytown"] and moves it into the worker itself. */}
+        <script
+          type="text/partytown"
+          id="gtm"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+              new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+              j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+              'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+              })(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GTM_ID}');
+            `,
+          }}
+        />
       </body>
     </html>
   );
