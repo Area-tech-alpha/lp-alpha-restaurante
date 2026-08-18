@@ -12,6 +12,23 @@
   --text: #FFFFFF;
   --text-muted: #A0A0A0;
   --text-on-light: #0A0A0A;
+
+  /* Paleta da home (LP "00-lp-b") — clara/dourada, usada só pelas seções em
+     components/sections e components/lead-form.tsx. Os tokens escuros acima
+     continuam servindo o dashboard e as páginas de obrigado/agradecimento. */
+  --lp-white: #ffffff;
+  --lp-off: #fbfaf8;
+  --lp-panel: #f5f4f1;
+  --lp-ink: #141005;
+  --lp-text: #1a1712;
+  --lp-text-muted: #5c584f;
+  --lp-text-dim: #8c887d;
+  --lp-gold-1: #FFB703;
+  --lp-gold-2: #F5A623;
+  --lp-amber: #F59E0B;
+  --lp-border: rgba(20, 16, 5, .1);
+  --lp-border-strong: rgba(20, 16, 5, .16);
+  --lp-border-gold: rgba(245, 166, 35, .45);
 }
 
 @theme inline {
@@ -29,6 +46,24 @@
   --font-display: var(--font-anton);
   --font-heading: var(--font-oswald);
   --font-body: var(--font-archivo);
+
+  --color-lp-white: var(--lp-white);
+  --color-lp-off: var(--lp-off);
+  --color-lp-panel: var(--lp-panel);
+  --color-lp-ink: var(--lp-ink);
+  --color-lp-text: var(--lp-text);
+  --color-lp-text-muted: var(--lp-text-muted);
+  --color-lp-text-dim: var(--lp-text-dim);
+  --color-lp-gold-1: var(--lp-gold-1);
+  --color-lp-gold-2: var(--lp-gold-2);
+  --color-lp-amber: var(--lp-amber);
+  --color-lp-border: var(--lp-border);
+  --color-lp-border-strong: var(--lp-border-strong);
+  --color-lp-border-gold: var(--lp-border-gold);
+
+  --font-lp-display: var(--font-clash-display);
+  --font-lp-heading: var(--font-general-sans);
+  --font-lp-body: var(--font-inter);
 }
 
 html {
@@ -88,7 +123,7 @@ body {
   }
 }
 
-/* react-phone-number-input — tema escuro */
+/* react-phone-number-input — tema claro/dourado da home (lead-form.tsx) */
 .phone-input-wrapper {
   display: flex;
   gap: 0.5rem;
@@ -100,21 +135,31 @@ body {
 
 .phone-input-wrapper .PhoneInputInput {
   flex: 1;
-  background: #111;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
-  color: white;
-  font-size: 1rem;
+  background: var(--lp-panel);
+  border: 1px solid var(--lp-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--lp-text);
+  font-size: 13.5px;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.25s, background-color 0.25s, box-shadow 0.25s;
   width: 100%;
 }
 
 .phone-input-wrapper .PhoneInputInput::placeholder {
-  color: var(--text-muted);
+  color: var(--lp-text-dim);
 }
 
 .phone-input-wrapper .PhoneInputInput:focus {
-  border-color: var(--accent);
+  border-color: var(--lp-gold-2);
+  background-color: var(--lp-white);
+  box-shadow: 0 0 0 4px rgba(245, 166, 35, .12);
+}
+
+/* gradiente dourado usado em destaques de headline */
+.lp-gold-text {
+  background: linear-gradient(90deg, var(--lp-gold-1), var(--lp-gold-2) 60%, var(--lp-amber));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }

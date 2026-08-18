@@ -1,14 +1,9 @@
 import { FaqJsonLd } from "@/components/json-ld";
 import Hero from "@/components/sections/hero";
-import Marquee from "@/components/sections/marquee";
-import FormSection from "@/components/sections/form-section";
 import Testimonials from "@/components/sections/testimonials";
-import About from "@/components/sections/about";
-import Method from "@/components/sections/method";
-import Services from "@/components/sections/services";
-import Plans from "@/components/sections/plans";
-import TeamCta from "@/components/sections/team-cta";
+import Entregaveis from "@/components/sections/entregaveis";
 import Faq from "@/components/sections/faq";
+import CtaFinal from "@/components/sections/cta-final";
 import Footer from "@/components/sections/footer";
 import Tracker from "@/components/analytics/tracker";
 import StickyCta from "@/components/ui/sticky-cta";
@@ -19,15 +14,10 @@ export default function Home() {
       <Tracker />
       <StickyCta />
       <Hero />
-      <Marquee />
-      <FormSection />
       <Testimonials />
-      <About />
-      <Method />
-      <Services />
-      <Plans />
-      <TeamCta />
+      <Entregaveis />
       <Faq />
+      <CtaFinal />
       <Footer />
       <FaqJsonLd />
     </main>

@@ -4,8 +4,32 @@ import { headers } from "next/headers";
 import { leadSchema, LeadFormData } from "@/lib/validation";
 import { db } from "@/lib/db";
 
-const REDIRECT_QUALIFIED = "/obrigado";
-const REDIRECT_UNQUALIFIED = "/agradecimento";
+// Faixas de faturamento que qualificam o lead pra cada página de obrigado —
+// espelha exatamente `calcularQualificacaoLead` da LP 00-lp-b (WordPress).
+// "80 mil até 100 mil" não está em nenhuma faixa e cai no /obrigado genérico:
+// é assim na página original, não é um bug introduzido aqui.
+const FAIXA_A = [
+  "100 mil até 150 mil",
+  "150 mil até 250 mil",
+  "250 mil até 400 mil",
+  "400 mil até 600 mil",
+  "600 mil até 1 milhão",
+  "Mais de 1 milhão",
+];
+const FAIXA_B = ["50 mil até 80 mil"];
+const FAIXA_C = ["30 mil até 50 mil"];
+
+function qualificarLead(faturamento: string, investiria: string | undefined) {
+  if (faturamento === "Até 30 mil" && investiria === "Não") {
+    return { redirectTo: "/agradecimento", qualified: false };
+  }
+  if (FAIXA_A.includes(faturamento)) return { redirectTo: "/obrigado-a", qualified: true };
+  if (FAIXA_B.includes(faturamento)) return { redirectTo: "/obrigado-b", qualified: true };
+  if (FAIXA_C.includes(faturamento) || faturamento === "Até 30 mil") {
+    return { redirectTo: "/obrigado-c", qualified: true };
+  }
+  return { redirectTo: "/obrigado", qualified: true };
+}
 
 type ActionResult =
   | { success: true; redirectTo: string }
@@ -33,9 +57,7 @@ export async function submitLead(
     null;
 
   // investiria só é perguntado para faturamento "Até 30 mil".
-  // Para faixas maiores chega undefined → tratado como qualificado (consistente com o redirect).
-  const qualified = parsed.data.investiria !== "Não";
-  const redirectTo = parsed.data.investiria === "Não" ? REDIRECT_UNQUALIFIED : REDIRECT_QUALIFIED;
+  const { redirectTo, qualified } = qualificarLead(parsed.data.faturamento, parsed.data.investiria);
 
   // Busca UTMs da sessão para desnormalizar no lead
   let utmFields: {
