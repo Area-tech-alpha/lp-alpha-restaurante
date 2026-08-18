@@ -1,64 +1,77 @@
 import Image from "next/image";
-import CtaButton from "@/components/ui/cta-button";
+import LeadForm from "@/components/lead-form";
+import LpCtaButton from "@/components/ui/lp-cta-button";
+import ScrollFade from "@/components/ui/scroll-fade";
 import { content } from "@/lib/content";
 
-export default function Hero() {
-  const { headline, subtitle, cta } = content.hero;
+const { hero } = content;
 
+export default function Hero() {
   return (
     <section
       id="hero"
       aria-label="Hero"
       data-section="hero"
-      className="relative overflow-hidden flex flex-col items-center pb-20"
+      className="relative overflow-hidden px-3 pt-6 pb-10 sm:px-4 sm:pt-9 sm:pb-[60px]"
     >
-      {/* Background image */}
       <Image
-        src="/hero-nova-teste-home.webp"
+        src="/hero-nova-00-lp.webp"
         alt=""
         fill
         priority
         className="object-cover object-center"
       />
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 pt-24 pb-32 max-w-5xl mx-auto w-full">
-        {/* Logo */}
-        <Image
-          src="/Logo-Alpha.png.webp"
-          alt="Alpha Assessoria"
-          width={200}
-          height={52}
-          priority
-          className="mb-10"
-        />
+      <div className="relative z-10 mx-auto max-w-[1160px]">
+        <div className="rounded-[32px] bg-lp-white p-5 shadow-[0_50px_110px_-30px_rgba(20,16,5,0.45)] sm:p-6 md:p-9">
+          <div className="mb-5 flex items-center justify-center md:justify-start">
+            <a href="https://assessorialpha.com">
+              <Image
+                src="/logo-alpha-header.png"
+                alt={hero.logoAlt}
+                width={750}
+                height={242}
+                priority
+                className="h-7 w-auto"
+              />
+            </a>
+          </div>
 
-        <h1 className="leading-none uppercase text-text-on-light">
-          {/* Linha 1 — Oswald fino para contraste com o bloco bold abaixo */}
-          <span className="block font-heading font-light text-xl sm:text-2xl md:text-3xl tracking-widest mb-2">
-            {headline.line1}
-          </span>
-          {/* Linha 2 — Anton grande, destaque principal */}
-          <span className="block font-display text-3xl sm:text-5xl md:text-6xl leading-tight">
-            {headline.line2}
-          </span>
-          {/* Linhas 3-4 — Anton, mesmo peso mas ligeiramente menor */}
-          <span className="font-display text-2xl sm:text-4xl md:text-5xl">
-            {headline.line3}{" "}
-          </span>
-          <span className="font-display text-2xl sm:text-4xl md:text-5xl">
-            {headline.line4}
-          </span>
-        </h1>
+          <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-[1.05fr_.95fr]">
+            <div>
+              <ScrollFade delay={80}>
+                <h1 className="font-lp-display text-[clamp(2rem,4.4vw,3.1rem)] leading-[1.12] font-semibold text-lp-ink mb-4">
+                  {hero.headlinePrefix}
+                  <span className="lp-gold-text">{hero.headlineHighlight1}</span>
+                  {hero.headlineMiddle}
+                  <span className="lp-gold-text">{hero.headlineHighlight2}</span>
+                  {hero.headlineSuffix}
+                </h1>
+              </ScrollFade>
 
-        {/* Subtítulo */}
-        <p className="mt-5 text-sm sm:text-base text-text-on-light/90 max-w-sm">
-          {subtitle}
-        </p>
+              <ScrollFade delay={160}>
+                <p className="max-w-[480px] text-[15px] leading-relaxed text-lp-text-muted mb-[22px]">
+                  {hero.subtitle}
+                </p>
+              </ScrollFade>
 
-        {/* CTA */}
-        <div className="mt-8">
-          <CtaButton href="#formulario">{cta}</CtaButton>
+              <ScrollFade delay={240}>
+                <LpCtaButton data-cta="hero-cta">{hero.cta}</LpCtaButton>
+              </ScrollFade>
+            </div>
+
+            <ScrollFade delay={160}>
+              <div id="contato">
+                <div className="rounded-[22px] border border-lp-border bg-lp-panel p-5 sm:p-[26px]">
+                  <h2 className="mb-1 text-[17px] font-semibold text-lp-ink">{hero.formTitle}</h2>
+                  <span className="mb-4 block text-[12.5px] text-lp-text-dim">
+                    {hero.formSubtitle}
+                  </span>
+                  <LeadForm />
+                </div>
+              </div>
+            </ScrollFade>
+          </div>
         </div>
       </div>
     </section>

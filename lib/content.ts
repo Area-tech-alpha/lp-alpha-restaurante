@@ -1,43 +1,27 @@
 export const content = {
   hero: {
-    headline: {
-      line1: "SEU RESTAURANTE PRECISA DA",
-      line2: "MAIOR ASSESSORIA DE MARKETING GASTRONÔMICO",
-      line3: "DA",
-      line4: "AMÉRICA LATINA!",
-    },
-    subtitle: "Somos a engrenagem invisível dos maiores restaurantes do Brasil.",
-    cta: "Quero mais informações",
-  },
-
-  marquee: {
-    text: "+600 CLIENTES ATIVOS • +500M EM VENDAS PARA OS NOSSOS CLIENTES • +5 ANOS DE EXPERIÊNCIA •",
+    logoAlt: "Alpha Assessoria",
+    headlinePrefix: "Fazemos o seu restaurante vender ",
+    headlineHighlight1: "15 reais",
+    headlineMiddle: " a cada ",
+    headlineHighlight2: "1 real investido",
+    headlineSuffix: " em Tráfego Pago.",
+    subtitle:
+      "Somos a maior assessoria de marketing para restaurantes da América Latina. Equipe própria, 100% presencial, metodologia validada por mais de 3.000 clientes.",
+    cta: "Quero vender mais",
+    formTitle: "Quero vender mais",
+    formSubtitle: "Preencha e um especialista da Alpha entra em contato.",
+    successMessage:
+      "Recebemos seus dados! Nosso time entra em contato em breve.",
   },
 
   form: {
-    sectionLabel: "AVISO",
-    title:
-      "NÃO SAIA AGORA! FALTAM POUCOS SEGUNDOS PARA SEU RESTAURANTE MUDAR.",
-    steps: [
-      {
-        number: 1,
-        title: "Complete o formulário",
-        description:
-          "Forneça suas informações no formulário ao lado. Garantimos a segurança total de seus dados. Serão usados apenas para contato.",
-      },
-      {
-        number: 2,
-        title: "Receba uma ligação personalizada",
-        description:
-          "Em um prazo de até 5 minutos em horário comercial, um dos nossos especialistas entrará em contato diretamente para agendar a reunião mais importante com você.",
-      },
-    ],
     fields: {
       nome: { label: "Nome", placeholder: "Seu nome" },
       email: { label: "E-mail", placeholder: "Seu melhor e-mail" },
       telefone: { label: "Telefone", placeholder: "Telefone" },
       empresa: { label: "Empresa", placeholder: "Nome da empresa" },
-      cnpj: { label: "CNPJ", placeholder: "Seu CNPJ" },
+      cnpj: { label: "CNPJ", placeholder: "00.000.000/0000-00" },
       segmento: {
         label: "Segmento",
         placeholder: "Selecionar segmento",
@@ -57,7 +41,7 @@ export const content = {
         ],
       },
       faturamento: {
-        label: "Faturamento mensal",
+        label: "Faturamento atual",
         placeholder: "Selecionar faturamento",
         options: [
           "Até 30 mil",
@@ -73,142 +57,143 @@ export const content = {
         ],
       },
       investiria: {
-        label: "Você investiria R$4.000,00 por mês para vender mais?",
+        label: "Você investiria R$4.000 por mês para vender mais?",
         options: ["Sim", "Não"],
       },
     },
-    submitLabel: "Receber mais informações",
-    successMessage:
-      "Recebemos! Em até 5 min entramos em contato.",
+    submitLabel: "Quero vender mais",
   },
 
   testimonials: {
-    sectionLabel: "DEPOIMENTOS",
-    title: {
-      prefix: "MAIS DE",
-      highlight: "2.000",
-      middle: "RESTAURANTES COM RESULTADOS.",
-      suffix: "ISSO É",
-      brand: "ALPHA.",
-    },
-    videos: [
-      { videoId: "aoDx_HTLaWA" },
-      { videoId: "5A264VtPKEs" },
-      { videoId: "oSDQUXjzd7Y" },
-    ],
-  },
-
-  about: {
-    sectionLabel: "QUEM SOMOS",
-    paragraphs: [
-      "Na Alpha Assessoria, não somos apenas uma agência; somos a maior assessoria de marketing especializada em restaurantes da América Latina. Nascemos da paixão por transformar negócios gastronômicos, elevando-os a um novo patamar de sucesso e reconhecimento.",
-      "Com uma estrutura 100% presencial e uma equipe de mais de 80 profissionais altamente qualificados, a Alpha Assessoria é a parceira estratégica que seu restaurante precisa.",
-      "Nosso time multidisciplinar, composto por gestores de tráfego, designers e especialistas em marketing digital, trabalha em sinergia para garantir que cada aspecto da sua presença online e offline seja otimizado.",
-    ],
-  },
-
-  method: {
-    sectionLabel: "O MÉTODO ALPHA",
+    sectionLabel: "Depoimentos",
+    title: "Quem já investiu com a Alpha, fala por nós",
     subtitle:
-      "Se você seguir, irá manter seu negócio faturando todos os dias.",
-    labels: ["Engajamento", "Retenção", "Ativação", "Aquisição", "Indicação"],
-    badge: "Monetização",
-    // TODO: confirmar com cliente se vídeo (.mp4 loop) ou animação SVG
+      "Restaurantes reais, resultado real com tráfego pago gerido pela nossa equipe.",
+    videos: [
+      {
+        videoId: "aoDx_HTLaWA",
+        badgeIcon: "trending-up",
+        badgeLabel: "Resultado real",
+        name: "Depoimento de cliente Alpha",
+        role: "Restaurante parceiro",
+      },
+      {
+        videoId: "XJCYsQPZbCk",
+        badgeIcon: "star",
+        badgeLabel: "4.9 ★",
+        name: "Depoimento de cliente Alpha",
+        role: "Restaurante parceiro",
+      },
+      {
+        videoId: "MktAB8hCzwQ",
+        badgeIcon: "trending-up",
+        badgeLabel: "+280%",
+        name: "Depoimento de cliente Alpha",
+        role: "Restaurante parceiro",
+      },
+    ],
   },
 
-  services: {
-    sectionLabel: "O QUE FAZEMOS?",
+  entregaveis: {
+    sectionLabel: "O que você recebe",
+    title:
+      'Não vendemos "gestão de tráfego". Entregamos um sistema completo de vendas.',
+    subtitle:
+      "Cada real investido passa pela nossa equipe presencial, do criativo ao relatório de resultado.",
     cards: [
       {
-        title: "Cardápio Digital",
-        bullets: [
-          "Estruturamos todo o seu cardápio digital, desde o layout até os itens",
-          "Aumentamos seu ticket médio para ter maior margem de lucro, utilizando uma estratégia validada",
-          "Maior conversão de clientes através de hierarquia visual, produtos âncora e campanhas sazonais",
-        ],
+        icon: "users",
+        title: "Gestão e atendimento",
+        description:
+          "Um time da Alpha acompanha seu restaurante de perto, do primeiro contato ao suporte do dia a dia.",
       },
       {
-        title: "Disparo de Mensagens Inteligente",
-        bullets: [
-          "Campanhas automáticas de vendas: promoções, combos e novidades direto no WhatsApp do seu cliente",
-          "Reativação de clientes antigos: trazemos de volta quem já comprou e parou de pedir",
-        ],
+        icon: "target",
+        title: "Mídia paga",
+        description:
+          "Campanhas de Meta e Google Ads geridas e otimizadas pela nossa equipe, não por um robô.",
       },
       {
-        title: "Gestão e Atendimento",
-        bullets: [], // TODO: extrair bullets da LP original (navegar carrossel)
+        icon: "store",
+        title: "Soluções comerciais para restaurantes",
+        description:
+          "Estratégias pensadas pra aumentar ticket médio, recorrência e conversão de mesa, não só clique.",
       },
       {
-        title: "Mídia Paga",
-        bullets: [], // TODO: extrair bullets da LP original
-      },
-      {
-        title: "Soluções Comerciais",
-        bullets: [], // TODO: extrair bullets da LP original
-      },
-      {
-        title: "Vídeos",
-        bullets: [], // TODO: extrair bullets da LP original
-      },
-      {
-        title: "Acompanhamento",
-        bullets: [], // TODO: extrair bullets da LP original
+        icon: "file-bar-chart",
+        title: "Relatórios e acompanhamento",
+        description:
+          "Você acompanha quanto entrou, quanto voltou e o retorno real de cada real investido, sem letra miúda.",
       },
     ],
-  },
-
-  plans: {
-    sectionLabel: "PLANOS PERSONALIZADOS",
-    paragraph:
-      "Oferecemos nossos serviços por planos flexíveis. Você escolhe conforme sua condição atual. O mais importante é continuar apostando em estratégias que trazem resultado.",
-  },
-
-  teamCta: {
-    sectionLabel: "RECEBA UM TIME EXCLUSIVO",
-    paragraph:
-      "Tenha um time de especialistas ao seu lado ou terceirize totalmente seu marketing e setor comercial com a Alpha. Sem dor de cabeça com contratações, gestão de equipe, riscos trabalhistas ou burocracias — você foca no seu restaurante, e a gente foca em fazer ele crescer.",
-    cta: "Quero mais informações",
-    onlineIndicator: "Especialistas online agora",
+    roi: {
+      label: "O resultado que buscamos em cada campanha",
+      prefix: "R$1 investido ",
+      highlight: "vira R$15",
+      suffix: " em vendas",
+    },
   },
 
   faq: {
-    title: "PERGUNTAS FREQUENTES",
-    subtitle:
-      "Ficou com alguma dúvida sobre a Alpha? Talvez ela esteja aqui.",
+    sectionLabel: "Perguntas frequentes",
+    title: "Antes de falar com a gente",
     items: [
       {
-        question: "O que exatamente a Alpha faz?",
+        question: "Como assim 15 reais pra cada 1 investido?",
         answer:
-          "Somos uma assessoria especializada em marketing gastronômico. Ajudamos restaurantes, pizzarias, hamburguerias e negócios de alimentação a vender mais por meio de estratégias como tráfego pago, gestão de iFood, disparo de mensagens, criação de criativos e estruturação do comercial.",
+          "É o retorno que buscamos em campanhas de tráfego pago geridas pela Alpha: pra cada R$1 investido em anúncios, o objetivo é gerar até R$15 em vendas pro seu restaurante, com gestão ativa e otimização constante da nossa equipe.",
       },
       {
-        question: "Posso cancelar quando quiser?",
+        question: "Como funciona a gestão de tráfego pago da Alpha?",
         answer:
-          "Sim, você pode cancelar sua assinatura a qualquer momento.",
+          "Nossa equipe presencial cuida de tudo: estratégia, criativos, configuração das campanhas em Meta e Google Ads, e otimização semanal com base em dados reais de venda, não só de clique.",
       },
       {
-        question: "Em quanto tempo vou ver resultados?",
+        question: "Em quanto tempo eu vejo resultado?",
         answer:
-          "Depende do estágio atual do seu negócio, estrutura interna e investimento. Mas, na maioria dos casos, nossos clientes começam a sentir o impacto positivo nas vendas em 30 a 60 dias.",
+          "A maioria dos restaurantes começa a ver impacto real entre 30 e 60 dias após o início da parceria.",
       },
       {
-        question: "Vocês atendem qualquer tipo de restaurante?",
+        question: "Preciso ter equipe de marketing própria?",
         answer:
-          "Atendemos desde pequenas operações até grandes redes, desde que estejam dispostas a seguir um plano estratégico de crescimento. Inclusive, temos um núcleo especializado para negócios que faturam acima de R$200 mil/mês: o Alpha X.",
+          "Não. A Alpha assume a operação de tráfego pago do zero, com sua própria equipe e estrutura.",
       },
       {
-        question: "A Alpha cuida do meu Instagram e redes sociais?",
+        question: "A Alpha atende qualquer segmento de restaurante?",
         answer:
-          "Sim, mas com foco em performance. Não somos uma empresa de 'post bonitinho'. Nosso objetivo é transformar conteúdo e anúncios em vendas reais. Se não gerar resultado, não faz sentido estar ali.",
+          "Sim. Atendemos pizzarias, hamburguerias, churrascarias, restaurantes japoneses, cafeterias, doçarias e praticamente qualquer segmento gastronômico.",
+      },
+      {
+        question: "Como sei se meu restaurante está pronto pra investir?",
+        answer:
+          "Como nosso trabalho é seletivo, o primeiro passo é conversar com nosso time. Preencha o formulário acima e agendamos um diagnóstico gratuito.",
       },
     ],
   },
 
+  ctaFinal: {
+    eyebrow: "Chega de deixar dinheiro na mesa",
+    headlinePrefix: "Pronto pra fazer o seu restaurante vender ",
+    headlineHighlight1: "15 reais",
+    headlineMiddle: " a cada ",
+    headlineHighlight2: "1 real investido",
+    headlineSuffix: "?",
+    paragraph:
+      "Preencha o formulário e fale agora com um especialista da Alpha. Vaga limitada por região, por causa da nossa estrutura 100% presencial.",
+    cta: "Quero vender mais",
+  },
+
+  floatCta: {
+    cta: "Quero vender 15x mais",
+  },
+
   footer: {
-    copyright: "2025 © Assessoria Alpha. CNPJ: 48.684.183/0001-38",
+    logoAlt: "Alpha Assessoria",
+    copyright: "Alpha Assessoria. Todos os direitos reservados.",
+    // usados só no JSON-LD (Organization.sameAs) — o rodapé da nova LP não
+    // exibe ícones sociais.
     socials: {
       instagram: "https://www.instagram.com/assessorialpha/",
-      tiktok: "", // TODO: confirmar URL com cliente
       linkedin: "https://www.linkedin.com/company/assessoria-alpha/",
     },
   },

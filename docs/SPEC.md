@@ -1,5 +1,13 @@
 # SPEC.md — Especificação da Landing Page Alpha
 
+> ⚠️ **DESATUALIZADO (2026-08-18).** Este documento descreve a *primeira* versão da
+> home (tema escuro, Anton/Oswald/Archivo, seções Sobre/Método/Marquee/Planos/
+> Serviços/Time). A home foi redesenhada para ficar idêntica à LP em WordPress
+> `https://assessorialpha.com/00-lp-b/` — tema claro/dourado, Clash Display +
+> General Sans, só 5 seções (Hero+Formulário, Depoimentos, Entregáveis, FAQ, CTA
+> final). A fonte de verdade atual é `lib/content.ts` + os componentes em
+> `components/sections/`. Mantido aqui como histórico da migração original.
+
 Fonte de verdade do que construir. Conteúdo extraído da LP original; design extraído
 de screenshots da versão renderizada. Construa contra esta spec, na ordem definida em
 TASKS.md.

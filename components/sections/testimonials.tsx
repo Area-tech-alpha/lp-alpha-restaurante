@@ -1,4 +1,5 @@
 import { VideoCard } from "@/components/ui/video-card";
+import Eyebrow from "@/components/ui/eyebrow";
 import ScrollFade from "@/components/ui/scroll-fade";
 import { content } from "@/lib/content";
 
@@ -6,34 +7,35 @@ const { testimonials } = content;
 
 export default function Testimonials() {
   return (
-    <section aria-label="Depoimentos" data-section="testimonials" className="py-20 px-4" style={{ background: "#FFFFFF" }}>
-      <div className="mx-auto max-w-6xl">
+    <section
+      id="depoimentos"
+      aria-label="Depoimentos"
+      data-section="testimonials"
+      className="bg-lp-off py-20"
+    >
+      <div className="mx-auto max-w-[1180px] px-6">
         <ScrollFade>
-          <div className="mb-12 text-center">
-            <p
-              className="mb-4 text-xs font-bold uppercase tracking-widest"
-              style={{ color: "var(--accent)" }}
-            >
-              {testimonials.sectionLabel}
-            </p>
-
-            <h2
-              className="text-3xl font-bold uppercase leading-tight sm:text-4xl"
-              style={{ fontFamily: "var(--font-heading)", color: "var(--text-on-light)" }}
-            >
-              {testimonials.title.prefix}{" "}
-              <span style={{ color: "var(--accent)" }}>{testimonials.title.highlight}</span>{" "}
-              {testimonials.title.middle}{" "}
-              {testimonials.title.suffix}{" "}
-              <span style={{ color: "var(--accent)" }}>{testimonials.title.brand}</span>
+          <div className="mx-auto mb-11 max-w-[640px] text-center">
+            <Eyebrow center>{testimonials.sectionLabel}</Eyebrow>
+            <h2 className="font-lp-heading text-[clamp(1.9rem,4vw,2.7rem)] leading-[1.15] font-semibold text-lp-ink mt-3.5">
+              {testimonials.title}
             </h2>
+            <p className="mt-3.5 text-base leading-relaxed text-lp-text-muted">
+              {testimonials.subtitle}
+            </p>
           </div>
         </ScrollFade>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
           {testimonials.videos.map((video, i) => (
-            <ScrollFade key={video.videoId} delay={i * 150}>
-              <VideoCard videoId={video.videoId} />
+            <ScrollFade key={video.videoId} delay={i * 80}>
+              <VideoCard
+                videoId={video.videoId}
+                badgeIcon={video.badgeIcon}
+                badgeLabel={video.badgeLabel}
+                name={video.name}
+                role={video.role}
+              />
             </ScrollFade>
           ))}
         </div>

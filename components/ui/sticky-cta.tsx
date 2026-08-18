@@ -1,38 +1,38 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import CtaButton from "@/components/ui/cta-button";
+import LpCtaButton from "@/components/ui/lp-cta-button";
+import { content } from "@/lib/content";
 
 export default function StickyCta() {
   const [visible, setVisible] = useState(false);
-  const heroRef = useRef<Element | null>(null);
+  const formRef = useRef<Element | null>(null);
 
   useEffect(() => {
-    heroRef.current = document.querySelector("[data-section='hero']");
-    if (!heroRef.current) return;
+    formRef.current = document.getElementById("contato");
+    if (!formRef.current) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => setVisible(!entry.isIntersecting),
       { threshold: 0 }
     );
-    observer.observe(heroRef.current);
+    observer.observe(formRef.current);
     return () => observer.disconnect();
   }, []);
 
-  if (!visible) return null;
-
   return (
     <div
-      aria-hidden="true"
-      className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex justify-center px-4 py-3 bg-bg/95 backdrop-blur-sm border-t border-white/10"
+      aria-hidden={!visible}
+      className={`fixed inset-x-3 bottom-3.5 z-[900] flex justify-center transition-all duration-300 sm:inset-x-auto sm:right-6 sm:justify-end md:right-6 ${
+        visible ? "opacity-100" : "pointer-events-none translate-y-4 opacity-0"
+      }`}
     >
-      <CtaButton
-        href="#formulario"
+      <LpCtaButton
         data-cta="sticky-cta"
-        className="w-full max-w-sm justify-center text-sm"
+        className="w-full max-w-sm shadow-[0_16px_40px_-8px_rgba(245,166,35,0.5)] sm:w-auto"
       >
-        Quero mais informações
-      </CtaButton>
+        {content.floatCta.cta}
+      </LpCtaButton>
     </div>
   );
 }

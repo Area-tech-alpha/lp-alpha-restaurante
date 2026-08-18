@@ -6,7 +6,6 @@ import type { Value as PhoneValue, Country } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import { leadSchema } from "@/lib/validation";
 import { submitLead } from "@/app/actions/submit-lead";
-import CtaButton from "@/components/ui/cta-button";
 import { content } from "@/lib/content";
 
 type CountryOption = { value?: Country; label: string; divider?: boolean };
@@ -49,25 +48,25 @@ function CountrySelect({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 h-full px-3 py-3 bg-[#111] border border-white/10 rounded-lg focus:outline-none focus:border-accent transition-colors cursor-pointer"
+        className="flex items-center gap-1.5 h-full px-3 py-2.5 bg-lp-panel border border-lp-border rounded-[10px] focus:outline-none focus:border-lp-gold-2 transition-colors cursor-pointer"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
         <Flag country={value} label="" />
-        <span className="text-white text-sm font-medium">{dialCode}</span>
-        <span className="text-white/50 text-[10px]">▾</span>
+        <span className="text-lp-text text-[13.5px] font-medium">{dialCode}</span>
+        <span className="text-lp-text-dim text-[10px]">▾</span>
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1 z-50 w-64 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
-          <div className="p-2 border-b border-white/10">
+        <div className="absolute left-0 top-full mt-1 z-50 w-64 bg-lp-white border border-lp-border rounded-xl shadow-2xl overflow-hidden">
+          <div className="p-2 border-b border-lp-border">
             <input
               type="text"
               placeholder="Buscar país..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               autoFocus
-              className="w-full bg-[#111] text-white text-sm px-3 py-1.5 rounded-lg focus:outline-none border border-white/10 focus:border-accent transition-colors placeholder:text-white/40"
+              className="w-full bg-lp-panel text-lp-text text-sm px-3 py-1.5 rounded-lg focus:outline-none border border-lp-border focus:border-lp-gold-2 transition-colors placeholder:text-lp-text-dim"
             />
           </div>
           <ul role="listbox" className="max-h-52 overflow-y-auto">
@@ -80,14 +79,14 @@ function CountrySelect({
                     setOpen(false);
                     setSearch("");
                   }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors hover:bg-white/5 ${
-                    opt.value === value ? "bg-accent/10 text-accent" : "text-white"
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors hover:bg-lp-panel ${
+                    opt.value === value ? "bg-lp-gold-2/10 text-lp-gold-2" : "text-lp-text"
                   }`}
                 >
                   <Flag country={opt.value} label="" />
                   <span className="flex-1 truncate">{opt.label}</span>
                   {opt.value && (
-                    <span className="text-white/40 text-xs shrink-0">
+                    <span className="text-lp-text-dim text-xs shrink-0">
                       +{getCountryCallingCode(opt.value)}
                     </span>
                   )}
@@ -140,12 +139,12 @@ const initial: FormValues = {
 };
 
 const inputClass =
-  "w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors";
+  "w-full bg-lp-panel border border-lp-border rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-lp-text placeholder:text-lp-text-dim focus:outline-none focus:border-lp-gold-2 focus:bg-lp-white focus:shadow-[0_0_0_4px_rgba(245,166,35,0.12)] transition-colors";
 
 const selectClass =
-  "w-full bg-[#111] border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors appearance-none";
+  "w-full bg-lp-panel border border-lp-border rounded-[10px] px-3.5 py-2.5 text-[13.5px] text-lp-text focus:outline-none focus:border-lp-gold-2 focus:bg-lp-white focus:shadow-[0_0_0_4px_rgba(245,166,35,0.12)] transition-colors appearance-none cursor-pointer";
 
-const errorClass = "text-red-400 text-xs mt-1";
+const errorClass = "text-[#d33] text-[11.5px] mt-1.5";
 
 export default function LeadForm() {
   const [status, setStatus] = useState<Status>("idle");
@@ -235,8 +234,10 @@ export default function LeadForm() {
 
   const isSending = status === "sending";
 
+  const labelClass = "block text-[11.5px] font-semibold text-lp-text-muted mb-1.5";
+
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-2.5">
       {/* honeypot */}
       <input
         type="text"
@@ -249,7 +250,7 @@ export default function LeadForm() {
 
       {/* Nome */}
       <div>
-        <label htmlFor="nome" className="sr-only">
+        <label htmlFor="nome" className={labelClass}>
           {c.fields.nome.label}
         </label>
         <input
@@ -275,7 +276,7 @@ export default function LeadForm() {
 
       {/* E-mail */}
       <div>
-        <label htmlFor="email" className="sr-only">
+        <label htmlFor="email" className={labelClass}>
           {c.fields.email.label}
         </label>
         <input
@@ -304,7 +305,7 @@ export default function LeadForm() {
         onFocus={() => tracker()?.trackFieldFocus("telefone")}
         onBlur={() => tracker()?.trackFieldBlur("telefone", !!values.telefone)}
       >
-        <label htmlFor="telefone" className="sr-only">
+        <label htmlFor="telefone" className={labelClass}>
           {c.fields.telefone.label}
         </label>
         <PhoneInput
@@ -327,7 +328,7 @@ export default function LeadForm() {
 
       {/* Empresa */}
       <div>
-        <label htmlFor="empresa" className="sr-only">
+        <label htmlFor="empresa" className={labelClass}>
           {c.fields.empresa.label}
         </label>
         <input
@@ -353,7 +354,7 @@ export default function LeadForm() {
 
       {/* Segmento */}
       <div>
-        <label htmlFor="segmento" className="sr-only">
+        <label htmlFor="segmento" className={labelClass}>
           {c.fields.segmento.label}
         </label>
         <div className="relative">
@@ -366,7 +367,7 @@ export default function LeadForm() {
             onChange={(e) => set("segmento", e.target.value)}
             onFocus={() => tracker()?.trackFieldFocus("segmento")}
             onBlur={(e) => tracker()?.trackFieldBlur("segmento", e.target.value.length > 0)}
-            className={`${selectClass} ${!values.segmento ? "text-text-muted" : ""}`}
+            className={`${selectClass} ${!values.segmento ? "text-lp-text-dim" : ""}`}
           >
             <option value="" disabled hidden>
               {c.fields.segmento.placeholder}
@@ -377,7 +378,7 @@ export default function LeadForm() {
               </option>
             ))}
           </select>
-          <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-text-muted">
+          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-lp-text-muted text-xs">
             ▾
           </span>
         </div>
@@ -390,7 +391,7 @@ export default function LeadForm() {
 
       {/* Faturamento */}
       <div>
-        <label htmlFor="faturamento" className="sr-only">
+        <label htmlFor="faturamento" className={labelClass}>
           {c.fields.faturamento.label}
         </label>
         <div className="relative">
@@ -403,7 +404,7 @@ export default function LeadForm() {
             onChange={(e) => handleFaturamentoChange(e.target.value)}
             onFocus={() => tracker()?.trackFieldFocus("faturamento")}
             onBlur={(e) => tracker()?.trackFieldBlur("faturamento", e.target.value.length > 0)}
-            className={`${selectClass} ${!values.faturamento ? "text-text-muted" : ""}`}
+            className={`${selectClass} ${!values.faturamento ? "text-lp-text-dim" : ""}`}
           >
             <option value="" disabled hidden>
               {c.fields.faturamento.placeholder}
@@ -414,7 +415,7 @@ export default function LeadForm() {
               </option>
             ))}
           </select>
-          <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-text-muted">
+          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-lp-text-muted text-xs">
             ▾
           </span>
         </div>
@@ -427,10 +428,10 @@ export default function LeadForm() {
 
       {/* CNPJ e Investiria — só aparecem para faturamento "Até 30 mil" */}
       {needsExtraFields && (
-        <>
+        <div className="overflow-hidden">
           {/* CNPJ */}
           <div>
-            <label htmlFor="cnpj" className="sr-only">
+            <label htmlFor="cnpj" className={labelClass}>
               {c.fields.cnpj.label}
             </label>
             <input
@@ -455,18 +456,18 @@ export default function LeadForm() {
           </div>
 
           {/* Investiria */}
-          <div>
-            <p id="label-investiria" className="text-white text-sm font-medium mb-2">
+          <div className="mt-2.5">
+            <p id="label-investiria" className={labelClass}>
               {c.fields.investiria.label}
             </p>
-            <div role="radiogroup" aria-labelledby="label-investiria" className="flex gap-3">
+            <div role="radiogroup" aria-labelledby="label-investiria" className="flex gap-2.5">
               {c.fields.investiria.options.map((opt) => (
                 <label
                   key={opt}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border cursor-pointer transition-colors ${
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[10px] border cursor-pointer transition-colors ${
                     values.investiria === opt
-                      ? "border-accent bg-accent/10 text-white"
-                      : "border-white/10 text-text-muted hover:border-white/30"
+                      ? "border-lp-gold-2 bg-lp-gold-2/10 text-lp-ink"
+                      : "border-lp-border text-lp-text-muted hover:border-lp-border-strong"
                   }`}
                 >
                   <input
@@ -484,7 +485,7 @@ export default function LeadForm() {
                       tracker()?.trackFieldBlur("investiria", true);
                     }}
                   />
-                  <span className="font-semibold">{opt}</span>
+                  <span className="font-semibold text-[13.5px]">{opt}</span>
                 </label>
               ))}
             </div>
@@ -494,20 +495,24 @@ export default function LeadForm() {
               </p>
             )}
           </div>
-        </>
+        </div>
       )}
 
       {/* Erro global */}
       {status === "error" && globalError && (
-        <p className="text-red-400 text-sm text-center" role="alert">
+        <p className="text-[#d33] text-sm text-center" role="alert">
           {globalError}
         </p>
       )}
 
       {/* Submit */}
-      <CtaButton type="submit" disabled={isSending} className="w-full justify-center mt-2">
+      <button
+        type="submit"
+        disabled={isSending}
+        className="mt-1 w-full rounded-full bg-lp-gold-2 bg-gradient-to-r from-lp-gold-1 to-lp-gold-2 px-[26px] py-[13px] font-lp-heading text-[15.5px] font-bold text-lp-ink shadow-[0_10px_30px_rgba(245,166,35,0.3)] transition-transform hover:-translate-y-[3px] hover:shadow-[0_16px_40px_rgba(245,166,35,0.42)] disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer"
+      >
         {isSending ? "Enviando..." : c.submitLabel}
-      </CtaButton>
+      </button>
     </form>
   );
 }

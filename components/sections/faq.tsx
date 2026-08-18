@@ -1,111 +1,46 @@
-"use client";
-
-import { useState } from "react";
+import { Plus } from "lucide-react";
+import Eyebrow from "@/components/ui/eyebrow";
+import ScrollFade from "@/components/ui/scroll-fade";
 import { content } from "@/lib/content";
 
 const { faq } = content;
 
-function FaqItem({
-  question,
-  answer,
-  isOpen,
-  onToggle,
-  index,
-}: {
-  question: string;
-  answer: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  index: number;
-}) {
-  const panelId = `faq-panel-${index}`;
-  const headingId = `faq-heading-${index}`;
-
-  return (
-    <div className="border-b" style={{ borderColor: "var(--bg-card)" }}>
-      <h3 id={headingId}>
-        <button
-          aria-expanded={isOpen}
-          aria-controls={panelId}
-          onClick={onToggle}
-          className="flex w-full items-center gap-4 py-5 text-left"
-        >
-          <span
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold"
-            style={{ background: "var(--accent)", color: "var(--bg)" }}
-            aria-hidden="true"
-          >
-            ?
-          </span>
-          <span
-            className="flex-1 text-base font-semibold uppercase sm:text-lg"
-            style={{ fontFamily: "var(--font-heading)", color: "var(--text)" }}
-          >
-            {question}
-          </span>
-          <span
-            className="ml-2 text-xl transition-transform duration-200 motion-reduce:transition-none"
-            style={{
-              color: "var(--accent)",
-              transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-            }}
-            aria-hidden="true"
-          >
-            ↓
-          </span>
-        </button>
-      </h3>
-
-      <div
-        id={panelId}
-        role="region"
-        aria-labelledby={headingId}
-        className="grid overflow-hidden transition-[grid-template-rows] duration-300 motion-reduce:transition-none"
-        style={{ gridTemplateRows: isOpen ? "1fr" : "0fr" }}
-      >
-        <div className="min-h-0">
-          <p className="pb-5 leading-relaxed" style={{ color: "var(--text-muted)" }}>
-            {answer}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function Faq() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  const toggle = (i: number) => setOpenIndex((prev) => (prev === i ? null : i));
-
   return (
-    <section aria-label="Perguntas frequentes" data-section="faq" style={{ background: "var(--bg)" }} className="py-20 px-4">
-      <div className="mx-auto max-w-6xl">
-        <div className="grid gap-12 lg:grid-cols-2">
-          <div>
-            <h2
-              className="text-4xl font-bold uppercase sm:text-5xl"
-              style={{ fontFamily: "var(--font-heading)", color: "var(--text)" }}
-            >
-              {faq.title}
-            </h2>
-            <p className="mt-4 leading-relaxed" style={{ color: "var(--text-muted)" }}>
-              {faq.subtitle}
-            </p>
-          </div>
+    <section id="faq" aria-label="Perguntas frequentes" data-section="faq" className="bg-lp-off py-20">
+      <div className="mx-auto max-w-[1180px] px-6">
+        <div className="grid grid-cols-1 gap-9 md:grid-cols-[.8fr_1.2fr] md:items-start">
+          <ScrollFade>
+            <div>
+              <Eyebrow>{faq.sectionLabel}</Eyebrow>
+              <h2 className="font-lp-heading text-[clamp(1.9rem,4vw,2.7rem)] leading-[1.15] font-semibold text-lp-ink mt-3.5">
+                {faq.title}
+              </h2>
+            </div>
+          </ScrollFade>
 
-          <div>
-            {faq.items.map((item, i) => (
-              <FaqItem
-                key={i}
-                index={i}
-                question={item.question}
-                answer={item.answer}
-                isOpen={openIndex === i}
-                onToggle={() => toggle(i)}
-              />
-            ))}
-          </div>
+          <ScrollFade delay={80}>
+            <div className="flex flex-col gap-3.5">
+              {faq.items.map((item, i) => (
+                <details
+                  key={item.question}
+                  open={i === 0}
+                  className="group rounded-2xl border border-lp-border bg-lp-white p-[22px_24px] transition-colors hover:border-lp-border-gold [&_summary::-webkit-details-marker]:hidden"
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-5 font-lp-heading text-[15.5px] font-semibold text-lp-ink">
+                    {item.question}
+                    <Plus
+                      className="h-[18px] w-[18px] shrink-0 text-lp-gold-2 transition-transform duration-300 group-open:rotate-45"
+                      aria-hidden="true"
+                    />
+                  </summary>
+                  <p className="mt-3.5 text-[14.5px] leading-relaxed text-lp-text-muted">
+                    {item.answer}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </ScrollFade>
         </div>
       </div>
     </section>
