@@ -133,7 +133,13 @@ export async function submitLead(
     faturamento: parsed.data.faturamento,
     cnpj: parsed.data.cnpj,
     investiria: parsed.data.investiria,
-    origem: 'alpha-restaurante'
+    origem: 'alpha-restaurante',
+    utm_source: utmFields.utmSource ?? null,
+    utm_medium: utmFields.utmMedium ?? null,
+    utm_campaign: utmFields.utmCampaign ?? null,
+    utm_content: utmFields.utmContent ?? null,
+    utm_term: utmFields.utmTerm ?? null,
+    referrer: utmFields.referrer ?? null,
   };
 
   try {
