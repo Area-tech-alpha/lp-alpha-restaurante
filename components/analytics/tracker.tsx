@@ -25,6 +25,7 @@ type TrackerAPI = {
 declare global {
   interface Window {
     __tracker: TrackerAPI;
+    fbq?: (...args: unknown[]) => void;
   }
 }
 
@@ -329,6 +330,7 @@ export default function Tracker() {
         formSubmittedRef.current = true;
         queue({ type: "form_submit_success", data: { leadId, qualified }, ts: now() });
         pushDataLayer({ event: "lead", lead_id: leadId, qualified });
+        window.fbq?.("track", "Lead", { qualified });
       },
     };
   }, []);

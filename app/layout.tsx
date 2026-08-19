@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Anton, Oswald, Archivo, Inter } from "next/font/google";
 import localFont from "next/font/local";
-import { Partytown } from "@qwik.dev/partytown/react";
+import Script from "next/script";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { OrganizationJsonLd } from "@/components/json-ld";
 import "./globals.css";
@@ -116,37 +116,37 @@ export default function RootLayout({
     >
       <head>
         <OrganizationJsonLd />
-        <Partytown debug={false} forward={["dataLayer.push"]} />
       </head>
       <body className="min-h-full bg-bg text-text antialiased" suppressHydrationWarning>
-        <noscript>
-          <iframe
-            src={`https://www.googletagmanager.com/ns.html?id=${process.env.NEXT_PUBLIC_GTM_ID}`}
-            height="0"
-            width="0"
-            style={{ display: "none", visibility: "hidden" }}
-          />
-        </noscript>
         {children}
         <SpeedInsights />
-        {/* next/script's strategy="worker" does not render under the App Router
-            (confirmed against Next's own docs + verified empirically), so the
-            Partytown script is authored as a plain tag: Partytown's runtime
-            (registered above via <Partytown>) scans the DOM for
-            script[type="text/partytown"] and moves it into the worker itself. */}
-        <script
-          type="text/partytown"
-          id="gtm"
+        <Script
+          id="meta-pixel"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
-              (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-              new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-              j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-              'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-              })(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GTM_ID}');
+              !function(f,b,e,v,n,t,s)
+              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+              n.queue=[];t=b.createElement(e);t.async=!0;
+              t.src=v;s=b.getElementsByTagName(e)[0];
+              s.parentNode.insertBefore(t,s)}(window, document,'script',
+              'https://connect.facebook.net/en_US/fbevents.js');
+              fbq('init', '${process.env.NEXT_PUBLIC_META_PIXEL_ID}');
+              fbq('track', 'PageView');
             `,
           }}
         />
+        <noscript>
+          <img
+            height="1"
+            width="1"
+            alt=""
+            style={{ display: "none" }}
+            src={`https://www.facebook.com/tr?id=${process.env.NEXT_PUBLIC_META_PIXEL_ID}&ev=PageView&noscript=1`}
+          />
+        </noscript>
       </body>
     </html>
   );

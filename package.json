@@ -5,14 +5,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "postinstall": "prisma generate && partytown copylib public/~partytown",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
-    "@qwik.dev/partytown": "^0.14.0",
     "@types/pg": "^8.20.0",
     "@vercel/speed-insights": "^2.0.0",
     "dotenv": "^17.4.2",
