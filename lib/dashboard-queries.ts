@@ -3,19 +3,25 @@ import { db } from "@/lib/db"
 export type Range = "hoje" | "7d" | "30d" | "90d" | "all"
 
 // América/São_Paulo não observa horário de verão desde 2019: UTC-3 fixo.
+// O banco (timestamptz) guarda tudo em UTC — qualquer corte "desde ontem",
+// "hoje", "7 dias" etc. precisa ser calculado em cima da meia-noite de
+// Brasília, senão o filtro corta no meio do dia local.
 const SP_OFFSET_MS = 3 * 60 * 60 * 1000
 
-function startOfTodaySaoPaulo(): Date {
+function startOfDaysAgoSaoPaulo(daysAgo: number): Date {
   const spLocal = new Date(Date.now() - SP_OFFSET_MS)
+  spLocal.setUTCDate(spLocal.getUTCDate() - daysAgo)
   spLocal.setUTCHours(0, 0, 0, 0)
   return new Date(spLocal.getTime() + SP_OFFSET_MS)
 }
 
 function getSince(range: Range): Date | null {
   if (range === "all") return null
-  if (range === "hoje") return startOfTodaySaoPaulo()
+  if (range === "hoje") return startOfDaysAgoSaoPaulo(0)
+  // "7 dias" = hoje + 6 dias anteriores (7 dias corridos em Brasília),
+  // alinhado com o agrupamento diário do gráfico "Leads por dia".
   const days = range === "7d" ? 7 : range === "30d" ? 30 : 90
-  return new Date(Date.now() - days * 86_400_000)
+  return startOfDaysAgoSaoPaulo(days - 1)
 }
 
 type TimeRow = { day: Date; count: bigint }

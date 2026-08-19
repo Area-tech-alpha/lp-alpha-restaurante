@@ -3,12 +3,15 @@ import type { DashboardData } from "@/lib/dashboard-queries"
 type Props = { leads: DashboardData["recentLeads"] }
 
 function formatDate(iso: string) {
+  // O banco salva em UTC; sem timeZone explícito o Node formata no fuso do
+  // servidor (UTC na Vercel), mostrando o horário 3h adiantado em relação a Brasília.
   return new Date(iso).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "America/Sao_Paulo",
   })
 }
 
