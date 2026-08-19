@@ -11,6 +11,31 @@ function getSince(range: Range): Date | null {
 type TimeRow = { day: Date; count: bigint }
 type GroupRow = { label: string | null; count: bigint }
 type DeviceRow = { device: string | null; count: bigint }
+type CountRow = { count: bigint }
+type FieldRow = { field: string | null; count: bigint }
+
+const FORM_FIELD_LABELS: Record<string, string> = {
+  nome: "Nome",
+  email: "E-mail",
+  telefone: "Telefone",
+  empresa: "Empresa",
+  segmento: "Segmento",
+  faturamento: "Faturamento",
+  cnpj: "CNPJ",
+  investiria: "Investiria",
+}
+
+async function distinctSessionCount(type: string, since: Date | null): Promise<number> {
+  const rows = since
+    ? await db.$queryRaw<CountRow[]>`
+        SELECT COUNT(DISTINCT "sessionId") AS count FROM events
+        WHERE type = ${type} AND ts >= ${since}
+      `
+    : await db.$queryRaw<CountRow[]>`
+        SELECT COUNT(DISTINCT "sessionId") AS count FROM events WHERE type = ${type}
+      `
+  return Number(rows[0]?.count ?? 0)
+}
 
 export type DashboardData = {
   kpis: {
@@ -19,12 +44,15 @@ export type DashboardData = {
     qualifiedLeads: number
     conversionRate: number
     qualificationRate: number
+    formCompletionRate: number
   }
   leadsOverTime: { day: string; leads: number }[]
   byUtmSource: { label: string; leads: number }[]
   bySegmento: { label: string; leads: number }[]
   byFaturamento: { label: string; leads: number }[]
   byDevice: { label: string; leads: number }[]
+  funnel: { stage: string; count: number }[]
+  dropOffByField: { field: string; count: number }[]
   recentLeads: {
     id: string
     nome: string
@@ -167,10 +195,48 @@ export async function getDashboardData(range: Range): Promise<DashboardData> {
     createdAt: l.createdAt.toISOString(),
   }))
 
+  // Funil do formulário — sessões distintas por estágio
+  const [formViews, formAttempts, formSuccesses] = await Promise.all([
+    distinctSessionCount("form_view", since),
+    distinctSessionCount("form_submit_attempt", since),
+    distinctSessionCount("form_submit_success", since),
+  ])
+
+  const funnel = [
+    { stage: "Visitas", count: totalSessions },
+    { stage: "Viu o formulário", count: formViews },
+    { stage: "Tentou enviar", count: formAttempts },
+    { stage: "Enviou com sucesso", count: formSuccesses },
+  ]
+
+  // Drop-off por campo — último campo tocado antes de abandonar o formulário
+  const rawFieldRows = since
+    ? await db.$queryRaw<FieldRow[]>`
+        SELECT data->>'lastField' AS field, COUNT(*) AS count
+        FROM events
+        WHERE type = 'form_abandon' AND data->>'lastField' IS NOT NULL AND ts >= ${since}
+        GROUP BY 1
+        ORDER BY count DESC
+      `
+    : await db.$queryRaw<FieldRow[]>`
+        SELECT data->>'lastField' AS field, COUNT(*) AS count
+        FROM events
+        WHERE type = 'form_abandon' AND data->>'lastField' IS NOT NULL
+        GROUP BY 1
+        ORDER BY count DESC
+      `
+
+  const dropOffByField = rawFieldRows.map((r) => ({
+    field: FORM_FIELD_LABELS[r.field ?? ""] ?? r.field ?? "(desconhecido)",
+    count: Number(r.count),
+  }))
+
   const conversionRate =
     totalSessions > 0 ? (totalLeads / totalSessions) * 100 : 0
   const qualificationRate =
     totalLeads > 0 ? (qualifiedLeads / totalLeads) * 100 : 0
+  const formCompletionRate =
+    formViews > 0 ? (formSuccesses / formViews) * 100 : 0
 
   return {
     kpis: {
@@ -179,12 +245,15 @@ export async function getDashboardData(range: Range): Promise<DashboardData> {
       qualifiedLeads,
       conversionRate,
       qualificationRate,
+      formCompletionRate,
     },
     leadsOverTime,
     byUtmSource,
     bySegmento,
     byFaturamento,
     byDevice,
+    funnel,
+    dropOffByField,
     recentLeads,
   }
 }

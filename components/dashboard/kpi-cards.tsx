@@ -21,12 +21,13 @@ function Card({ label, value }: { label: string; value: string }) {
 
 export default function KpiCards({ kpis }: { kpis: Kpis }) {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
       <Card label="Sessões" value={fmt(kpis.totalSessions)} />
       <Card label="Leads" value={fmt(kpis.totalLeads)} />
       <Card label="Qualificados" value={fmt(kpis.qualifiedLeads)} />
       <Card label="Taxa de Conversão" value={pct(kpis.conversionRate)} />
       <Card label="Taxa de Qualificação" value={pct(kpis.qualificationRate)} />
+      <Card label="Conclusão do Formulário" value={pct(kpis.formCompletionRate)} />
     </div>
   )
 }

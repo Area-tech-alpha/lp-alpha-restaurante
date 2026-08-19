@@ -6,6 +6,8 @@ import LeadsByUtmChart from "@/components/dashboard/leads-by-utm-chart"
 import LeadsBySegmentoChart from "@/components/dashboard/leads-by-segmento-chart"
 import LeadsByFaturamentoChart from "@/components/dashboard/leads-by-faturamento-chart"
 import LeadsByDeviceChart from "@/components/dashboard/leads-by-device-chart"
+import FunnelChart from "@/components/dashboard/funnel-chart"
+import DropOffByFieldChart from "@/components/dashboard/drop-off-by-field-chart"
 import RecentLeadsTable from "@/components/dashboard/recent-leads-table"
 
 export const dynamic = "force-dynamic"
@@ -35,6 +37,8 @@ export default async function DashboardPage({
       <KpiCards kpis={data.kpis} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <FunnelChart data={data.funnel} />
+        <DropOffByFieldChart data={data.dropOffByField} />
         <LeadsOverTimeChart data={data.leadsOverTime} />
         <LeadsByUtmChart data={data.byUtmSource} />
         <LeadsBySegmentoChart data={data.bySegmento} />
