@@ -33,7 +33,7 @@ function qualificarLead(faturamento: string, investiria: string | undefined) {
 
 type ActionResult =
   | { success: true; redirectTo: string }
-  | { success: false; error: string };
+  | { success: false; error: string; reason: "validation" | "server" };
 
 export async function submitLead(
   data: LeadFormData,
@@ -41,13 +41,13 @@ export async function submitLead(
 ): Promise<ActionResult> {
   const parsed = leadSchema.safeParse(data);
   if (!parsed.success) {
-    return { success: false, error: "Dados inválidos. Verifique o formulário." };
+    return { success: false, error: "Dados inválidos. Verifique o formulário.", reason: "validation" };
   }
 
   const webhookUrl = process.env.CRM_WEBHOOK_URL;
   if (!webhookUrl) {
     console.error("[submit-lead] CRM_WEBHOOK_URL não definida");
-    return { success: false, error: "Serviço indisponível. Tente mais tarde." };
+    return { success: false, error: "Serviço indisponível. Tente mais tarde.", reason: "server" };
   }
 
   const headersList = await headers();
@@ -111,7 +111,14 @@ export async function submitLead(
     leadId = lead.id;
   } catch (err) {
     console.error("[submit-lead] Erro ao salvar lead no banco:", err);
-    // Continua mesmo sem salvar — o webhook é a fonte primária
+    // Continua mesmo sem salvar — o webhook é a fonte primária.
+    // Loga um evento (best-effort) pra esse lead não desaparecer em silêncio
+    // do dashboard: ele chega ao CRM mas fica invisível no funil/KPIs.
+    if (sessionId) {
+      await db.event
+        .create({ data: { sessionId, type: "lead_db_write_failed" } })
+        .catch(() => {});
+    }
     leadId = "unknown";
   }
 
@@ -147,12 +154,12 @@ export async function submitLead(
 
     if (!res.ok) {
       console.error(`[submit-lead] Webhook retornou ${res.status}`);
-      return { success: false, error: "Erro ao enviar. Tente novamente em instantes." };
+      return { success: false, error: "Erro ao enviar. Tente novamente em instantes.", reason: "server" };
     }
 
     return { success: true, redirectTo };
   } catch (err) {
-    console.error("[submit-lead] Erro de rede:", err);
-    return { success: false, error: "Erro de conexão. Verifique sua internet e tente novamente." };
+    console.error("[submit-lead] Erro de rede ao chamar o webhook:", err);
+    return { success: false, error: "Erro de conexão. Verifique sua internet e tente novamente.", reason: "server" };
   }
 }

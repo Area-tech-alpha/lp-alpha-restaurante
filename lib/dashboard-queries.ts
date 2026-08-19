@@ -1,9 +1,19 @@
 import { db } from "@/lib/db"
 
-export type Range = "7d" | "30d" | "90d" | "all"
+export type Range = "hoje" | "7d" | "30d" | "90d" | "all"
+
+// América/São_Paulo não observa horário de verão desde 2019: UTC-3 fixo.
+const SP_OFFSET_MS = 3 * 60 * 60 * 1000
+
+function startOfTodaySaoPaulo(): Date {
+  const spLocal = new Date(Date.now() - SP_OFFSET_MS)
+  spLocal.setUTCHours(0, 0, 0, 0)
+  return new Date(spLocal.getTime() + SP_OFFSET_MS)
+}
 
 function getSince(range: Range): Date | null {
   if (range === "all") return null
+  if (range === "hoje") return startOfTodaySaoPaulo()
   const days = range === "7d" ? 7 : range === "30d" ? 30 : 90
   return new Date(Date.now() - days * 86_400_000)
 }
@@ -53,6 +63,8 @@ export type DashboardData = {
   byDevice: { label: string; leads: number }[]
   funnel: { stage: string; count: number }[]
   dropOffByField: { field: string; count: number }[]
+  submitErrors: { reason: string; count: number }[]
+  leadDbWriteFailures: number
   recentLeads: {
     id: string
     nome: string
@@ -231,6 +243,46 @@ export async function getDashboardData(range: Range): Promise<DashboardData> {
     count: Number(r.count),
   }))
 
+  // Motivos de falha no envio — por que o "Tentou enviar" não virou "Enviou com sucesso"
+  const rawSubmitErrorRows = since
+    ? await db.$queryRaw<GroupRow[]>`
+        SELECT
+          CASE
+            WHEN type = 'form_validation_error' THEN 'Erro de validação (campo inválido)'
+            WHEN type = 'form_submit_error' AND data->>'reason' = 'server' THEN 'Erro no servidor (webhook/CRM)'
+            WHEN type = 'form_submit_error' AND data->>'reason' = 'network' THEN 'Erro de conexão do visitante'
+            ELSE 'Outro'
+          END AS label,
+          COUNT(*) AS count
+        FROM events
+        WHERE type IN ('form_validation_error', 'form_submit_error') AND ts >= ${since}
+        GROUP BY 1
+        ORDER BY count DESC
+      `
+    : await db.$queryRaw<GroupRow[]>`
+        SELECT
+          CASE
+            WHEN type = 'form_validation_error' THEN 'Erro de validação (campo inválido)'
+            WHEN type = 'form_submit_error' AND data->>'reason' = 'server' THEN 'Erro no servidor (webhook/CRM)'
+            WHEN type = 'form_submit_error' AND data->>'reason' = 'network' THEN 'Erro de conexão do visitante'
+            ELSE 'Outro'
+          END AS label,
+          COUNT(*) AS count
+        FROM events
+        WHERE type IN ('form_validation_error', 'form_submit_error')
+        GROUP BY 1
+        ORDER BY count DESC
+      `
+
+  const submitErrors = rawSubmitErrorRows.map((r) => ({
+    reason: r.label ?? "Outro",
+    count: Number(r.count),
+  }))
+
+  // Leads que o webhook/CRM recebeu mas que falharam ao salvar em "leads" —
+  // ficam invisíveis no dashboard sem esse contador.
+  const leadDbWriteFailures = await distinctSessionCount("lead_db_write_failed", since)
+
   const conversionRate =
     totalSessions > 0 ? (totalLeads / totalSessions) * 100 : 0
   const qualificationRate =
@@ -254,6 +306,8 @@ export async function getDashboardData(range: Range): Promise<DashboardData> {
     byDevice,
     funnel,
     dropOffByField,
+    submitErrors,
+    leadDbWriteFailures,
     recentLeads,
   }
 }

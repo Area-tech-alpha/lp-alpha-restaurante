@@ -4,6 +4,7 @@ import { useRouter, usePathname } from "next/navigation"
 import type { Range } from "@/lib/dashboard-queries"
 
 const OPTIONS: { label: string; value: Range }[] = [
+  { label: "Hoje", value: "hoje" },
   { label: "7 dias", value: "7d" },
   { label: "30 dias", value: "30d" },
   { label: "90 dias", value: "90d" },

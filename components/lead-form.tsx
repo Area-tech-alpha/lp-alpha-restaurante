@@ -232,10 +232,12 @@ export default function LeadForm() {
       } else {
         setStatus("error");
         setGlobalError(res.error);
+        tracker()?.trackSubmitError("server", res.error);
       }
     } catch {
       setStatus("error");
       setGlobalError("Erro ao enviar. Tente novamente.");
+      tracker()?.trackSubmitError("network", "server action unreachable");
     }
   }
 

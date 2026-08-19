@@ -18,6 +18,7 @@ type TrackerAPI = {
   trackFieldBlur: (field: string, filled: boolean) => void;
   trackValidationError: (fields: string[]) => void;
   trackSubmitAttempt: () => void;
+  trackSubmitError: (reason: "server" | "network", detail: string) => void;
   trackSubmitSuccess: (leadId: string, qualified: boolean) => void;
   markFormTouched: () => void;
 };
@@ -87,10 +88,14 @@ export default function Tracker() {
 
   function send(events: EventPayload[]) {
     if (!sessionIdRef.current || events.length === 0) return;
+    // keepalive: form_submit_success dispara imediatamente antes de um
+    // redirect (window.location.href) — sem isso o navegador pode cancelar
+    // o fetch em voo e o funil registra "sucesso" abaixo do real.
     fetch("/api/track", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessionId: sessionIdRef.current, events }),
+      keepalive: true,
     }).catch(() => {});
   }
 
@@ -324,6 +329,11 @@ export default function Tracker() {
       trackSubmitAttempt: () => {
         queue({ type: "form_submit_attempt", ts: now() });
         pushDataLayer({ event: "form_submit_attempt" });
+      },
+
+      trackSubmitError: (reason, detail) => {
+        queue({ type: "form_submit_error", data: { reason, detail }, ts: now() });
+        pushDataLayer({ event: "form_submit_error", reason });
       },
 
       trackSubmitSuccess: (leadId: string, qualified: boolean) => {
