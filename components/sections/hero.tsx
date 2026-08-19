@@ -18,7 +18,6 @@ export default function Hero() {
         src="/hero-nova-00-lp.webp"
         alt=""
         fill
-        priority
         className="object-cover object-center"
       />
 
@@ -29,8 +28,8 @@ export default function Hero() {
               <Image
                 src="/logo-alpha-header.png"
                 alt={hero.logoAlt}
-                width={750}
-                height={242}
+                width={260}
+                height={84}
                 priority
                 className="h-7 w-auto"
               />

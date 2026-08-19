@@ -9,18 +9,25 @@ import { submitLead } from "@/app/actions/submit-lead";
 import { content } from "@/lib/content";
 
 type CountryOption = { value?: Country; label: string; divider?: boolean };
-type FlagComponent = React.ComponentType<{ country?: Country; label: string }>;
+
+// Emoji em vez do ícone padrão do react-phone-number-input, que busca SVGs de
+// bandeira em um CDN externo (purecatamphetamine.github.io) — isso gerava um
+// preload de imagem de terceiros concorrendo com a logo (LCP) por banda.
+function flagEmoji(country?: Country) {
+  if (!country) return "🌐";
+  return country
+    .toUpperCase()
+    .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
+}
 
 function CountrySelect({
   value,
   onChange,
   options,
-  iconComponent: Flag,
 }: {
   value?: Country;
   onChange: (v?: Country) => void;
   options: CountryOption[];
-  iconComponent: FlagComponent;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -52,7 +59,7 @@ function CountrySelect({
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <Flag country={value} label="" />
+        <span aria-hidden="true">{flagEmoji(value)}</span>
         <span className="text-lp-text text-[13.5px] font-medium">{dialCode}</span>
         <span className="text-lp-text-dim text-[10px]">▾</span>
       </button>
@@ -83,7 +90,7 @@ function CountrySelect({
                     opt.value === value ? "bg-lp-gold-2/10 text-lp-gold-2" : "text-lp-text"
                   }`}
                 >
-                  <Flag country={opt.value} label="" />
+                  <span aria-hidden="true">{flagEmoji(opt.value)}</span>
                   <span className="flex-1 truncate">{opt.label}</span>
                   {opt.value && (
                     <span className="text-lp-text-dim text-xs shrink-0">
