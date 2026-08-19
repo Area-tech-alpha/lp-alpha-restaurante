@@ -9,6 +9,7 @@ import LeadsByDeviceChart from "@/components/dashboard/leads-by-device-chart"
 import FunnelChart from "@/components/dashboard/funnel-chart"
 import DropOffByFieldChart from "@/components/dashboard/drop-off-by-field-chart"
 import SubmitErrorsChart from "@/components/dashboard/submit-errors-chart"
+import UtmCampaignsTable from "@/components/dashboard/utm-campaigns-table"
 import RecentLeadsTable from "@/components/dashboard/recent-leads-table"
 
 export const dynamic = "force-dynamic"
@@ -47,6 +48,8 @@ export default async function DashboardPage({
         <LeadsByFaturamentoChart data={data.byFaturamento} />
         <LeadsByDeviceChart data={data.byDevice} />
       </div>
+
+      <UtmCampaignsTable data={data.utmCampaigns} />
 
       <RecentLeadsTable leads={data.recentLeads} />
     </div>

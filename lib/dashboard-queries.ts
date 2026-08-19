@@ -23,6 +23,16 @@ type GroupRow = { label: string | null; count: bigint }
 type DeviceRow = { device: string | null; count: bigint }
 type CountRow = { count: bigint }
 type FieldRow = { field: string | null; count: bigint }
+type UtmGroupRow = {
+  source: string
+  medium: string
+  campaign: string
+  content: string
+  term: string
+  sessions: bigint
+  leads: bigint
+  qualified: bigint
+}
 
 const FORM_FIELD_LABELS: Record<string, string> = {
   nome: "Nome",
@@ -65,6 +75,18 @@ export type DashboardData = {
   dropOffByField: { field: string; count: number }[]
   submitErrors: { reason: string; count: number }[]
   leadDbWriteFailures: number
+  utmCampaigns: {
+    source: string
+    medium: string
+    campaign: string
+    content: string
+    term: string
+    sessions: number
+    leads: number
+    qualified: number
+    conversionRate: number
+    qualificationRate: number
+  }[]
   recentLeads: {
     id: string
     nome: string
@@ -283,6 +305,102 @@ export async function getDashboardData(range: Range): Promise<DashboardData> {
   // ficam invisíveis no dashboard sem esse contador.
   const leadDbWriteFailures = await distinctSessionCount("lead_db_write_failed", since)
 
+  // Campanhas (UTM completo) — sessões e leads são grupos independentes
+  // (tabelas diferentes, cada uma com seus próprios campos utm_*),
+  // por isso duas queries que depois são unidas em memória pela combinação.
+  const rawUtmSessionRows = since
+    ? await db.$queryRaw<UtmGroupRow[]>`
+        SELECT
+          COALESCE("utmSource", '(direto)') AS source,
+          COALESCE("utmMedium", '-') AS medium,
+          COALESCE("utmCampaign", '-') AS campaign,
+          COALESCE("utmContent", '-') AS content,
+          COALESCE("utmTerm", '-') AS term,
+          COUNT(*) AS sessions,
+          0 AS leads,
+          0 AS qualified
+        FROM sessions
+        WHERE "startedAt" >= ${since}
+        GROUP BY 1, 2, 3, 4, 5
+      `
+    : await db.$queryRaw<UtmGroupRow[]>`
+        SELECT
+          COALESCE("utmSource", '(direto)') AS source,
+          COALESCE("utmMedium", '-') AS medium,
+          COALESCE("utmCampaign", '-') AS campaign,
+          COALESCE("utmContent", '-') AS content,
+          COALESCE("utmTerm", '-') AS term,
+          COUNT(*) AS sessions,
+          0 AS leads,
+          0 AS qualified
+        FROM sessions
+        GROUP BY 1, 2, 3, 4, 5
+      `
+
+  const rawUtmLeadRows = since
+    ? await db.$queryRaw<UtmGroupRow[]>`
+        SELECT
+          COALESCE("utmSource", '(direto)') AS source,
+          COALESCE("utmMedium", '-') AS medium,
+          COALESCE("utmCampaign", '-') AS campaign,
+          COALESCE("utmContent", '-') AS content,
+          COALESCE("utmTerm", '-') AS term,
+          0 AS sessions,
+          COUNT(*) AS leads,
+          COUNT(*) FILTER (WHERE qualified) AS qualified
+        FROM leads
+        WHERE "createdAt" >= ${since}
+        GROUP BY 1, 2, 3, 4, 5
+      `
+    : await db.$queryRaw<UtmGroupRow[]>`
+        SELECT
+          COALESCE("utmSource", '(direto)') AS source,
+          COALESCE("utmMedium", '-') AS medium,
+          COALESCE("utmCampaign", '-') AS campaign,
+          COALESCE("utmContent", '-') AS content,
+          COALESCE("utmTerm", '-') AS term,
+          0 AS sessions,
+          COUNT(*) AS leads,
+          COUNT(*) FILTER (WHERE qualified) AS qualified
+        FROM leads
+        GROUP BY 1, 2, 3, 4, 5
+      `
+
+  const utmMap = new Map<
+    string,
+    { source: string; medium: string; campaign: string; content: string; term: string; sessions: number; leads: number; qualified: number }
+  >()
+
+  function utmKey(r: UtmGroupRow) {
+    return `${r.source}|${r.medium}|${r.campaign}|${r.content}|${r.term}`
+  }
+
+  for (const r of [...rawUtmSessionRows, ...rawUtmLeadRows]) {
+    const key = utmKey(r)
+    const existing = utmMap.get(key) ?? {
+      source: r.source,
+      medium: r.medium,
+      campaign: r.campaign,
+      content: r.content,
+      term: r.term,
+      sessions: 0,
+      leads: 0,
+      qualified: 0,
+    }
+    existing.sessions += Number(r.sessions)
+    existing.leads += Number(r.leads)
+    existing.qualified += Number(r.qualified)
+    utmMap.set(key, existing)
+  }
+
+  const utmCampaigns = Array.from(utmMap.values())
+    .map((r) => ({
+      ...r,
+      conversionRate: r.sessions > 0 ? (r.leads / r.sessions) * 100 : 0,
+      qualificationRate: r.leads > 0 ? (r.qualified / r.leads) * 100 : 0,
+    }))
+    .sort((a, b) => b.leads - a.leads || b.sessions - a.sessions)
+
   const conversionRate =
     totalSessions > 0 ? (totalLeads / totalSessions) * 100 : 0
   const qualificationRate =
@@ -308,6 +426,7 @@ export async function getDashboardData(range: Range): Promise<DashboardData> {
     dropOffByField,
     submitErrors,
     leadDbWriteFailures,
+    utmCampaigns,
     recentLeads,
   }
 }
