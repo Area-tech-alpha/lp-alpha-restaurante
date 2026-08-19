@@ -30,7 +30,8 @@ export default function Hero() {
                 alt={hero.logoAlt}
                 width={260}
                 height={84}
-                priority
+                preload
+                fetchPriority="high"
                 className="h-7 w-auto"
               />
             </a>
