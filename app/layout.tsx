@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Anton, Oswald, Archivo, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { OrganizationJsonLd } from "@/components/json-ld";
 import "./globals.css";
@@ -119,6 +120,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full bg-bg text-text antialiased" suppressHydrationWarning>
         {children}
+        <Analytics />
         <SpeedInsights />
         <Script
           id="meta-pixel"
