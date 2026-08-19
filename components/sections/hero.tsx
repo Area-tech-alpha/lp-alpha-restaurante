@@ -68,7 +68,10 @@ export default function Hero() {
 
             <FadeInLoad delay={160}>
               <div id="contato">
-                <div className="rounded-[22px] border border-lp-border bg-lp-panel p-5 sm:p-[26px]">
+                <div
+                  data-section="form"
+                  className="rounded-[22px] border border-lp-border bg-lp-panel p-5 sm:p-[26px]"
+                >
                   <h2 className="mb-1 text-[17px] font-semibold text-lp-ink">{hero.formTitle}</h2>
                   <span className="mb-4 block text-[12.5px] text-lp-text-dim">
                     {hero.formSubtitle}
