@@ -124,7 +124,10 @@ export default function RootLayout({
         <SpeedInsights />
         <Script
           id="meta-pixel"
-          strategy="lazyOnload"
+          // afterInteractive (não lazyOnload): lazyOnload só carrega em idle time do
+          // browser, o que pode atrasar o fbq além do tempo que o usuário leva pra
+          // preencher e enviar o formulário — perdendo o evento "Lead".
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               !function(f,b,e,v,n,t,s)

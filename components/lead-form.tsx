@@ -228,7 +228,11 @@ export default function LeadForm() {
       const res = await submitLead(result.data, sessionId);
       if (res.success) {
         tracker()?.trackSubmitSuccess("", result.data.investiria === "Sim");
-        window.location.href = res.redirectTo;
+        // Pequeno atraso antes do redirect: o fbq('track', 'Lead', ...) dispara um
+        // beacon de rede que pode ser cancelado se a navegação começar no mesmo tick.
+        setTimeout(() => {
+          window.location.href = res.redirectTo;
+        }, 150);
       } else {
         setStatus("error");
         setGlobalError(res.error);
