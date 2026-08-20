@@ -4,29 +4,12 @@ import { headers } from "next/headers";
 import { leadSchema, LeadFormData } from "@/lib/validation";
 import { db } from "@/lib/db";
 
-// Faixas de faturamento que qualificam o lead pra cada página de obrigado —
-// espelha exatamente `calcularQualificacaoLead` da LP 00-lp-b (WordPress).
-// "80 mil até 100 mil" não está em nenhuma faixa e cai no /obrigado genérico:
-// é assim na página original, não é um bug introduzido aqui.
-const FAIXA_A = [
-  "100 mil até 150 mil",
-  "150 mil até 250 mil",
-  "250 mil até 400 mil",
-  "400 mil até 600 mil",
-  "600 mil até 1 milhão",
-  "Mais de 1 milhão",
-];
-const FAIXA_B = ["50 mil até 80 mil"];
-const FAIXA_C = ["30 mil até 50 mil"];
-
+// Único critério de desqualificação: faturamento mínimo ("Até 30 mil") E não
+// disposto a investir em CNPJ novo. Todo o resto vai para a página de obrigado
+// qualificada — sem mais páginas segmentadas por faixa de faturamento.
 function qualificarLead(faturamento: string, investiria: string | undefined) {
   if (faturamento === "Até 30 mil" && investiria === "Não") {
     return { redirectTo: "/agradecimento", qualified: false };
-  }
-  if (FAIXA_A.includes(faturamento)) return { redirectTo: "/obrigado-a", qualified: true };
-  if (FAIXA_B.includes(faturamento)) return { redirectTo: "/obrigado-b", qualified: true };
-  if (FAIXA_C.includes(faturamento) || faturamento === "Até 30 mil") {
-    return { redirectTo: "/obrigado-c", qualified: true };
   }
   return { redirectTo: "/obrigado", qualified: true };
 }
