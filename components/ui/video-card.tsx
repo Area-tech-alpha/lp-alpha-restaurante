@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Play, Star, TrendingUp } from "lucide-react";
 
 const BADGE_ICONS = {
@@ -25,11 +25,32 @@ export function VideoCard({
   role: string;
 }) {
   const [playing, setPlaying] = useState(false);
+  const [nearViewport, setNearViewport] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
   const BadgeIconComponent = BADGE_ICONS[badgeIcon];
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setNearViewport(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "300px" }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div
+      ref={containerRef}
       className="group relative block overflow-hidden rounded-[22px] bg-lp-panel shadow-[0_20px_50px_-20px_rgba(20,16,5,0.18)] transition-transform duration-400 hover:-translate-y-2"
       style={{ aspectRatio: "9 / 13" }}
     >
@@ -43,13 +64,15 @@ export function VideoCard({
         />
       ) : (
         <>
-          <Image
-            src={thumbnail}
-            alt={`${name} — depoimento em vídeo`}
-            fill
-            className="object-cover"
-            sizes="(max-width: 640px) 100vw, 33vw"
-          />
+          {nearViewport && (
+            <Image
+              src={thumbnail}
+              alt={`${name} — depoimento em vídeo`}
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 100vw, 33vw"
+            />
+          )}
           <div
             className="pointer-events-none absolute inset-0"
             style={{
