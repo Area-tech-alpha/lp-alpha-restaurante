@@ -52,6 +52,13 @@ export default function ObrigadoContent() {
           {new Date().getFullYear()} © Assessoria Alpha. Todos os direitos reservados.
         </p>
       </footer>
+
+      <button
+        type="button"
+        aria-hidden="true"
+        tabIndex={-1}
+        className="absolute w-px h-px p-0 m-0 opacity-0 overflow-hidden border-0"
+      />
     </div>
   );
 }
