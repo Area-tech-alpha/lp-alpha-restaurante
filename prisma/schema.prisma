@@ -75,3 +75,21 @@ model Event {
   @@index([type])
   @@map("events")
 }
+
+// Cliques em anúncio por dia/campanha, vindos da API da plataforma de mídia
+// (ex: Meta Insights). Alimenta o Connect Rate = sessions.utmCampaign / clicks.
+// "campaign" guarda o ID da campanha (não o nome) — é isso que o UTM real usa
+// aqui (utm_campaign={{campaign.id}}), confirmado direto no banco de sessions.
+// "campaignName" é só o nome legível, pra exibição no dashboard.
+model AdClick {
+  id           String   @id @default(uuid())
+  date         DateTime
+  platform     String
+  campaign     String
+  campaignName String?
+  clicks       Int
+
+  @@unique([date, platform, campaign])
+  @@index([campaign])
+  @@map("ad_clicks")
+}

@@ -9,6 +9,7 @@ import LeadsByDeviceChart from "@/components/dashboard/leads-by-device-chart"
 import FunnelChart from "@/components/dashboard/funnel-chart"
 import DropOffByFieldChart from "@/components/dashboard/drop-off-by-field-chart"
 import SubmitErrorsChart from "@/components/dashboard/submit-errors-chart"
+import ConnectRateChart from "@/components/dashboard/connect-rate-chart"
 import UtmCampaignsTable from "@/components/dashboard/utm-campaigns-table"
 import RecentLeadsTable from "@/components/dashboard/recent-leads-table"
 
@@ -36,7 +37,11 @@ export default async function DashboardPage({
         <DateRangeFilter current={range} />
       </div>
 
-      <KpiCards kpis={data.kpis} leadDbWriteFailures={data.leadDbWriteFailures} />
+      <KpiCards
+        kpis={data.kpis}
+        leadDbWriteFailures={data.leadDbWriteFailures}
+        connectRate={data.connectRate}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <FunnelChart data={data.funnel} />
@@ -47,6 +52,7 @@ export default async function DashboardPage({
         <LeadsBySegmentoChart data={data.bySegmento} />
         <LeadsByFaturamentoChart data={data.byFaturamento} />
         <LeadsByDeviceChart data={data.byDevice} />
+        <ConnectRateChart data={data.connectRate} />
       </div>
 
       <UtmCampaignsTable data={data.utmCampaigns} />

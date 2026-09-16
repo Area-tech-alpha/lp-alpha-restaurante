@@ -47,13 +47,15 @@ function Card({ label, value, tooltip }: { label: string; value: string; tooltip
 export default function KpiCards({
   kpis,
   leadDbWriteFailures,
+  connectRate,
 }: {
   kpis: Kpis
   leadDbWriteFailures: number
+  connectRate: DashboardData["connectRate"]
 }) {
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
         <Card
           label="Sessões"
           value={fmt(kpis.totalSessions)}
@@ -83,6 +85,11 @@ export default function KpiCards({
           label="Conclusão do Formulário"
           value={pct(kpis.formCompletionRate)}
           tooltip="Das sessões que viram o formulário, quantas concluíram o envio com sucesso: Enviou com sucesso ÷ Viu o formulário."
+        />
+        <Card
+          label="Connect Rate"
+          value={connectRate.totalAdClicks > 0 ? pct(connectRate.overall) : "—"}
+          tooltip="Percentual de cliques no anúncio (Meta Ads) que resultaram em sessão carregada na LP: Sessões ÷ Cliques no anúncio. Requer sincronização configurada — ver app/api/cron/sync-meta-ads."
         />
       </div>
 

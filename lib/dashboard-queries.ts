@@ -39,6 +39,8 @@ type UtmGroupRow = {
   leads: bigint
   qualified: bigint
 }
+type CampaignSessionRow = { campaign: string; sessions: bigint }
+type CampaignClickRow = { campaign: string; campaignName: string | null; clicks: bigint }
 
 const FORM_FIELD_LABELS: Record<string, string> = {
   nome: "Nome",
@@ -81,6 +83,13 @@ export type DashboardData = {
   dropOffByField: { field: string; count: number }[]
   submitErrors: { reason: string; count: number }[]
   leadDbWriteFailures: number
+  connectRate: {
+    overall: number
+    totalAdClicks: number
+    totalMatchedSessions: number
+    unmatchedCampaigns: number
+    byCampaign: { campaign: string; campaignName: string | null; sessions: number; clicks: number; rate: number }[]
+  }
   utmCampaigns: {
     source: string
     medium: string
@@ -407,6 +416,75 @@ export async function getDashboardData(range: Range): Promise<DashboardData> {
     }))
     .sort((a, b) => b.leads - a.leads || b.sessions - a.sessions)
 
+  // Connect Rate = sessões que chegaram na LP ÷ cliques no anúncio, por campanha.
+  // Casamento é pelo nome da campanha (utmCampaign vs. AdClick.campaign) — só
+  // funciona se o UTM usar parâmetro dinâmico {{campaign.name}} no anúncio.
+  const rawCampaignSessionRows = since
+    ? await db.$queryRaw<CampaignSessionRow[]>`
+        SELECT "utmCampaign" AS campaign, COUNT(*) AS sessions
+        FROM sessions
+        WHERE "utmCampaign" IS NOT NULL AND "startedAt" >= ${since}
+        GROUP BY 1
+      `
+    : await db.$queryRaw<CampaignSessionRow[]>`
+        SELECT "utmCampaign" AS campaign, COUNT(*) AS sessions
+        FROM sessions
+        WHERE "utmCampaign" IS NOT NULL
+        GROUP BY 1
+      `
+
+  const rawCampaignClickRows = since
+    ? await db.$queryRaw<CampaignClickRow[]>`
+        SELECT campaign, MAX("campaignName") AS "campaignName", SUM(clicks) AS clicks
+        FROM ad_clicks
+        WHERE date >= ${since}
+        GROUP BY 1
+      `
+    : await db.$queryRaw<CampaignClickRow[]>`
+        SELECT campaign, MAX("campaignName") AS "campaignName", SUM(clicks) AS clicks
+        FROM ad_clicks
+        GROUP BY 1
+      `
+
+  const sessionsByCampaign = new Map(
+    rawCampaignSessionRows.map((r) => [r.campaign, Number(r.sessions)])
+  )
+  const clicksByCampaign = new Map(
+    rawCampaignClickRows.map((r) => [r.campaign, { clicks: Number(r.clicks), name: r.campaignName }])
+  )
+
+  // Base é sessionsByCampaign, não clicksByCampaign: a conta de anúncios roda
+  // campanhas de outros produtos/LPs da Alpha também, então "cliques" sozinho
+  // inclui volume que nada tem a ver com essa LP. Só entra no Connect Rate uma
+  // campanha que já comprovadamente mandou gente pra cá (casado por campaign_id).
+  const byCampaign = Array.from(sessionsByCampaign.entries())
+    .map(([campaign, sessions]) => {
+      const click = clicksByCampaign.get(campaign)
+      const clicks = click?.clicks ?? 0
+      return {
+        campaign,
+        campaignName: click?.name ?? null,
+        sessions,
+        clicks,
+        rate: clicks > 0 ? (sessions / clicks) * 100 : 0,
+      }
+    })
+    .sort((a, b) => b.sessions - a.sessions)
+
+  const totalAdClicks = byCampaign.reduce((sum, c) => sum + c.clicks, 0)
+  const totalMatchedSessions = byCampaign.reduce((sum, c) => sum + c.sessions, 0)
+  // Campanhas com UTM na sessão mas sem clique correspondente da Meta — indica
+  // UTM digitado à mão (não bate com o nome exato da campanha) ou tráfego não pago.
+  const unmatchedCampaigns = byCampaign.filter((c) => c.clicks === 0).length
+
+  const connectRate = {
+    overall: totalAdClicks > 0 ? (totalMatchedSessions / totalAdClicks) * 100 : 0,
+    totalAdClicks,
+    totalMatchedSessions,
+    unmatchedCampaigns,
+    byCampaign,
+  }
+
   const conversionRate =
     totalSessions > 0 ? (totalLeads / totalSessions) * 100 : 0
   const qualificationRate =
@@ -432,6 +510,7 @@ export async function getDashboardData(range: Range): Promise<DashboardData> {
     dropOffByField,
     submitErrors,
     leadDbWriteFailures,
+    connectRate,
     utmCampaigns,
     recentLeads,
   }
