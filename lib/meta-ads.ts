@@ -42,6 +42,17 @@ export async function fetchMetaAdClicks(since: string, until: string): Promise<C
   url.searchParams.set("limit", "500")
   url.searchParams.set("access_token", token)
 
+  // A conta de anúncios roda campanhas de outros produtos/LPs da Alpha também.
+  // Restringe direto na API às campanhas confirmadas pelo marketing pra essa
+  // LP — não depende só do filtro no dashboard, evita puxar volume irrelevante.
+  const campaignIds = process.env.META_CAMPAIGN_IDS?.split(",").map((id) => id.trim()).filter(Boolean)
+  if (campaignIds && campaignIds.length > 0) {
+    url.searchParams.set(
+      "filtering",
+      JSON.stringify([{ field: "campaign.id", operator: "IN", value: campaignIds }])
+    )
+  }
+
   const rows: CampaignClicks[] = []
   let nextUrl: string | null = url.toString()
 
