@@ -1,0 +1,20 @@
+name: Sync Meta Ads clicks
+
+# Roda de hora em hora: o plano Hobby da Vercel só permite cron 1x/dia, então
+# o agendamento fica aqui em vez de vercel.json. Rodar mais frequente que isso
+# não traz dado mais fresco — o Meta Insights já tem atraso próprio de horas
+# pra consolidar cliques.
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar o endpoint de sincronização
+        run: |
+          curl --fail-with-body -sS \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/sync-meta-ads"

@@ -457,25 +457,33 @@ export async function getDashboardData(range: Range): Promise<DashboardData> {
   // campanhas de outros produtos/LPs da Alpha também, então "cliques" sozinho
   // inclui volume que nada tem a ver com essa LP. Só entra no Connect Rate uma
   // campanha que já comprovadamente mandou gente pra cá (casado por campaign_id).
-  const byCampaign = Array.from(sessionsByCampaign.entries())
-    .map(([campaign, sessions]) => {
-      const click = clicksByCampaign.get(campaign)
-      const clicks = click?.clicks ?? 0
-      return {
-        campaign,
-        campaignName: click?.name ?? null,
-        sessions,
-        clicks,
-        rate: clicks > 0 ? (sessions / clicks) * 100 : 0,
-      }
-    })
+  const allCampaigns = Array.from(sessionsByCampaign.entries()).map(([campaign, sessions]) => {
+    const click = clicksByCampaign.get(campaign)
+    const clicks = click?.clicks ?? 0
+    return {
+      campaign,
+      campaignName: click?.name ?? null,
+      sessions,
+      clicks,
+      rate: clicks > 0 ? (sessions / clicks) * 100 : 0,
+    }
+  })
+
+  // Só exibe/soma campanha com clique confirmado no período: sem isso, uma
+  // campanha ainda sem sync (clicks=0) infla o numerador do "overall" sem
+  // contribuir no denominador — a taxa geral passava de 100% sem sentido.
+  // Como consequência, isso também já filtra pra "ativa e com clique", porque
+  // uma campanha pausada/sem verba não aparece nos Insights do período.
+  const byCampaign = allCampaigns
+    .filter((c) => c.clicks > 0)
     .sort((a, b) => b.sessions - a.sessions)
 
   const totalAdClicks = byCampaign.reduce((sum, c) => sum + c.clicks, 0)
   const totalMatchedSessions = byCampaign.reduce((sum, c) => sum + c.sessions, 0)
   // Campanhas com UTM na sessão mas sem clique correspondente da Meta — indica
-  // UTM digitado à mão (não bate com o nome exato da campanha) ou tráfego não pago.
-  const unmatchedCampaigns = byCampaign.filter((c) => c.clicks === 0).length
+  // UTM digitado à mão (não bate com o ID da campanha), campanha pausada, ou
+  // tráfego não pago.
+  const unmatchedCampaigns = allCampaigns.length - byCampaign.length
 
   const connectRate = {
     overall: totalAdClicks > 0 ? (totalMatchedSessions / totalAdClicks) * 100 : 0,

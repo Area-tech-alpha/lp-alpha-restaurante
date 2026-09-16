@@ -76,8 +76,9 @@ export default function ConnectRateChart({ data }: Props) {
       {data.unmatchedCampaigns > 0 && (
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
           {data.unmatchedCampaigns} campanha(s) com UTM na sessão não encontraram clique
-          correspondente no Meta Ads — confira se o utm_campaign do anúncio usa o parâmetro
-          dinâmico {"{{campaign.name}}"} exatamente.
+          correspondente no Meta Ads — confira se o anúncio usa utm_campaign=
+          {"{{campaign.id}}"} e se a campanha ainda está ativa (uma campanha pausada não
+          aparece nos Insights do período sincronizado).
         </p>
       )}
     </div>
