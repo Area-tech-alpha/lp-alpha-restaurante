@@ -56,3 +56,12 @@ export const leadSchema = z
   });
 
 export type LeadFormData = z.infer<typeof leadSchema>;
+
+// Validação individual (não combinada) de e-mail/telefone para a captura
+// parcial (onBlur, antes do submit final). Cada campo é validado sozinho de
+// propósito: se o telefone ainda está incompleto quando o e-mail já é válido,
+// queremos salvar o e-mail mesmo assim — um schema único com .optional() por
+// campo reprovaria o objeto inteiro e descartaria os dois. Ver
+// app/actions/submit-partial-lead.ts.
+export const partialEmailSchema = z.string().trim().email();
+export const partialTelefoneSchema = z.string().refine((v) => isValidPhoneNumber(v));

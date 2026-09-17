@@ -105,6 +105,16 @@ export async function submitLead(
     leadId = "unknown";
   }
 
+  // Formulário completo: marca a captura parcial da mesma sessão (se existir)
+  // como convertida, pra a automação de recuperação (n8n) não tentar mais
+  // reengajar quem já virou lead. Best-effort — não existe partial_lead pra
+  // toda sessão (ex: autofill sem passar pelo onBlur), e tudo bem.
+  if (sessionId && leadId !== "unknown") {
+    await db.partialLead
+      .update({ where: { sessionId }, data: { convertedAt: new Date() } })
+      .catch(() => {});
+  }
+
   // Envia ao webhook n8n (inclui lead_id para a automação atualizar whatsapp_sent_at)
   const payload = {
     lead_id: leadId,

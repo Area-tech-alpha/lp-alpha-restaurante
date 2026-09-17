@@ -23,8 +23,9 @@ model Session {
   timeOnPageSec  Int?
   deviceType     String?
 
-  leads  Lead[]
-  events Event[]
+  leads        Lead[]
+  events       Event[]
+  partialLeads PartialLead[]
 
   @@map("sessions")
 }
@@ -92,4 +93,38 @@ model AdClick {
   @@unique([date, platform, campaign])
   @@index([campaign])
   @@map("ad_clicks")
+}
+
+// Captura parcial de e-mail/telefone antes do envio final do formulário
+// (Fase 1 da automação de marketing — recuperação de leads). Uma linha por
+// sessão: cada onBlur de e-mail/telefone em components/lead-form.tsx dispara
+// um upsert aqui via app/actions/submit-partial-lead.ts. "convertedAt" é
+// preenchido quando a mesma sessão completa o formulário (ver
+// app/actions/submit-lead.ts), pra a automação no n8n filtrar só quem
+// abandonou (convertedAt IS NULL) ao montar uma régua de recuperação futura.
+model PartialLead {
+  id        String   @id @default(uuid())
+  sessionId String?  @unique
+  session   Session? @relation(fields: [sessionId], references: [id])
+
+  email    String?
+  telefone String?
+
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+  utmTerm     String?
+  referrer    String?
+  ipAddress   String?
+
+  webhookSentAt   DateTime?
+  webhookStatus   Int?
+  convertedAt     DateTime?
+  reminderSentAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("partial_leads")
 }
