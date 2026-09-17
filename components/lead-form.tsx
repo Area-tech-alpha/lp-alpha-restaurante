@@ -6,6 +6,7 @@ import type { Value as PhoneValue, Country } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import { leadSchema } from "@/lib/validation";
 import { submitLead } from "@/app/actions/submit-lead";
+import { submitPartialLead } from "@/app/actions/submit-partial-lead";
 import { content } from "@/lib/content";
 
 type CountryOption = { value?: Country; label: string; divider?: boolean };
@@ -159,6 +160,12 @@ export default function LeadForm() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
   const [values, setValues] = useState<FormValues>(initial);
 
+  // Guarda a última combinação (e-mail, telefone) já enviada pra captura
+  // parcial, pra não repetir o POST toda vez que o usuário sai e volta a um
+  // campo sem mudar o valor (o próprio onBlur já funciona como debounce
+  // natural — dispara só ao sair do campo, nunca a cada tecla digitada).
+  const partialSentRef = useRef<{ email?: string; telefone?: string }>({});
+
   const needsExtraFields = values.faturamento === FATURAMENTO_CNPJ_REQUIRED;
 
   function set(field: keyof FormValues, value: string) {
@@ -184,6 +191,21 @@ export default function LeadForm() {
   }
 
   const tracker = () => (typeof window !== "undefined" ? window.__tracker : null);
+
+  // Captura parcial (Fase 1 — recuperação de leads): dispara em background no
+  // onBlur de e-mail/telefone, sem bloquear a UI. Só reenvia se algo mudou
+  // desde o último envio bem-sucedido.
+  function firePartialCapture(next: { email?: string; telefone?: string }) {
+    const email = next.email?.trim() || undefined;
+    const telefone = next.telefone || undefined;
+    if (!email && !telefone) return;
+    if (email === partialSentRef.current.email && telefone === partialSentRef.current.telefone) {
+      return;
+    }
+    partialSentRef.current = { email, telefone };
+    const sessionId = tracker()?.sessionId() ?? undefined;
+    submitPartialLead({ sessionId, email, telefone }).catch(() => {});
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -303,7 +325,10 @@ export default function LeadForm() {
           value={values.email}
           onChange={(e) => set("email", e.target.value)}
           onFocus={() => tracker()?.trackFieldFocus("email")}
-          onBlur={(e) => tracker()?.trackFieldBlur("email", e.target.value.trim().length > 0)}
+          onBlur={(e) => {
+            tracker()?.trackFieldBlur("email", e.target.value.trim().length > 0);
+            firePartialCapture({ email: e.target.value, telefone: values.telefone });
+          }}
           className={inputClass}
         />
         {errors.email && (
@@ -316,7 +341,10 @@ export default function LeadForm() {
       {/* Telefone com seletor de país */}
       <div
         onFocus={() => tracker()?.trackFieldFocus("telefone")}
-        onBlur={() => tracker()?.trackFieldBlur("telefone", !!values.telefone)}
+        onBlur={() => {
+          tracker()?.trackFieldBlur("telefone", !!values.telefone);
+          firePartialCapture({ email: values.email, telefone: values.telefone });
+        }}
       >
         <label htmlFor="telefone" className={labelClass}>
           {c.fields.telefone.label}

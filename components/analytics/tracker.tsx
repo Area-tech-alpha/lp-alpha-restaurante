@@ -79,7 +79,7 @@ export default function Tracker() {
   const filledFieldsRef = useRef<Set<string>>(new Set());
   const lastFieldRef = useRef<string | null>(null);
   const maxScrollRef = useRef(0);
-  const startTimeRef = useRef(Date.now());
+  const startTimeRef = useRef<number | null>(null);
   const flushing = useRef(false);
 
   // -------------------------------------------------------------------------
@@ -130,6 +130,7 @@ export default function Tracker() {
   // -------------------------------------------------------------------------
 
   useEffect(() => {
+    startTimeRef.current = Date.now();
     const existing = sessionStorage.getItem(SESSION_KEY);
     const utms = getUtms();
 
@@ -259,7 +260,7 @@ export default function Tracker() {
 
   useEffect(() => {
     function onUnload() {
-      const timeOnPageSec = Math.round((Date.now() - startTimeRef.current) / 1000);
+      const timeOnPageSec = Math.round((Date.now() - (startTimeRef.current ?? Date.now())) / 1000);
       const events: EventPayload[] = [];
 
       if (formTouchedRef.current && !formSubmittedRef.current) {
