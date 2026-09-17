@@ -17,7 +17,7 @@
     "@vercel/speed-insights": "^2.0.0",
     "dotenv": "^17.4.2",
     "lucide-react": "^1.32.0",
-    "next": "^16.2.12",
+    "next": "^15.5.25",
     "next-auth": "^5.0.0-beta.32",
     "pg": "^8.21.0",
     "prisma": "^7.8.0",
