@@ -1,8 +1,10 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { after } from "next/server";
 import { leadSchema, LeadFormData } from "@/lib/validation";
 import { db } from "@/lib/db";
+import { sendLeadToMetaCapi } from "@/lib/meta-capi";
 
 // Único critério de desqualificação: faturamento mínimo ("Até 30 mil") E não
 // disposto a investir em CNPJ novo. Todo o resto vai para a página de obrigado
@@ -20,7 +22,8 @@ type ActionResult =
 
 export async function submitLead(
   data: LeadFormData,
-  sessionId?: string
+  sessionId?: string,
+  eventId?: string
 ): Promise<ActionResult> {
   const parsed = leadSchema.safeParse(data);
   if (!parsed.success) {
@@ -154,6 +157,24 @@ export async function submitLead(
     if (!res.ok) {
       console.error(`[submit-lead] Webhook retornou ${res.status}`);
       return { success: false, error: "Erro ao enviar. Tente novamente em instantes.", reason: "server" };
+    }
+
+    if (eventId) {
+      const cookieStore = await cookies();
+      const capiInput = {
+        eventId,
+        eventSourceUrl: headersList.get("referer") ?? undefined,
+        email: parsed.data.email,
+        phone: parsed.data.telefone,
+        name: parsed.data.nome,
+        ip,
+        userAgent: headersList.get("user-agent"),
+        fbp: cookieStore.get("_fbp")?.value,
+        fbc: cookieStore.get("_fbc")?.value,
+        externalId: sessionId,
+        qualified,
+      };
+      after(() => sendLeadToMetaCapi(capiInput));
     }
 
     return { success: true, redirectTo };

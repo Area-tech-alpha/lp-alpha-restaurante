@@ -19,7 +19,7 @@ type TrackerAPI = {
   trackValidationError: (fields: string[]) => void;
   trackSubmitAttempt: () => void;
   trackSubmitError: (reason: "server" | "network", detail: string) => void;
-  trackSubmitSuccess: (leadId: string, qualified: boolean) => void;
+  trackSubmitSuccess: (leadId: string, qualified: boolean, eventId?: string) => void;
   markFormTouched: () => void;
 };
 
@@ -337,11 +337,11 @@ export default function Tracker() {
         pushDataLayer({ event: "form_submit_error", reason });
       },
 
-      trackSubmitSuccess: (leadId: string, qualified: boolean) => {
+      trackSubmitSuccess: (leadId: string, qualified: boolean, eventId?: string) => {
         formSubmittedRef.current = true;
         queue({ type: "form_submit_success", data: { leadId, qualified }, ts: now() });
         pushDataLayer({ event: "lead", lead_id: leadId, qualified });
-        window.fbq?.("track", "Lead", { qualified });
+        window.fbq?.("track", "Lead", { qualified }, eventId ? { eventID: eventId } : undefined);
       },
     };
   }, []);
