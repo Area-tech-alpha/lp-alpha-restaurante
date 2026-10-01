@@ -1,7 +1,6 @@
 import Image from "next/image";
 import LeadForm from "@/components/lead-form";
 import LpCtaButton from "@/components/ui/lp-cta-button";
-import FadeInLoad from "@/components/ui/fade-in-load";
 import { content } from "@/lib/content";
 
 const { hero } = content;
@@ -12,12 +11,14 @@ export default function Hero() {
       id="hero"
       aria-label="Hero"
       data-section="hero"
-      className="relative overflow-hidden px-3 pt-6 pb-10 sm:px-4 sm:pt-9 sm:pb-[60px]"
+      className="relative overflow-hidden bg-lp-gold-2 px-3 pt-6 pb-10 sm:px-4 sm:pt-9 sm:pb-[60px]"
     >
       <Image
         src="/hero-nova-00-lp.webp"
         alt=""
         fill
+        priority
+        sizes="100vw"
         className="object-cover object-center"
       />
 
@@ -38,48 +39,44 @@ export default function Hero() {
 
           <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-[1.05fr_.95fr]">
             <div>
-              <FadeInLoad delay={80}>
-                <h1 className="font-lp-display text-[clamp(2rem,4.4vw,3.1rem)] leading-[1.12] font-semibold text-lp-ink mb-4">
-                  {hero.headlinePrefix}
-                  <span className="lp-gold-text">{hero.headlineHighlight1}</span>
-                  {hero.headlineMiddle}
-                  <span className="lp-gold-text">{hero.headlineHighlight2}</span>
-                  {hero.headlineSuffix}
-                </h1>
-              </FadeInLoad>
-
-              <FadeInLoad delay={160}>
-                <div className="max-w-[480px] mb-[22px]">
-                  <p className="text-[15px] leading-relaxed text-lp-text-muted">{hero.subtitle}</p>
-                  <ul className="mt-3 flex flex-col gap-1.5">
-                    {hero.subtitleBullets.map((bullet) => (
-                      <li key={bullet} className="text-[15px] leading-relaxed text-lp-text-muted">
-                        ✅ {bullet}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </FadeInLoad>
-
-              <FadeInLoad delay={240}>
-                <LpCtaButton data-cta="hero-cta">{hero.cta}</LpCtaButton>
-              </FadeInLoad>
-            </div>
-
-            <FadeInLoad delay={160}>
-              <div id="contato">
-                <div
-                  data-section="form"
-                  className="rounded-[22px] border border-lp-border bg-lp-panel p-5 sm:p-[26px]"
-                >
-                  <h2 className="mb-1 text-[17px] font-semibold text-lp-ink">{hero.formTitle}</h2>
-                  <span className="mb-4 block text-[12.5px] text-lp-text-dim">
-                    {hero.formSubtitle}
-                  </span>
-                  <LeadForm />
-                </div>
+              <h1 className="font-lp-display text-[clamp(2rem,4.4vw,3.1rem)] leading-[1.12] font-semibold text-lp-ink mb-4">
+                {hero.headlinePrefix}
+                <span className="lp-gold-text">{hero.headlineHighlight1}</span>
+                {hero.headlineMiddle}
+                <span className="lp-gold-text">{hero.headlineHighlight2}</span>
+                {hero.headlineSuffix}
+              </h1>
+              <div className="max-w-[480px] mb-[22px]">
+                <p className="text-[15px] leading-relaxed text-lp-text-muted">
+                  {hero.subtitle}
+                </p>
+                <ul className="mt-3 flex flex-col gap-1.5">
+                  {hero.subtitleBullets.map((bullet) => (
+                    <li
+                      key={bullet}
+                      className="text-[15px] leading-relaxed text-lp-text-muted"
+                    >
+                      ✅ {bullet}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </FadeInLoad>
+              <LpCtaButton data-cta="hero-cta">{hero.cta}</LpCtaButton>
+            </div>
+            <div id="contato">
+              <div
+                data-section="form"
+                className="rounded-[22px] border border-lp-border bg-lp-panel p-5 sm:p-[26px]"
+              >
+                <h2 className="mb-1 text-[17px] font-semibold text-lp-ink">
+                  {hero.formTitle}
+                </h2>
+                <span className="mb-4 block text-[12.5px] text-lp-text-dim">
+                  {hero.formSubtitle}
+                </span>
+                <LeadForm />
+              </div>
+            </div>
           </div>
         </div>
       </div>
