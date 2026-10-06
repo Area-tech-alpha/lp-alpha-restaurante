@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { getMetaCapiToken, getMetaPixelIds } from "@/lib/meta-pixels";
 
 const GRAPH_API_VERSION = "v21.0";
 
@@ -29,10 +30,15 @@ export type CapiLeadInput = {
 // do formulário. O eventId deve ser o mesmo passado ao fbq no cliente — é ele que
 // permite ao Meta deduplicar o evento do pixel com o do servidor.
 export async function sendLeadToMetaCapi(input: CapiLeadInput): Promise<void> {
-  const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
-  const token = process.env.META_CAPI_TOKEN;
-  if (!pixelId || !token) return;
+  await Promise.all(
+    getMetaPixelIds().map((pixelId) => {
+      const token = getMetaCapiToken(pixelId);
+      return token ? sendToPixel(pixelId, token, input) : undefined;
+    })
+  );
+}
 
+async function sendToPixel(pixelId: string, token: string, input: CapiLeadInput) {
   const [firstName, ...rest] = input.name.trim().split(/\s+/);
   const lastName = rest.length ? rest[rest.length - 1] : undefined;
   const email = normalize(input.email);
@@ -77,9 +83,9 @@ export async function sendLeadToMetaCapi(input: CapiLeadInput): Promise<void> {
       }
     );
     if (!res.ok) {
-      console.error(`[meta-capi] HTTP ${res.status}: ${await res.text()}`);
+      console.error(`[meta-capi:${pixelId}] HTTP ${res.status}: ${await res.text()}`);
     }
   } catch (err) {
-    console.error("[meta-capi] Erro de rede:", err);
+    console.error(`[meta-capi:${pixelId}] Erro de rede:`, err);
   }
 }
