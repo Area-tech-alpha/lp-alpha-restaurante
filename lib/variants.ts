@@ -42,23 +42,21 @@ export const variants = {
       "Vamos copiar e colar o mesmo método que fez a Alpha's Pizzaria *faturar 400k* no seu restaurante, e se não aumentarmos suas vendas devolvemos o seu dinheiro",
     footnote: GUARANTEE_NOTE,
   },
-  // TODO: headline provisória — substituir pela definitiva.
   "lp-06": {
-    theme: "black",
-    headline:
-      "Seu restaurante *vendendo mais* em 30 dias, ou devolvemos o seu dinheiro",
-    footnote: GUARANTEE_NOTE,
-  },
-  "lp-07": {
     theme: "black",
     headline:
       "Vamos aplicar o mesmo método que fez a Alpha's Pizzaria *faturar 400k* no seu restaurante *de graça*, aproveite ainda esse mês",
     countdown: { label: "Essa condição gratuita encerra em" },
   },
-  "lp-08": {
+  "lp-07": {
     theme: "black",
     headline:
       "*Terceirize o seu marketing* e dobre o faturamento do seu restaurante nos próximos 6 meses",
+  },
+  "lp-08": {
+    theme: "black",
+    headline:
+      "*Terceirize o seu marketing* e dobre o faturamento do seu delivery nos próximos 3 meses",
   },
 } as const satisfies Record<string, Variant>;
 
