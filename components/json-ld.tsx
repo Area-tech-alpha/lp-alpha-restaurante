@@ -23,11 +23,15 @@ export function OrganizationJsonLd() {
   );
 }
 
-export function FaqJsonLd() {
+export function FaqJsonLd({
+  items = content.faq.items,
+}: {
+  items?: readonly { question: string; answer: string }[];
+}) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: content.faq.items.map((item) => ({
+    mainEntity: items.map((item) => ({
       "@type": "Question",
       name: item.question,
       acceptedAnswer: {

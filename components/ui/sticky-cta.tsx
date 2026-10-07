@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import LpCtaButton from "@/components/ui/lp-cta-button";
 import { content } from "@/lib/content";
 
-export default function StickyCta() {
+export default function StickyCta({ label = content.floatCta.cta }: { label?: string }) {
   const [visible, setVisible] = useState(false);
   const formRef = useRef<Element | null>(null);
 
@@ -31,7 +31,7 @@ export default function StickyCta() {
         data-cta="sticky-cta"
         className="w-full max-w-sm shadow-[0_16px_40px_-8px_rgba(245,166,35,0.5)] sm:w-auto"
       >
-        {content.floatCta.cta}
+        {label}
       </LpCtaButton>
     </div>
   );

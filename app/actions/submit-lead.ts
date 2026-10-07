@@ -5,6 +5,7 @@ import { after } from "next/server";
 import { leadSchema, LeadFormData } from "@/lib/validation";
 import { db } from "@/lib/db";
 import { sendLeadToMetaCapi } from "@/lib/meta-capi";
+import { variantFromUrl } from "@/lib/variants";
 
 // Único critério de desqualificação: faturamento mínimo ("Até 30 mil") E não
 // disposto a investir em CNPJ novo. Todo o resto vai para a página de obrigado
@@ -54,6 +55,7 @@ export async function submitLead(
     utmTerm?: string | null;
     referrer?: string | null;
   } = {};
+  let variant: string | null = null;
 
   if (sessionId) {
     try {
@@ -66,9 +68,14 @@ export async function submitLead(
           utmContent: true,
           utmTerm: true,
           referrer: true,
+          landingUrl: true,
         },
       });
-      if (session) utmFields = session;
+      if (session) {
+        const { landingUrl, ...utms } = session;
+        utmFields = utms;
+        variant = variantFromUrl(landingUrl);
+      }
     } catch {
       // UTMs são melhores-esforços — não bloquear o lead por isso
     }
@@ -130,6 +137,7 @@ export async function submitLead(
     cnpj: parsed.data.cnpj,
     investiria: parsed.data.investiria,
     origem: 'alpha-restaurante',
+    variante: variant,
     utm_source: utmFields.utmSource ?? null,
     utm_medium: utmFields.utmMedium ?? null,
     utm_campaign: utmFields.utmCampaign ?? null,
@@ -173,6 +181,7 @@ export async function submitLead(
         fbc: cookieStore.get("_fbc")?.value,
         externalId: sessionId,
         qualified,
+        variant,
       };
       after(() => sendLeadToMetaCapi(capiInput));
     }

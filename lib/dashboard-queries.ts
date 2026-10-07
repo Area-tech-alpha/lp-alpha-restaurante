@@ -39,6 +39,7 @@ type UtmGroupRow = {
   leads: bigint
   qualified: bigint
 }
+type VariantRow = { variant: string; sessions: bigint; leads: bigint; qualified: bigint }
 type CampaignSessionRow = { campaign: string; sessions: bigint }
 type CampaignClickRow = { campaign: string; campaignName: string | null; clicks: bigint }
 
@@ -90,6 +91,13 @@ export type DashboardData = {
     unmatchedCampaigns: number
     byCampaign: { campaign: string; campaignName: string | null; sessions: number; clicks: number; rate: number }[]
   }
+  byVariant: {
+    variant: string
+    sessions: number
+    leads: number
+    qualified: number
+    conversionRate: number
+  }[]
   utmCampaigns: {
     source: string
     medium: string
@@ -493,6 +501,44 @@ export async function getDashboardData(range: Range): Promise<DashboardData> {
     byCampaign,
   }
 
+  // A variação é derivada do path da landingUrl da sessão (/lp-01 ... /lp-08);
+  // sessões sem match vêm da home.
+  const variantRows = since
+    ? await db.$queryRaw<VariantRow[]>`
+        SELECT
+          COALESCE(substring(s."landingUrl" from '/(lp-[0-9]{2})'), 'home') AS variant,
+          COUNT(DISTINCT s.id) AS sessions,
+          COUNT(l.id) AS leads,
+          COUNT(l.id) FILTER (WHERE l.qualified) AS qualified
+        FROM sessions s
+        LEFT JOIN leads l ON l."sessionId" = s.id
+        WHERE s."startedAt" >= ${since}
+        GROUP BY 1
+        ORDER BY 1
+      `
+    : await db.$queryRaw<VariantRow[]>`
+        SELECT
+          COALESCE(substring(s."landingUrl" from '/(lp-[0-9]{2})'), 'home') AS variant,
+          COUNT(DISTINCT s.id) AS sessions,
+          COUNT(l.id) AS leads,
+          COUNT(l.id) FILTER (WHERE l.qualified) AS qualified
+        FROM sessions s
+        LEFT JOIN leads l ON l."sessionId" = s.id
+        GROUP BY 1
+        ORDER BY 1
+      `
+  const byVariant = variantRows.map((r) => {
+    const sessions = Number(r.sessions)
+    const leads = Number(r.leads)
+    return {
+      variant: r.variant,
+      sessions,
+      leads,
+      qualified: Number(r.qualified),
+      conversionRate: sessions > 0 ? (leads / sessions) * 100 : 0,
+    }
+  })
+
   const conversionRate =
     totalSessions > 0 ? (totalLeads / totalSessions) * 100 : 0
   const qualificationRate =
@@ -519,6 +565,7 @@ export async function getDashboardData(range: Range): Promise<DashboardData> {
     submitErrors,
     leadDbWriteFailures,
     connectRate,
+    byVariant,
     utmCampaigns,
     recentLeads,
   }

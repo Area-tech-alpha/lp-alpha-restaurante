@@ -24,6 +24,7 @@ export type CapiLeadInput = {
   fbc?: string;
   externalId?: string;
   qualified: boolean;
+  variant?: string | null;
 };
 
 // Best-effort: nunca lança. Chamado dentro de after() para não atrasar a resposta
@@ -65,7 +66,7 @@ async function sendToPixel(pixelId: string, token: string, input: CapiLeadInput)
         action_source: "website",
         event_source_url: input.eventSourceUrl,
         user_data: userData,
-        custom_data: { qualified: input.qualified },
+        custom_data: { qualified: input.qualified, variant: input.variant ?? undefined },
       },
     ],
   };

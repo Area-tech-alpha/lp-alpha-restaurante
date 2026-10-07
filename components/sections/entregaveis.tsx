@@ -12,7 +12,7 @@ const ICONS = {
   "file-bar-chart": FileBarChart,
 } as const;
 
-export default function Entregaveis() {
+export default function Entregaveis({ showRoi = true }: { showRoi?: boolean }) {
   return (
     <section
       id="entregaveis"
@@ -50,8 +50,9 @@ export default function Entregaveis() {
           })}
         </div>
 
+        {showRoi && (
         <ScrollFade>
-          <div className="mt-11 flex flex-col gap-1.5 rounded-[32px] bg-lp-ink p-9 text-center sm:p-[34px]">
+          <div className="mt-11 flex flex-col gap-1.5 rounded-[32px] border border-lp-border bg-lp-dark p-9 text-center sm:p-[34px]">
             <span className="text-[13.5px] font-semibold tracking-[.05em] text-white/60 uppercase">
               {entregaveis.roi.label}
             </span>
@@ -62,6 +63,7 @@ export default function Entregaveis() {
             </strong>
           </div>
         </ScrollFade>
+        )}
       </div>
     </section>
   );

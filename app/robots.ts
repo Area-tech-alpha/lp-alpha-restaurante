@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/obrigado", "/agradecimento", "/api/"],
+      disallow: ["/obrigado", "/agradecimento", "/api/", "/lp-"],
     },
     sitemap: "https://assessorialpha.com/sitemap.xml",
   };

@@ -70,7 +70,7 @@ function pushDataLayer(payload: Record<string, unknown>) {
 // Component
 // ---------------------------------------------------------------------------
 
-export default function Tracker() {
+export default function Tracker({ variant }: { variant?: string }) {
   const sessionIdRef = useRef<string | null>(null);
   const pendingRef = useRef<EventPayload[]>([]);
   const formTouchedRef = useRef(false);
@@ -151,10 +151,15 @@ export default function Tracker() {
         sessionStorage.setItem(SESSION_KEY, sessionId);
 
         if (!existing) {
-          queue({ type: "session_start", data: { ...utms, device: getDevice() }, ts: now() });
+          queue({
+            type: "session_start",
+            data: { ...utms, device: getDevice(), variant },
+            ts: now(),
+          });
           pushDataLayer({
             event: "session_start",
             device: getDevice(),
+            variant,
             utm_source: utms.utmSource,
             utm_medium: utms.utmMedium,
             utm_campaign: utms.utmCampaign,
@@ -340,8 +345,8 @@ export default function Tracker() {
       trackSubmitSuccess: (leadId: string, qualified: boolean, eventId?: string) => {
         formSubmittedRef.current = true;
         queue({ type: "form_submit_success", data: { leadId, qualified }, ts: now() });
-        pushDataLayer({ event: "lead", lead_id: leadId, qualified });
-        window.fbq?.("track", "Lead", { qualified }, eventId ? { eventID: eventId } : undefined);
+        pushDataLayer({ event: "lead", lead_id: leadId, qualified, variant });
+        window.fbq?.("track", "Lead", { qualified, variant }, eventId ? { eventID: eventId } : undefined);
       },
     };
   }, []);

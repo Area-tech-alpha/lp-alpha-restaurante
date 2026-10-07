@@ -551,7 +551,7 @@ export default function LeadForm() {
       <button
         type="submit"
         disabled={isSending}
-        className="mt-1 w-full rounded-full bg-lp-gold-2 bg-gradient-to-r from-lp-gold-1 to-lp-gold-2 px-[26px] py-[13px] font-lp-heading text-[15.5px] font-bold text-lp-ink shadow-[0_10px_30px_rgba(245,166,35,0.3)] transition-transform hover:-translate-y-[3px] hover:shadow-[0_16px_40px_rgba(245,166,35,0.42)] disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer"
+        className="mt-1 w-full rounded-full bg-lp-gold-2 bg-gradient-to-r from-lp-gold-1 to-lp-gold-2 px-[26px] py-[13px] font-lp-heading text-[15.5px] font-bold text-lp-on-gold shadow-[0_10px_30px_rgba(245,166,35,0.3)] transition-transform hover:-translate-y-[3px] hover:shadow-[0_16px_40px_rgba(245,166,35,0.42)] disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer"
       >
         {isSending ? "Enviando..." : c.submitLabel}
       </button>

@@ -10,6 +10,7 @@ import FunnelChart from "@/components/dashboard/funnel-chart"
 import DropOffByFieldChart from "@/components/dashboard/drop-off-by-field-chart"
 import SubmitErrorsChart from "@/components/dashboard/submit-errors-chart"
 import ConnectRateChart from "@/components/dashboard/connect-rate-chart"
+import VariantsTable from "@/components/dashboard/variants-table"
 import UtmCampaignsTable from "@/components/dashboard/utm-campaigns-table"
 import RecentLeadsTable from "@/components/dashboard/recent-leads-table"
 
@@ -54,6 +55,8 @@ export default async function DashboardPage({
         <LeadsByDeviceChart data={data.byDevice} />
         <ConnectRateChart data={data.connectRate} />
       </div>
+
+      <VariantsTable data={data.byVariant} />
 
       <UtmCampaignsTable data={data.utmCampaigns} />
 

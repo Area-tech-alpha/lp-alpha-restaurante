@@ -5,7 +5,7 @@ export default function Footer() {
   const { footer } = content;
 
   return (
-    <footer aria-label="Rodapé" className="bg-lp-ink py-[50px] pb-[26px] text-center text-white/60">
+    <footer aria-label="Rodapé" className="bg-lp-dark py-[50px] pb-[26px] text-center text-white/60">
       <div className="mx-auto max-w-[1180px] px-6">
         <a href="https://assessorialpha.com" className="mx-auto mb-3.5 block w-fit">
           <Image

@@ -29,6 +29,26 @@
   --lp-border: rgba(20, 16, 5, .1);
   --lp-border-strong: rgba(20, 16, 5, .16);
   --lp-border-gold: rgba(245, 166, 35, .45);
+  --lp-on-gold: #141005;
+  --lp-dark: #141005;
+  --lp-hero-bg: #F5A623;
+}
+
+/* Tema amarelo/preto das variações (/lp-05 em diante): redefine os mesmos
+   tokens --lp-*, então nenhum componente precisa saber qual tema está ativo. */
+[data-theme="black"] {
+  --lp-white: #0f0f0f;
+  --lp-off: #0a0a0a;
+  --lp-panel: #1a1a1a;
+  --lp-ink: #ffffff;
+  --lp-text: #f2f2f2;
+  --lp-text-muted: #b4b4b4;
+  --lp-text-dim: #7d7d7d;
+  --lp-border: rgba(255, 255, 255, .1);
+  --lp-border-strong: rgba(255, 255, 255, .18);
+  --lp-border-gold: rgba(255, 183, 3, .5);
+  --lp-dark: #050505;
+  --lp-hero-bg: #000000;
 }
 
 @theme inline {
@@ -60,6 +80,9 @@
   --color-lp-border: var(--lp-border);
   --color-lp-border-strong: var(--lp-border-strong);
   --color-lp-border-gold: var(--lp-border-gold);
+  --color-lp-on-gold: var(--lp-on-gold);
+  --color-lp-dark: var(--lp-dark);
+  --color-lp-hero-bg: var(--lp-hero-bg);
 
   --font-lp-display: var(--font-clash-display);
   --font-lp-heading: var(--font-general-sans);

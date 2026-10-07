@@ -5,7 +5,7 @@ import { content } from "@/lib/content";
 
 const { faq } = content;
 
-export default function Faq() {
+export default function Faq({ items = faq.items }: { items?: readonly { question: string; answer: string }[] }) {
   return (
     <section id="faq" aria-label="Perguntas frequentes" data-section="faq" className="bg-lp-off py-20">
       <div className="mx-auto max-w-[1180px] px-6">
@@ -21,7 +21,7 @@ export default function Faq() {
 
           <ScrollFade delay={80}>
             <div className="flex flex-col gap-3.5">
-              {faq.items.map((item, i) => (
+              {items.map((item, i) => (
                 <details
                   key={item.question}
                   open={i === 0}
