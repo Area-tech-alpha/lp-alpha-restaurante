@@ -9,27 +9,22 @@ export type Variant = {
   countdown?: { label: string };
 };
 
-const GUARANTEE_NOTE =
-  "*Garantia de devolução do investimento, conforme condições do contrato.";
 
 export const variants = {
   "lp-01": {
     theme: "gold",
     headline:
       "Utilize nosso serviço de marketing, e *se não gostar devolvemos o seu dinheiro*",
-    footnote: GUARANTEE_NOTE,
   },
   "lp-02": {
     theme: "gold",
     headline:
       "Aplique o método que vai *dobrar o faturamento do seu delivery* e caso você não goste devolvemos o seu dinheiro",
-    footnote: GUARANTEE_NOTE,
   },
   "lp-03": {
     theme: "gold",
     headline:
       "Aplique o método que vai fazer o seu restaurante *crescer 3x mais* e caso você não goste devolvemos o seu dinheiro",
-    footnote: GUARANTEE_NOTE,
   },
   "lp-04": {
     theme: "gold",
@@ -40,7 +35,6 @@ export const variants = {
     theme: "black",
     headline:
       "Vamos copiar e colar o mesmo método que fez a Alpha's Pizzaria *faturar 400k* no seu restaurante, e se não aumentarmos suas vendas devolvemos o seu dinheiro",
-    footnote: GUARANTEE_NOTE,
   },
   "lp-06": {
     theme: "black",
