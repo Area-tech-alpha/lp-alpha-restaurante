@@ -10,6 +10,8 @@ type PartialLeadInput = {
   telefone?: string;
 };
 
+// Só grava em partial_leads — NÃO chama webhook: o webhook do CRM recebe apenas
+// o lead completo (submit-lead.ts), senão vira lead sem nome/empresa/faturamento.
 // Best-effort: nunca deve travar a UI nem aparecer como erro pro usuário.
 // Chamado no onBlur de e-mail/telefone em components/lead-form.tsx, antes do
 // envio final — captura contato de quem preenche e abandona o formulário,
@@ -64,49 +66,14 @@ export async function submitPartialLead(input: PartialLeadInput): Promise<void> 
     ...(utmFields ?? {}),
   };
 
-  let partialLeadId: string;
   try {
-    const row = await db.partialLead.upsert({
+    await db.partialLead.upsert({
       where: { sessionId: input.sessionId },
       create: { sessionId: input.sessionId, ...data },
       update: data,
     });
-    partialLeadId = row.id;
   } catch (err) {
     console.error("[submit-partial-lead] Erro ao salvar captura parcial:", err);
     return;
-  }
-
-  const webhookUrl = process.env.CRM_WEBHOOK_URL;
-  if (!webhookUrl) return;
-
-  try {
-    const res = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        partial: true,
-        partial_lead_id: partialLeadId,
-        session_id: input.sessionId,
-        email: email ?? null,
-        telefone: telefone ?? null,
-        origem: "alpha-restaurante",
-        utm_source: utmFields?.utmSource ?? null,
-        utm_medium: utmFields?.utmMedium ?? null,
-        utm_campaign: utmFields?.utmCampaign ?? null,
-        utm_content: utmFields?.utmContent ?? null,
-        utm_term: utmFields?.utmTerm ?? null,
-        referrer: utmFields?.referrer ?? null,
-      }),
-    });
-
-    await db.partialLead
-      .update({
-        where: { id: partialLeadId },
-        data: { webhookSentAt: new Date(), webhookStatus: res.status },
-      })
-      .catch(() => {});
-  } catch (err) {
-    console.error("[submit-partial-lead] Erro de rede ao chamar o webhook:", err);
   }
 }
