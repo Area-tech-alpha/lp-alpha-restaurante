@@ -238,7 +238,13 @@ export default function LeadForm() {
         if (!fieldErrors[field]) fieldErrors[field] = issue.message;
       });
       setErrors(fieldErrors);
-      tracker()?.trackValidationError(Object.keys(fieldErrors));
+      tracker()?.trackValidationError(
+        Object.entries(fieldErrors).map(([field, message]) => ({
+          field,
+          message: message ?? "",
+          value: String(payload[field as keyof typeof payload] ?? "").slice(0, 80),
+        })),
+      );
       return;
     }
 

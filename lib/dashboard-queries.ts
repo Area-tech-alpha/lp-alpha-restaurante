@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client"
 import { db } from "@/lib/db"
 
 export type Range = "hoje" | "7d" | "30d" | "90d" | "all"
@@ -54,6 +55,17 @@ const FORM_FIELD_LABELS: Record<string, string> = {
   investiria: "Investiria",
 }
 
+const SUBMIT_ERROR_SOURCE_LABELS: Record<string, string> = {
+  _server: "Servidor (webhook/CRM)",
+  _network: "Conexão do visitante",
+  _other: "Outro",
+}
+
+function submitErrorFieldLabel(field: string | null): string {
+  if (!field) return "(desconhecido)"
+  return SUBMIT_ERROR_SOURCE_LABELS[field] ?? FORM_FIELD_LABELS[field] ?? field
+}
+
 async function distinctSessionCount(type: string, since: Date | null): Promise<number> {
   const rows = since
     ? await db.$queryRaw<CountRow[]>`
@@ -83,6 +95,8 @@ export type DashboardData = {
   funnel: { stage: string; count: number }[]
   dropOffByField: { field: string; count: number }[]
   submitErrors: { reason: string; count: number }[]
+  submitErrorGroups: { field: string; message: string | null; count: number; samples: string[] }[]
+  recentSubmitErrors: { field: string; message: string | null; value: string | null; ts: string }[]
   leadDbWriteFailures: number
   connectRate: {
     overall: number
@@ -324,6 +338,58 @@ export async function getDashboardData(range: Range): Promise<DashboardData> {
     count: Number(r.count),
   }))
 
+  // Detalhe por campo/mensagem. Eventos antigos só têm "fields" (sem mensagem
+  // nem valor), então entram com message nula.
+  const errorSince = since ? Prisma.sql`AND ts >= ${since}` : Prisma.empty
+  const errorIssuesCte = Prisma.sql`
+    WITH issues AS (
+      SELECT i->>'field' AS field, i->>'message' AS message, i->>'value' AS value, ts
+      FROM events, jsonb_array_elements(data->'issues') AS i
+      WHERE type = 'form_validation_error' AND jsonb_typeof(data->'issues') = 'array' ${errorSince}
+      UNION ALL
+      SELECT f AS field, NULL AS message, NULL AS value, ts
+      FROM events, jsonb_array_elements_text(data->'fields') AS f
+      WHERE type = 'form_validation_error'
+        AND jsonb_typeof(data->'issues') IS DISTINCT FROM 'array'
+        AND jsonb_typeof(data->'fields') = 'array' ${errorSince}
+      UNION ALL
+      SELECT CASE data->>'reason' WHEN 'server' THEN '_server' WHEN 'network' THEN '_network' ELSE '_other' END AS field,
+             data->>'detail' AS message, NULL AS value, ts
+      FROM events
+      WHERE type = 'form_submit_error' ${errorSince}
+    )
+  `
+  const rawErrorGroups = await db.$queryRaw<
+    { field: string | null; message: string | null; count: bigint; samples: string[] | null }[]
+  >`
+    ${errorIssuesCte}
+    SELECT field, message, COUNT(*) AS count,
+           (array_agg(DISTINCT value) FILTER (WHERE value IS NOT NULL AND value <> ''))[1:5] AS samples
+    FROM issues
+    GROUP BY 1, 2
+    ORDER BY count DESC
+    LIMIT 20
+  `
+  const rawRecentErrors = await db.$queryRaw<
+    { field: string | null; message: string | null; value: string | null; ts: Date }[]
+  >`
+    ${errorIssuesCte}
+    SELECT field, message, value, ts FROM issues ORDER BY ts DESC LIMIT 15
+  `
+
+  const submitErrorGroups = rawErrorGroups.map((r) => ({
+    field: submitErrorFieldLabel(r.field),
+    message: r.message,
+    count: Number(r.count),
+    samples: r.samples ?? [],
+  }))
+  const recentSubmitErrors = rawRecentErrors.map((r) => ({
+    field: submitErrorFieldLabel(r.field),
+    message: r.message,
+    value: r.value,
+    ts: r.ts.toISOString(),
+  }))
+
   // Leads que o webhook/CRM recebeu mas que falharam ao salvar em "leads" —
   // ficam invisíveis no dashboard sem esse contador.
   const leadDbWriteFailures = await distinctSessionCount("lead_db_write_failed", since)
@@ -563,6 +629,8 @@ export async function getDashboardData(range: Range): Promise<DashboardData> {
     funnel,
     dropOffByField,
     submitErrors,
+    submitErrorGroups,
+    recentSubmitErrors,
     leadDbWriteFailures,
     connectRate,
     byVariant,

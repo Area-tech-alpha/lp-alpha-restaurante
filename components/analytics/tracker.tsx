@@ -16,7 +16,7 @@ type TrackerAPI = {
   sessionId: () => string | null;
   trackFieldFocus: (field: string) => void;
   trackFieldBlur: (field: string, filled: boolean) => void;
-  trackValidationError: (fields: string[]) => void;
+  trackValidationError: (issues: { field: string; message: string; value: string }[]) => void;
   trackSubmitAttempt: () => void;
   trackSubmitError: (reason: "server" | "network", detail: string) => void;
   trackSubmitSuccess: (leadId: string, qualified: boolean, eventId?: string) => void;
@@ -328,8 +328,13 @@ export default function Tracker({ variant }: { variant?: string }) {
         queue({ type: "form_field_blur", data: { field, filled }, ts: now() });
       },
 
-      trackValidationError: (fields: string[]) => {
-        queue({ type: "form_validation_error", data: { fields }, ts: now() });
+      trackValidationError: (issues) => {
+        // "fields" segue gravado para manter compatível com eventos antigos.
+        queue({
+          type: "form_validation_error",
+          data: { fields: issues.map((i) => i.field), issues },
+          ts: now(),
+        });
       },
 
       trackSubmitAttempt: () => {

@@ -9,6 +9,7 @@ import LeadsByDeviceChart from "@/components/dashboard/leads-by-device-chart"
 import FunnelChart from "@/components/dashboard/funnel-chart"
 import DropOffByFieldChart from "@/components/dashboard/drop-off-by-field-chart"
 import SubmitErrorsChart from "@/components/dashboard/submit-errors-chart"
+import SubmitErrorsDetail from "@/components/dashboard/submit-errors-detail"
 import ConnectRateChart from "@/components/dashboard/connect-rate-chart"
 import VariantsTable from "@/components/dashboard/variants-table"
 import UtmCampaignsTable from "@/components/dashboard/utm-campaigns-table"
@@ -47,6 +48,11 @@ export default async function DashboardPage({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <FunnelChart data={data.funnel} />
         <SubmitErrorsChart data={data.submitErrors} />
+      </div>
+
+      <SubmitErrorsDetail groups={data.submitErrorGroups} recent={data.recentSubmitErrors} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <DropOffByFieldChart data={data.dropOffByField} />
         <LeadsOverTimeChart data={data.leadsOverTime} />
         <LeadsByUtmChart data={data.byUtmSource} />
