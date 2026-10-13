@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { clarityEvent, clarityIdentify, claritySet, clarityUpgrade } from "@/lib/clarity";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -21,6 +22,7 @@ type TrackerAPI = {
   trackSubmitError: (reason: "server" | "network", detail: string) => void;
   trackSubmitSuccess: (leadId: string, qualified: boolean, eventId?: string) => void;
   markFormTouched: () => void;
+  trackVideo: (type: string, data: Record<string, unknown>) => void;
 };
 
 declare global {
@@ -57,13 +59,6 @@ function getUtms() {
 
 function now() {
   return new Date().toISOString();
-}
-
-function pushDataLayer(payload: Record<string, unknown>) {
-  if (typeof window === "undefined") return;
-  const w = window as Window & { dataLayer?: unknown[] };
-  w.dataLayer = w.dataLayer ?? [];
-  w.dataLayer.push(payload);
 }
 
 // ---------------------------------------------------------------------------
@@ -150,19 +145,18 @@ export default function Tracker({ variant }: { variant?: string }) {
         sessionIdRef.current = sessionId;
         sessionStorage.setItem(SESSION_KEY, sessionId);
 
+        // Mesmo ID no Clarity e no dashboard: de um lead dá pra achar a gravação.
+        clarityIdentify(sessionId);
+        claritySet("variant", variant ?? "home");
+        claritySet("device", getDevice());
+        if (utms.utmSource) claritySet("utm_source", utms.utmSource);
+        if (utms.utmCampaign) claritySet("utm_campaign", utms.utmCampaign);
+
         if (!existing) {
           queue({
             type: "session_start",
             data: { ...utms, device: getDevice(), variant },
             ts: now(),
-          });
-          pushDataLayer({
-            event: "session_start",
-            device: getDevice(),
-            variant,
-            utm_source: utms.utmSource,
-            utm_medium: utms.utmMedium,
-            utm_campaign: utms.utmCampaign,
           });
         }
 
@@ -195,9 +189,6 @@ export default function Tracker({ variant }: { variant?: string }) {
           if (!reached.has(milestone) && percent >= milestone) {
             reached.add(milestone);
             queue({ type: "scroll_depth", data: { percent: milestone }, ts: now() });
-            if (milestone === 50 || milestone === 75) {
-              pushDataLayer({ event: `scroll_${milestone}` });
-            }
           }
         }
       });
@@ -223,7 +214,7 @@ export default function Tracker({ variant }: { variant?: string }) {
             queue({ type: "section_view", data: { section }, ts: now() });
             if (section === "form") {
               queue({ type: "form_view", ts: now() });
-              pushDataLayer({ event: "form_view" });
+              clarityEvent("form_view");
             }
           }
         }
@@ -253,7 +244,7 @@ export default function Tracker({ variant }: { variant?: string }) {
         data: { label: ctaLabel, section: ctaSection },
         ts: now(),
       });
-      pushDataLayer({ event: "cta_click", cta_label: ctaLabel, section: ctaSection });
+      clarityEvent("cta_click");
     }
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
@@ -281,11 +272,7 @@ export default function Tracker({ variant }: { variant?: string }) {
           },
           ts: now(),
         });
-        pushDataLayer({
-          event: "form_abandon",
-          last_field: lastFieldRef.current,
-          filled_fields_count: filledFieldsRef.current.size,
-        });
+        clarityEvent("form_abandon");
       }
 
       events.push({ type: "session_end", ts: now() });
@@ -313,6 +300,7 @@ export default function Tracker({ variant }: { variant?: string }) {
         if (!formTouchedRef.current) {
           formTouchedRef.current = true;
           formOpenAtRef.current = Date.now();
+          clarityEvent("form_start");
         }
       },
 
@@ -335,22 +323,26 @@ export default function Tracker({ variant }: { variant?: string }) {
           data: { fields: issues.map((i) => i.field), issues },
           ts: now(),
         });
+        clarityEvent("form_validation_error");
       },
 
       trackSubmitAttempt: () => {
         queue({ type: "form_submit_attempt", ts: now() });
-        pushDataLayer({ event: "form_submit_attempt" });
+        clarityEvent("form_submit_attempt");
       },
 
       trackSubmitError: (reason, detail) => {
         queue({ type: "form_submit_error", data: { reason, detail }, ts: now() });
-        pushDataLayer({ event: "form_submit_error", reason });
+        clarityEvent("form_submit_error");
+        claritySet("submit_error", reason);
       },
 
       trackSubmitSuccess: (leadId: string, qualified: boolean, eventId?: string) => {
         formSubmittedRef.current = true;
         queue({ type: "form_submit_success", data: { leadId, qualified }, ts: now() });
-        pushDataLayer({ event: "lead", lead_id: leadId, qualified, variant });
+        clarityEvent("lead");
+        claritySet("lead_qualified", String(qualified));
+        clarityUpgrade("lead");
         if (!qualified) {
           queue({ type: "meta_pixel_lead", data: { eventId, status: "not_qualified" }, ts: now() });
           return;
@@ -366,6 +358,10 @@ export default function Tracker({ variant }: { variant?: string }) {
             : "script_not_loaded";
         fbq?.("track", "Lead", { variant }, eventId ? { eventID: eventId } : undefined);
         queue({ type: "meta_pixel_lead", data: { eventId, status }, ts: now() });
+      },
+
+      trackVideo: (type, data) => {
+        queue({ type, data, ts: now() });
       },
     };
   }, []);

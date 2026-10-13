@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useYoutubeTracking, youtubeTrackingParams } from "@/lib/use-youtube-tracking";
 
 interface YoutubePlayerProps {
   videoId: string;
@@ -10,11 +11,15 @@ interface YoutubePlayerProps {
 
 export default function YoutubePlayer({ videoId, title }: YoutubePlayerProps) {
   const [active, setActive] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  useYoutubeTracking(iframeRef, videoId, active);
 
   if (active) {
     return (
       <iframe
-        src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
+        ref={iframeRef}
+        src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&${youtubeTrackingParams()}`}
         title={title}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen

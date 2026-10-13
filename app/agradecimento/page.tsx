@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { PageEvent } from "@/components/analytics/page-event";
+import Clarity from "@/components/analytics/clarity";
 export const metadata: Metadata = {
   title: "Agradecimento — Assessoria Alpha",
   description: "Obrigado pelo interesse na Assessoria Alpha.",
@@ -11,7 +12,8 @@ export const metadata: Metadata = {
 export default function AgradecimentoPage() {
   return (
     <main className="min-h-screen bg-bg flex items-center justify-center px-6 py-16">
-      <PageEvent event="lead" data={{ qualified: false }} />
+      <Clarity />
+      <PageEvent event="thank_you_view" tags={{ lead_qualified: "false" }} />
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
         {/* Left — content */}
         <div className="space-y-6">

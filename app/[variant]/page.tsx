@@ -7,6 +7,7 @@ import Entregaveis from "@/components/sections/entregaveis";
 import Faq from "@/components/sections/faq";
 import Footer from "@/components/sections/footer";
 import Tracker from "@/components/analytics/tracker";
+import Clarity from "@/components/analytics/clarity";
 import StickyCta from "@/components/ui/sticky-cta";
 import CountdownBar from "@/components/ui/countdown-bar";
 import { content } from "@/lib/content";
@@ -55,6 +56,7 @@ export default async function VariantPage({
       {config.countdown && <CountdownBar label={config.countdown.label} />}
       <main>
         <Tracker variant={variant} />
+        <Clarity />
         <StickyCta label={content.hero.cta} />
         <LpHero headline={config.headline} footnote={config.footnote} theme={config.theme} />
         <Testimonials />

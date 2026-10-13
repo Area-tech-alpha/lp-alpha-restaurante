@@ -6,12 +6,14 @@ import Faq from "@/components/sections/faq";
 import CtaFinal from "@/components/sections/cta-final";
 import Footer from "@/components/sections/footer";
 import Tracker from "@/components/analytics/tracker";
+import Clarity from "@/components/analytics/clarity";
 import StickyCta from "@/components/ui/sticky-cta";
 
 export default function Home() {
   return (
     <main>
       <Tracker />
+      <Clarity />
       <StickyCta />
       <Hero />
       <Testimonials />
