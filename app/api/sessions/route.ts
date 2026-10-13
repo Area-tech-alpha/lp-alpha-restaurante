@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
       utmContent,
       utmTerm,
       deviceType,
+      fbclid,
     } = body as {
       id?: string;
       landingUrl?: string;
@@ -26,6 +27,7 @@ export async function POST(req: NextRequest) {
       utmContent?: string;
       utmTerm?: string;
       deviceType?: string;
+      fbclid?: string;
     };
 
     const ip =
@@ -48,6 +50,7 @@ export async function POST(req: NextRequest) {
             ...(hasNewUtm && sessionMissingUtm
               ? { utmSource, utmMedium, utmCampaign, utmContent, utmTerm }
               : {}),
+            ...(fbclid && !existing.fbclid ? { fbclid } : {}),
           },
         });
         return NextResponse.json({ sessionId: id });
@@ -67,6 +70,7 @@ export async function POST(req: NextRequest) {
         utmContent: utmContent ?? null,
         utmTerm: utmTerm ?? null,
         deviceType: deviceType ?? null,
+        fbclid: fbclid ?? null,
       },
     });
 

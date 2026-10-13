@@ -19,6 +19,7 @@ model Session {
   utmCampaign    String?
   utmContent     String?
   utmTerm        String?
+  fbclid         String?
   maxScrollDepth Int      @default(0)
   timeOnPageSec  Int?
   deviceType     String?
@@ -57,6 +58,9 @@ model Lead {
   utmContent     String?
   utmTerm        String?
   referrer       String?
+  fbclid         String?
+  fbc            String?
+  fbp            String?
 
   createdAt      DateTime  @default(now())
 

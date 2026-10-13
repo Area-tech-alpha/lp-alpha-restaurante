@@ -15,6 +15,30 @@ function qualificarLead(faturamento: string, investiria: string | undefined) {
   return { redirectTo: qualified ? "/obrigado" : "/agradecimento", qualified };
 }
 
+// fbclid da URL (salvo na sessão) é a fonte principal: não depende do Pixel ter
+// carregado. O cookie _fbc ("fb.1.<ms>.<fbclid>") é o fallback. Sem cookie mas
+// com fbclid, montamos o fbc no formato do Meta usando o início da sessão como
+// timestamp do clique — assim CAPI e conversões offline continuam atribuindo.
+function resolveMetaClickIds(
+  cookieStore: Awaited<ReturnType<typeof cookies>>,
+  sessionFbclid: string | null,
+  sessionStartedAt: Date | null
+) {
+  const fbcCookie = cookieStore.get("_fbc")?.value ?? null;
+  const fbp = cookieStore.get("_fbp")?.value ?? null;
+  const fbclidFromCookie = fbcCookie?.split(".").slice(3).join(".") || null;
+  const fbclid = sessionFbclid ?? fbclidFromCookie;
+
+  const fbc =
+    fbcCookie && (!sessionFbclid || fbclidFromCookie === sessionFbclid)
+      ? fbcCookie
+      : fbclid
+        ? `fb.1.${(sessionStartedAt ?? new Date()).getTime()}.${fbclid}`
+        : null;
+
+  return { fbclid, fbc, fbp };
+}
+
 type ActionResult =
   | { success: true; redirectTo: string; qualified: boolean }
   | { success: false; error: string; reason: "validation" | "server" };
@@ -54,6 +78,8 @@ export async function submitLead(
     referrer?: string | null;
   } = {};
   let variant: string | null = null;
+  let sessionFbclid: string | null = null;
+  let sessionStartedAt: Date | null = null;
 
   if (sessionId) {
     try {
@@ -67,17 +93,27 @@ export async function submitLead(
           utmTerm: true,
           referrer: true,
           landingUrl: true,
+          fbclid: true,
+          startedAt: true,
         },
       });
       if (session) {
-        const { landingUrl, ...utms } = session;
+        const { landingUrl, fbclid, startedAt, ...utms } = session;
         utmFields = utms;
         variant = variantFromUrl(landingUrl);
+        sessionFbclid = fbclid;
+        sessionStartedAt = startedAt;
       }
     } catch {
       // UTMs são melhores-esforços — não bloquear o lead por isso
     }
   }
+
+  const metaIds = resolveMetaClickIds(
+    await cookies(),
+    sessionFbclid,
+    sessionStartedAt
+  );
 
   // Salva lead no banco
   let leadId: string;
@@ -97,6 +133,7 @@ export async function submitLead(
         ipAddress: ip,
         sessionId: sessionId ?? null,
         ...utmFields,
+        ...metaIds,
       },
     });
     leadId = lead.id;
@@ -142,6 +179,9 @@ export async function submitLead(
     utm_content: utmFields.utmContent ?? null,
     utm_term: utmFields.utmTerm ?? null,
     referrer: utmFields.referrer ?? null,
+    fbclid: metaIds.fbclid,
+    fbc: metaIds.fbc,
+    fbp: metaIds.fbp,
   };
 
   try {
@@ -165,7 +205,6 @@ export async function submitLead(
       return { success: false, error: "Erro ao enviar. Tente novamente em instantes.", reason: "server" };
     }
 
-    const cookieStore = await cookies();
     const capiInput = {
       eventId: eventId ?? "",
       eventSourceUrl: headersList.get("referer") ?? undefined,
@@ -174,8 +213,8 @@ export async function submitLead(
       name: parsed.data.nome,
       ip,
       userAgent: headersList.get("user-agent"),
-      fbp: cookieStore.get("_fbp")?.value,
-      fbc: cookieStore.get("_fbc")?.value,
+      fbp: metaIds.fbp ?? undefined,
+      fbc: metaIds.fbc ?? undefined,
       externalId: sessionId,
       variant,
     };

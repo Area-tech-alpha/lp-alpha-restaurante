@@ -137,6 +137,7 @@ export default function Tracker({ variant }: { variant?: string }) {
         landingUrl: window.location.href,
         referrer: document.referrer || undefined,
         deviceType: getDevice(),
+        fbclid: new URLSearchParams(window.location.search).get("fbclid") ?? undefined,
         ...utms,
       }),
     })
