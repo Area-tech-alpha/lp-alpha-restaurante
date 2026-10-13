@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Play, Star, TrendingUp } from "lucide-react";
+import { useYoutubeTracking, youtubeTrackingParams } from "@/lib/use-youtube-tracking";
 
 const BADGE_ICONS = {
   "trending-up": TrendingUp,
@@ -27,8 +28,11 @@ export function VideoCard({
   const [playing, setPlaying] = useState(false);
   const [nearViewport, setNearViewport] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
   const BadgeIconComponent = BADGE_ICONS[badgeIcon];
+
+  useYoutubeTracking(iframeRef, videoId, playing);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -56,7 +60,8 @@ export function VideoCard({
     >
       {playing ? (
         <iframe
-          src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`}
+          ref={iframeRef}
+          src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&${youtubeTrackingParams()}`}
           title={name}
           allow="autoplay; encrypted-media; picture-in-picture"
           allowFullScreen

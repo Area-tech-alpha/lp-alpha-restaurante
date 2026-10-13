@@ -1,13 +1,15 @@
 import Image from "next/image";
 import YoutubePlayer from "@/components/ui/youtube-player";
 import { PageEvent } from "@/components/analytics/page-event";
+import Clarity from "@/components/analytics/clarity";
 
 const VIDEO_ID = "Bp27LBpMAck";
 
 export default function ObrigadoContent() {
   return (
     <div className="min-h-screen bg-bg flex flex-col">
-      <PageEvent event="lead" data={{ qualified: true }} />
+      <Clarity />
+      <PageEvent event="thank_you_view" tags={{ lead_qualified: "true" }} />
       {/* Header */}
       <header className="px-6 py-6 border-b border-white/10 flex justify-center">
         <Image

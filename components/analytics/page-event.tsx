@@ -1,18 +1,19 @@
 "use client";
 
 import { useEffect } from "react";
+import { clarityEvent, claritySet, clarityUpgrade } from "@/lib/clarity";
 
 export function PageEvent({
   event,
-  data,
+  tags,
 }: {
   event: string;
-  data?: Record<string, unknown>;
+  tags?: Record<string, string>;
 }) {
   useEffect(() => {
-    const w = window as Window & { dataLayer?: unknown[] };
-    w.dataLayer = w.dataLayer ?? [];
-    w.dataLayer.push({ event, ...data });
+    clarityEvent(event);
+    for (const [key, value] of Object.entries(tags ?? {})) claritySet(key, value);
+    clarityUpgrade(event);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return null;

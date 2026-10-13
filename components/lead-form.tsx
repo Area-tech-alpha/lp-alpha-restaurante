@@ -279,7 +279,9 @@ export default function LeadForm() {
   const labelClass = "block text-[11.5px] font-semibold text-lp-text-muted mb-1.5";
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-2.5">
+    // data-clarity-mask: garante que nenhum dado digitado apareça nas gravações,
+    // independente do nível de mascaramento configurado no painel do Clarity.
+    <form onSubmit={handleSubmit} noValidate data-clarity-mask="true" className="flex flex-col gap-2.5">
       {/* honeypot */}
       <input
         type="text"
