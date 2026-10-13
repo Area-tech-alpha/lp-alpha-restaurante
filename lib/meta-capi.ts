@@ -26,14 +26,28 @@ export type CapiLeadInput = {
   variant?: string | null;
 };
 
-// Best-effort: nunca lança. Chamado dentro de after() para não atrasar a resposta
-// do formulário, e só para leads qualificados. O eventId deve ser o mesmo passado
-// ao fbq no cliente — é ele que permite ao Meta deduplicar pixel e servidor.
-export async function sendLeadToMetaCapi(input: CapiLeadInput): Promise<void> {
+export type CapiResult = {
+  status: "sent" | "error" | "no_token";
+  httpStatus?: number;
+  eventsReceived?: number;
+  fbtraceId?: string;
+  error?: string;
+  testEventCode?: string;
+  hasFbp: boolean;
+  hasFbc: boolean;
+  durationMs?: number;
+};
+
+// Nunca lança. Chamado dentro de after() para não atrasar a resposta do formulário,
+// e só para leads qualificados. O eventId deve ser o mesmo passado ao fbq no cliente
+// — é ele que permite ao Meta deduplicar pixel e servidor. O retorno é gravado como
+// evento "meta_capi_lead" para auditoria no dashboard.
+export async function sendLeadToMetaCapi(input: CapiLeadInput): Promise<CapiResult> {
+  const base = { hasFbp: !!input.fbp, hasFbc: !!input.fbc };
   const token = getMetaCapiToken();
   if (!token) {
     console.warn("[meta-capi] META_CAPI_TOKEN não definido — Lead não enviado pelo servidor");
-    return;
+    return { ...base, status: "no_token" };
   }
   const pixelId = META_PIXEL_ID;
   const [firstName, ...rest] = input.name.trim().split(/\s+/);
@@ -67,9 +81,12 @@ export async function sendLeadToMetaCapi(input: CapiLeadInput): Promise<void> {
     ],
   };
 
-  const testCode = process.env.META_CAPI_TEST_EVENT_CODE;
-  if (testCode) body.test_event_code = testCode;
+  // Com test_event_code o Meta só mostra o evento na aba "Testar eventos" — ele não
+  // conta para os anúncios. Registrado no log justamente para flagrar isso em produção.
+  const testEventCode = process.env.META_CAPI_TEST_EVENT_CODE || undefined;
+  if (testEventCode) body.test_event_code = testEventCode;
 
+  const startedAt = Date.now();
   try {
     const res = await fetch(
       `https://graph.facebook.com/${GRAPH_API_VERSION}/${pixelId}/events?access_token=${encodeURIComponent(token)}`,
@@ -79,10 +96,35 @@ export async function sendLeadToMetaCapi(input: CapiLeadInput): Promise<void> {
         body: JSON.stringify(body),
       }
     );
-    if (!res.ok) {
-      console.error(`[meta-capi:${pixelId}] HTTP ${res.status}: ${await res.text()}`);
+    const json = (await res.json().catch(() => ({}))) as {
+      events_received?: number;
+      fbtrace_id?: string;
+      error?: { message?: string; fbtrace_id?: string };
+    };
+    const result: CapiResult = {
+      ...base,
+      status: res.ok ? "sent" : "error",
+      httpStatus: res.status,
+      eventsReceived: json.events_received,
+      fbtraceId: json.fbtrace_id ?? json.error?.fbtrace_id,
+      error: json.error?.message,
+      testEventCode,
+      durationMs: Date.now() - startedAt,
+    };
+    if (res.ok) {
+      console.info(`[meta-capi:${pixelId}] Lead ${input.eventId} recebido`, result);
+    } else {
+      console.error(`[meta-capi:${pixelId}] Lead ${input.eventId} HTTP ${res.status}`, result);
     }
+    return result;
   } catch (err) {
     console.error(`[meta-capi:${pixelId}] Erro de rede:`, err);
+    return {
+      ...base,
+      status: "error",
+      error: err instanceof Error ? err.message : String(err),
+      testEventCode,
+      durationMs: Date.now() - startedAt,
+    };
   }
 }

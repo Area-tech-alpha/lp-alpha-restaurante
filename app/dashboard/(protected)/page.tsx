@@ -14,6 +14,8 @@ import ConnectRateChart from "@/components/dashboard/connect-rate-chart"
 import VariantsTable from "@/components/dashboard/variants-table"
 import UtmCampaignsTable from "@/components/dashboard/utm-campaigns-table"
 import RecentLeadsTable from "@/components/dashboard/recent-leads-table"
+import MetaEventsPanel from "@/components/dashboard/meta-events-panel"
+import { getMetaEventsData } from "@/lib/meta-events-queries"
 
 export const dynamic = "force-dynamic"
 
@@ -30,7 +32,7 @@ export default async function DashboardPage({
 }) {
   const params = await searchParams
   const range: Range = isRange(params.range) ? params.range : "30d"
-  const data = await getDashboardData(range)
+  const [data, metaEvents] = await Promise.all([getDashboardData(range), getMetaEventsData(range)])
 
   return (
     <div className="space-y-6">
@@ -51,6 +53,8 @@ export default async function DashboardPage({
       </div>
 
       <SubmitErrorsDetail groups={data.submitErrorGroups} recent={data.recentSubmitErrors} />
+
+      <MetaEventsPanel data={metaEvents} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <DropOffByFieldChart data={data.dropOffByField} />

@@ -351,9 +351,21 @@ export default function Tracker({ variant }: { variant?: string }) {
         formSubmittedRef.current = true;
         queue({ type: "form_submit_success", data: { leadId, qualified }, ts: now() });
         pushDataLayer({ event: "lead", lead_id: leadId, qualified, variant });
-        if (qualified) {
-          window.fbq?.("track", "Lead", { variant }, eventId ? { eventID: eventId } : undefined);
+        if (!qualified) {
+          queue({ type: "meta_pixel_lead", data: { eventId, status: "not_qualified" }, ts: now() });
+          return;
         }
+        // O stub do fbq existe mesmo com fbevents.js bloqueado (adblock, navegador do
+        // Instagram etc.) — só o script real define fbq.callMethod. Sem ele, o evento
+        // fica na fila do stub e não sai do navegador.
+        const fbq = window.fbq as ((...args: unknown[]) => void) & { callMethod?: unknown };
+        const status = !fbq
+          ? "fbq_missing"
+          : typeof fbq.callMethod === "function"
+            ? "sent"
+            : "script_not_loaded";
+        fbq?.("track", "Lead", { variant }, eventId ? { eventID: eventId } : undefined);
+        queue({ type: "meta_pixel_lead", data: { eventId, status }, ts: now() });
       },
     };
   }, []);

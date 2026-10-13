@@ -165,23 +165,40 @@ export async function submitLead(
       return { success: false, error: "Erro ao enviar. Tente novamente em instantes.", reason: "server" };
     }
 
-    if (eventId && qualified) {
-      const cookieStore = await cookies();
-      const capiInput = {
-        eventId,
-        eventSourceUrl: headersList.get("referer") ?? undefined,
-        email: parsed.data.email,
-        phone: parsed.data.telefone,
-        name: parsed.data.nome,
-        ip,
-        userAgent: headersList.get("user-agent"),
-        fbp: cookieStore.get("_fbp")?.value,
-        fbc: cookieStore.get("_fbc")?.value,
-        externalId: sessionId,
-        variant,
-      };
-      after(() => sendLeadToMetaCapi(capiInput));
-    }
+    const cookieStore = await cookies();
+    const capiInput = {
+      eventId: eventId ?? "",
+      eventSourceUrl: headersList.get("referer") ?? undefined,
+      email: parsed.data.email,
+      phone: parsed.data.telefone,
+      name: parsed.data.nome,
+      ip,
+      userAgent: headersList.get("user-agent"),
+      fbp: cookieStore.get("_fbp")?.value,
+      fbc: cookieStore.get("_fbc")?.value,
+      externalId: sessionId,
+      variant,
+    };
+    // Todo lead aceito gera uma linha "meta_capi_lead" (inclusive os pulados), para o
+    // dashboard conseguir conciliar leads do banco com o que chegou no Meta.
+    after(async () => {
+      const result =
+        !qualified
+          ? { status: "not_qualified" }
+          : !eventId
+            ? { status: "no_event_id" }
+            : await sendLeadToMetaCapi(capiInput);
+      if (!sessionId) return;
+      await db.event
+        .create({
+          data: {
+            sessionId,
+            type: "meta_capi_lead",
+            data: { ...result, eventId: eventId ?? null, leadId, qualified },
+          },
+        })
+        .catch((err) => console.error("[submit-lead] Falha ao gravar log da CAPI:", err));
+    });
 
     return { success: true, redirectTo, qualified };
   } catch (err) {

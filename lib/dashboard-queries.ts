@@ -16,7 +16,7 @@ function startOfDaysAgoSaoPaulo(daysAgo: number): Date {
   return new Date(spLocal.getTime() + SP_OFFSET_MS)
 }
 
-function getSince(range: Range): Date | null {
+export function getSince(range: Range): Date | null {
   if (range === "all") return null
   if (range === "hoje") return startOfDaysAgoSaoPaulo(0)
   // "7 dias" = hoje + 6 dias anteriores (7 dias corridos em Brasília),
