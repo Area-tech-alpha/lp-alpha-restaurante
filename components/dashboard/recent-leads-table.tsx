@@ -1,4 +1,5 @@
 import type { DashboardData } from "@/lib/dashboard-queries"
+import ClarityRecordingButton from "@/components/dashboard/clarity-recording-button"
 
 type Props = { leads: DashboardData["recentLeads"] }
 
@@ -26,7 +27,7 @@ export default function RecentLeadsTable({ leads }: Props) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100">
-              {["Nome", "E-mail", "Empresa", "Segmento", "Qualificado", "Fonte", "Data"].map(
+              {["Nome", "E-mail", "Empresa", "Segmento", "Qualificado", "Fonte", "Data", "Clarity"].map(
                 (h) => (
                   <th
                     key={h}
@@ -41,7 +42,7 @@ export default function RecentLeadsTable({ leads }: Props) {
           <tbody>
             {leads.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-gray-400 text-sm">
+                <td colSpan={8} className="py-8 text-center text-gray-400 text-sm">
                   Sem leads no período
                 </td>
               </tr>
@@ -66,8 +67,11 @@ export default function RecentLeadsTable({ leads }: Props) {
                 <td className="py-2 pr-4 text-gray-500 whitespace-nowrap">
                   {lead.utmSource ?? "(direto)"}
                 </td>
-                <td className="py-2 text-gray-400 whitespace-nowrap text-xs">
+                <td className="py-2 pr-4 text-gray-400 whitespace-nowrap text-xs">
                   {formatDate(lead.createdAt)}
+                </td>
+                <td className="py-2">
+                  <ClarityRecordingButton sessionId={lead.sessionId} />
                 </td>
               </tr>
             ))}

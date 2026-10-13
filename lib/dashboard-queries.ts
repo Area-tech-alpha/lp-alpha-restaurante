@@ -132,6 +132,7 @@ export type DashboardData = {
     segmento: string
     qualified: boolean
     utmSource: string | null
+    sessionId: string | null
     createdAt: string
   }[]
 }
@@ -257,6 +258,7 @@ export async function getDashboardData(range: Range): Promise<DashboardData> {
       segmento: true,
       qualified: true,
       utmSource: true,
+      sessionId: true,
       createdAt: true,
     },
   })

@@ -16,6 +16,10 @@ import UtmCampaignsTable from "@/components/dashboard/utm-campaigns-table"
 import RecentLeadsTable from "@/components/dashboard/recent-leads-table"
 import MetaEventsPanel from "@/components/dashboard/meta-events-panel"
 import { getMetaEventsData } from "@/lib/meta-events-queries"
+import VideosPanel from "@/components/dashboard/videos-panel"
+import ClarityPanel from "@/components/dashboard/clarity-panel"
+import { getVideoData } from "@/lib/video-queries"
+import { getClarityData } from "@/lib/clarity-queries"
 
 export const dynamic = "force-dynamic"
 
@@ -32,7 +36,12 @@ export default async function DashboardPage({
 }) {
   const params = await searchParams
   const range: Range = isRange(params.range) ? params.range : "30d"
-  const [data, metaEvents] = await Promise.all([getDashboardData(range), getMetaEventsData(range)])
+  const [data, metaEvents, videos, clarity] = await Promise.all([
+    getDashboardData(range),
+    getMetaEventsData(range),
+    getVideoData(range),
+    getClarityData(range),
+  ])
 
   return (
     <div className="space-y-6">
@@ -67,6 +76,10 @@ export default async function DashboardPage({
       </div>
 
       <VariantsTable data={data.byVariant} />
+
+      <VideosPanel data={videos} />
+
+      <ClarityPanel data={clarity} />
 
       <UtmCampaignsTable data={data.utmCampaigns} />
 

@@ -128,3 +128,19 @@ model PartialLead {
 
   @@map("partial_leads")
 }
+
+// Resposta bruta da Clarity Data Export API, uma linha por dia + combinação de
+// dimensões. A API só devolve as últimas 24-72h e não tem histórico, então o
+// cron diário (app/api/cron/sync-clarity) é a única forma de acumular série.
+// Guardamos o payload cru porque a Microsoft não documenta os campos de cada
+// métrica — o parsing fica em lib/clarity-queries.ts e pode mudar sem perder dado.
+model ClaritySnapshot {
+  id         String   @id @default(uuid())
+  date       DateTime
+  dimensions String
+  payload    Json
+  fetchedAt  DateTime @default(now())
+
+  @@unique([date, dimensions])
+  @@map("clarity_snapshots")
+}
