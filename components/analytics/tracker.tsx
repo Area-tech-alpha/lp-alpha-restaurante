@@ -351,7 +351,9 @@ export default function Tracker({ variant }: { variant?: string }) {
         formSubmittedRef.current = true;
         queue({ type: "form_submit_success", data: { leadId, qualified }, ts: now() });
         pushDataLayer({ event: "lead", lead_id: leadId, qualified, variant });
-        window.fbq?.("track", "Lead", { qualified, variant }, eventId ? { eventID: eventId } : undefined);
+        if (qualified) {
+          window.fbq?.("track", "Lead", { variant }, eventId ? { eventID: eventId } : undefined);
+        }
       },
     };
   }, []);

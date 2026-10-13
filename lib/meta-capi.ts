@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { getMetaCapiToken, getMetaPixelIds } from "@/lib/meta-pixels";
+import { getMetaCapiToken, META_PIXEL_ID } from "@/lib/meta-pixels";
 
 const GRAPH_API_VERSION = "v21.0";
 
@@ -23,23 +23,19 @@ export type CapiLeadInput = {
   fbp?: string;
   fbc?: string;
   externalId?: string;
-  qualified: boolean;
   variant?: string | null;
 };
 
 // Best-effort: nunca lança. Chamado dentro de after() para não atrasar a resposta
-// do formulário. O eventId deve ser o mesmo passado ao fbq no cliente — é ele que
-// permite ao Meta deduplicar o evento do pixel com o do servidor.
+// do formulário, e só para leads qualificados. O eventId deve ser o mesmo passado
+// ao fbq no cliente — é ele que permite ao Meta deduplicar pixel e servidor.
 export async function sendLeadToMetaCapi(input: CapiLeadInput): Promise<void> {
-  await Promise.all(
-    getMetaPixelIds().map((pixelId) => {
-      const token = getMetaCapiToken(pixelId);
-      return token ? sendToPixel(pixelId, token, input) : undefined;
-    })
-  );
-}
-
-async function sendToPixel(pixelId: string, token: string, input: CapiLeadInput) {
+  const token = getMetaCapiToken();
+  if (!token) {
+    console.warn("[meta-capi] META_CAPI_TOKEN não definido — Lead não enviado pelo servidor");
+    return;
+  }
+  const pixelId = META_PIXEL_ID;
   const [firstName, ...rest] = input.name.trim().split(/\s+/);
   const lastName = rest.length ? rest[rest.length - 1] : undefined;
   const email = normalize(input.email);
@@ -66,7 +62,7 @@ async function sendToPixel(pixelId: string, token: string, input: CapiLeadInput)
         action_source: "website",
         event_source_url: input.eventSourceUrl,
         user_data: userData,
-        custom_data: { qualified: input.qualified, variant: input.variant ?? undefined },
+        custom_data: { variant: input.variant ?? undefined },
       },
     ],
   };

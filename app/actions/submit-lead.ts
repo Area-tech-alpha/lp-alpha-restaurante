@@ -7,18 +7,16 @@ import { db } from "@/lib/db";
 import { sendLeadToMetaCapi } from "@/lib/meta-capi";
 import { variantFromUrl } from "@/lib/variants";
 
-// Único critério de desqualificação: faturamento mínimo ("Até 30 mil") E não
-// disposto a investir em CNPJ novo. Todo o resto vai para a página de obrigado
-// qualificada — sem mais páginas segmentadas por faixa de faturamento.
+// Qualificado = faturamento acima de 30 mil, ou "Até 30 mil" respondendo "Sim" para
+// investiria. Fonte única da verdade: decide o redirect E se o evento "Lead" vai
+// para o Meta (pixel e CAPI) — o cliente não recalcula, usa o que vem daqui.
 function qualificarLead(faturamento: string, investiria: string | undefined) {
-  if (faturamento === "Até 30 mil" && investiria === "Não") {
-    return { redirectTo: "/agradecimento", qualified: false };
-  }
-  return { redirectTo: "/obrigado", qualified: true };
+  const qualified = faturamento !== "Até 30 mil" || investiria === "Sim";
+  return { redirectTo: qualified ? "/obrigado" : "/agradecimento", qualified };
 }
 
 type ActionResult =
-  | { success: true; redirectTo: string }
+  | { success: true; redirectTo: string; qualified: boolean }
   | { success: false; error: string; reason: "validation" | "server" };
 
 export async function submitLead(
@@ -167,7 +165,7 @@ export async function submitLead(
       return { success: false, error: "Erro ao enviar. Tente novamente em instantes.", reason: "server" };
     }
 
-    if (eventId) {
+    if (eventId && qualified) {
       const cookieStore = await cookies();
       const capiInput = {
         eventId,
@@ -180,13 +178,12 @@ export async function submitLead(
         fbp: cookieStore.get("_fbp")?.value,
         fbc: cookieStore.get("_fbc")?.value,
         externalId: sessionId,
-        qualified,
         variant,
       };
       after(() => sendLeadToMetaCapi(capiInput));
     }
 
-    return { success: true, redirectTo };
+    return { success: true, redirectTo, qualified };
   } catch (err) {
     console.error("[submit-lead] Erro de rede ao chamar o webhook:", err);
     return { success: false, error: "Erro de conexão. Verifique sua internet e tente novamente.", reason: "server" };

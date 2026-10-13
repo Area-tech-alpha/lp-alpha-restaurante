@@ -5,7 +5,7 @@ import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { OrganizationJsonLd } from "@/components/json-ld";
-import { getMetaPixelIds } from "@/lib/meta-pixels";
+import { META_PIXEL_ID } from "@/lib/meta-pixels";
 import "./globals.css";
 
 const anton = Anton({
@@ -111,7 +111,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pixelIds = getMetaPixelIds();
   return (
     <html
       lang="pt-BR"
@@ -140,23 +139,20 @@ export default function RootLayout({
               t.src=v;s=b.getElementsByTagName(e)[0];
               s.parentNode.insertBefore(t,s)}(window, document,'script',
               'https://connect.facebook.net/en_US/fbevents.js');
-              ${pixelIds.map((id) => `fbq('init', '${id}');`).join("\n")}
+              fbq('init', '${META_PIXEL_ID}');
               fbq('track', 'PageView');
             `,
           }}
         />
         <noscript>
-          {pixelIds.map((id) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={id}
-              height="1"
-              width="1"
-              alt=""
-              style={{ display: "none" }}
-              src={`https://www.facebook.com/tr?id=${id}&ev=PageView&noscript=1`}
-            />
-          ))}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            height="1"
+            width="1"
+            alt=""
+            style={{ display: "none" }}
+            src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
+          />
         </noscript>
       </body>
     </html>

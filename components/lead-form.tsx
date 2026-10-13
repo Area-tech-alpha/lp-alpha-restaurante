@@ -256,7 +256,7 @@ export default function LeadForm() {
       const eventId = crypto.randomUUID();
       const res = await submitLead(result.data, sessionId, eventId);
       if (res.success) {
-        tracker()?.trackSubmitSuccess("", result.data.investiria === "Sim", eventId);
+        tracker()?.trackSubmitSuccess("", res.qualified, eventId);
         // Pequeno atraso antes do redirect: o fbq('track', 'Lead', ...) dispara um
         // beacon de rede que pode ser cancelado se a navegação começar no mesmo tick.
         setTimeout(() => {
