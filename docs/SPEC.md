@@ -101,7 +101,7 @@ TASKS.md.
   4. `empresa` — texto — placeholder "Nome da empresa"
   5. `segmento` — select — label "Selecionar segmento" — opções:
      Pizzarias, Hamburguerias, Restaurante comida brasileira, Churrascaria steakhouse,
-     Restaurante japonês, Restaurante massas italiano, Restaurante comida árabe,
+     Restaurante japonês, Restaurante massas italiano, Pastelaria,
      Açaí / sorveteria, Cafeteria, Doceria, Gastrobar, Outros
   6. `faturamento` — select — label "Selecionar faturamento" — opções:
      Até 30 mil, 30 mil até 50 mil, 50 mil até 80 mil, 80 mil até 100 mil,

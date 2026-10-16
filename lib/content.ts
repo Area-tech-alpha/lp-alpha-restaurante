@@ -33,7 +33,7 @@ export const content = {
           "Churrascaria steakhouse",
           "Restaurante japonês",
           "Restaurante massas italiano",
-          "Restaurante comida árabe",
+          "Pastelaria",
           "Açaí / sorveteria",
           "Cafeteria",
           "Doceria",
