@@ -41,6 +41,13 @@ function ServerCell({ log }: { log: ServerLog | null }) {
         <div className="space-y-1">
           <Badge tone="bad">Erro {log.httpStatus ?? "de rede"}</Badge>
           {log.error && <p className="text-xs text-red-600 break-all">{log.error}</p>}
+          {log.token && (
+            <p className="text-xs text-gray-500">
+              Token: {log.token.source}, {log.token.length} caracteres,{" "}
+              {log.token.startsWithEAA ? "começa com EAA" : "NÃO começa com EAA"}
+              {log.token.wasSanitized && ", tinha espaço/aspas (limpo automaticamente)"}
+            </p>
+          )}
         </div>
       )
     case "no_token":

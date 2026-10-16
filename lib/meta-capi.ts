@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { getMetaCapiToken, META_PIXEL_ID } from "@/lib/meta-pixels";
+import { getMetaCapiToken, META_PIXEL_ID, type CapiTokenInfo } from "@/lib/meta-pixels";
 
 const GRAPH_API_VERSION = "v21.0";
 
@@ -36,6 +36,7 @@ export type CapiResult = {
   hasFbp: boolean;
   hasFbc: boolean;
   durationMs?: number;
+  token?: CapiTokenInfo;
 };
 
 // Nunca lança. Chamado dentro de after() para não atrasar a resposta do formulário,
@@ -44,11 +45,12 @@ export type CapiResult = {
 // evento "meta_capi_lead" para auditoria no dashboard.
 export async function sendLeadToMetaCapi(input: CapiLeadInput): Promise<CapiResult> {
   const base = { hasFbp: !!input.fbp, hasFbc: !!input.fbc };
-  const token = getMetaCapiToken();
-  if (!token) {
+  const credentials = getMetaCapiToken();
+  if (!credentials) {
     console.warn("[meta-capi] META_CAPI_TOKEN não definido — Lead não enviado pelo servidor");
     return { ...base, status: "no_token" };
   }
+  const { token, info: tokenInfo } = credentials;
   const pixelId = META_PIXEL_ID;
   const [firstName, ...rest] = input.name.trim().split(/\s+/);
   const lastName = rest.length ? rest[rest.length - 1] : undefined;
@@ -110,6 +112,7 @@ export async function sendLeadToMetaCapi(input: CapiLeadInput): Promise<CapiResu
       error: json.error?.message,
       testEventCode,
       durationMs: Date.now() - startedAt,
+      token: res.ok ? undefined : tokenInfo,
     };
     if (res.ok) {
       console.info(`[meta-capi:${pixelId}] Lead ${input.eventId} recebido`, result);

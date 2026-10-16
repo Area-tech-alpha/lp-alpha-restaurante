@@ -17,6 +17,7 @@ export type ServerLog = {
   hasFbp?: boolean
   hasFbc?: boolean
   eventId?: string | null
+  token?: { source: string; length: number; startsWithEAA: boolean; wasSanitized: boolean }
 }
 
 export type BrowserStatus = "sent" | "script_not_loaded" | "fbq_missing" | "not_qualified"
