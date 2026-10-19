@@ -23,7 +23,7 @@ export default function Universidade() {
       id="universidade"
       aria-label="Universidade FFM"
       data-section="universidade"
-      className="bg-lp-white py-20"
+      className="bg-lp-white pt-6 pb-20 md:pt-20"
     >
       <div className="mx-auto max-w-[1180px] px-6">
         <ScrollFade>

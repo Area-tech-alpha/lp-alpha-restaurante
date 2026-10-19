@@ -18,7 +18,7 @@ export default function Palestrante() {
       id="palestrante"
       aria-label="Palestrante"
       data-section="palestrante"
-      className="bg-lp-white py-20"
+      className="bg-lp-white pt-20 pb-6 md:pb-20"
     >
       <div className="mx-auto max-w-[1180px] px-6">
         <ScrollFade>
