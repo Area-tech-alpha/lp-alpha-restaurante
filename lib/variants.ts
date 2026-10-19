@@ -44,7 +44,7 @@ export const variants = {
   "lp-06": {
     theme: "black",
     headline:
-      "Aumente seu faturamento em marketing\ne aprenda como aumentar a produção\nda sua cozinha *de GRAÇA!*",
+      "Aumente seu faturamento com marketing\ne aprenda como aumentar a produção\nda sua cozinha *de GRAÇA!*",
     countdown: { label: "Essa condição gratuita encerra em", endsAt: "2026-11-19T23:59:59-03:00" },
     universidade: true,
     palestrante: true,
