@@ -22,7 +22,12 @@ function renderLine(text: string) {
 function renderHeadline(text: string) {
   return text.split("\n").map((line, i) => (
     <Fragment key={i}>
-      {i > 0 && <br className="hidden md:block" />}
+      {i > 0 && (
+        <>
+          {" "}
+          <br className="hidden md:block" />
+        </>
+      )}
       {renderLine(line)}
     </Fragment>
   ));
