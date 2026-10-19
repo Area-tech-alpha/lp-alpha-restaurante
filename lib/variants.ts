@@ -2,11 +2,16 @@ export type Theme = "gold" | "black";
 
 export type Variant = {
   theme: Theme;
-  // Trechos entre *asteriscos* ganham o destaque dourado.
+  // Trechos entre *asteriscos* ganham o destaque dourado; "\n" quebra a linha no desktop.
   headline: string;
   // Condições curtas exibidas sob o formulário (garantia, etc.).
   footnote?: string;
-  countdown?: { label: string };
+  // Sem endsAt, o cronômetro conta até o fim do mês corrente.
+  countdown?: { label: string; endsAt?: string };
+  // Seção de vídeo da Universidade FFM logo após os depoimentos.
+  universidade?: boolean;
+  // Galeria de fotos do palestrante logo após o hero.
+  palestrante?: boolean;
 };
 
 
@@ -39,8 +44,10 @@ export const variants = {
   "lp-06": {
     theme: "black",
     headline:
-      "Vamos aplicar o mesmo método que fez a Alpha's Pizzaria *faturar 400k* no seu restaurante *de graça*, aproveite ainda esse mês",
-    countdown: { label: "Essa condição gratuita encerra em" },
+      "Aumente seu faturamento em marketing\ne aprenda como aumentar a produção\nda sua cozinha *de GRAÇA!*",
+    countdown: { label: "Essa condição gratuita encerra em", endsAt: "2026-11-19T23:59:59-03:00" },
+    universidade: true,
+    palestrante: true,
   },
   "lp-07": {
     theme: "black",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 // America/São_Paulo não tem horário de verão: UTC-3 fixo.
 const SP_OFFSET_MS = 3 * 60 * 60 * 1000;
@@ -26,9 +26,11 @@ function subscribe(onTick: () => void) {
   return () => clearInterval(id);
 }
 
-const getSnapshot = () => Math.floor(msUntilEndOfMonth() / 1000);
-
-export default function CountdownBar({ label }: { label: string }) {
+export default function CountdownBar({ label, endsAt }: { label: string; endsAt?: string }) {
+  const getSnapshot = useCallback(() => {
+    const ms = endsAt ? Math.max(0, Date.parse(endsAt) - Date.now()) : msUntilEndOfMonth();
+    return Math.floor(ms / 1000);
+  }, [endsAt]);
   // Snapshot de servidor null: o valor depende do relógio, então SSR renderiza
   // "--" e o cliente assume depois da hidratação, sem mismatch.
   const seconds = useSyncExternalStore(subscribe, getSnapshot, () => null);

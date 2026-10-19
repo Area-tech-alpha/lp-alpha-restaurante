@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { FaqJsonLd } from "@/components/json-ld";
 import LpHero from "@/components/sections/lp-hero";
+import Palestrante from "@/components/sections/palestrante";
 import Testimonials from "@/components/sections/testimonials";
+import Universidade from "@/components/sections/universidade";
 import Entregaveis from "@/components/sections/entregaveis";
 import Faq from "@/components/sections/faq";
 import Footer from "@/components/sections/footer";
@@ -53,12 +55,16 @@ export default async function VariantPage({
 
   return (
     <div data-theme={config.theme} className="bg-lp-off">
-      {config.countdown && <CountdownBar label={config.countdown.label} />}
+      {config.countdown && (
+        <CountdownBar label={config.countdown.label} endsAt={config.countdown.endsAt} />
+      )}
       <main>
         <Tracker variant={variant} />
         <Clarity />
         <StickyCta label={content.hero.cta} />
         <LpHero headline={config.headline} footnote={config.footnote} theme={config.theme} />
+        {config.palestrante && <Palestrante />}
+        {config.universidade && <Universidade />}
         <Testimonials />
         <Entregaveis showRoi={false} />
         <Faq items={faqItems} />
