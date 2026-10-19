@@ -18,19 +18,22 @@ export function VideoCard({
   badgeLabel,
   name,
   role,
+  wide = false,
 }: {
   videoId: string;
-  badgeIcon: BadgeIcon;
-  badgeLabel: string;
+  badgeIcon?: BadgeIcon;
+  badgeLabel?: string;
   name: string;
   role: string;
+  // 16:9 em largura total, com thumbnail em alta resolução.
+  wide?: boolean;
 }) {
   const [playing, setPlaying] = useState(false);
   const [nearViewport, setNearViewport] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-  const BadgeIconComponent = BADGE_ICONS[badgeIcon];
+  const thumbnail = `https://i.ytimg.com/vi/${videoId}/${wide ? "maxresdefault" : "hqdefault"}.jpg`;
+  const BadgeIconComponent = badgeIcon ? BADGE_ICONS[badgeIcon] : null;
 
   useYoutubeTracking(iframeRef, videoId, playing);
 
@@ -56,7 +59,7 @@ export function VideoCard({
     <div
       ref={containerRef}
       className="group relative block overflow-hidden rounded-[22px] bg-lp-panel shadow-[0_20px_50px_-20px_rgba(20,16,5,0.18)] transition-transform duration-400 hover:-translate-y-2"
-      style={{ aspectRatio: "9 / 13" }}
+      style={{ aspectRatio: wide ? "16 / 9" : "9 / 13" }}
     >
       {playing ? (
         <iframe
@@ -75,7 +78,7 @@ export function VideoCard({
               alt={`${name} — depoimento em vídeo`}
               fill
               className="object-cover"
-              sizes="(max-width: 640px) 100vw, 33vw"
+              sizes={wide ? "(max-width: 1180px) 100vw, 1180px" : "(max-width: 640px) 100vw, 33vw"}
             />
           )}
           <div
@@ -87,10 +90,12 @@ export function VideoCard({
             aria-hidden="true"
           />
 
-          <div className="absolute top-3.5 right-3.5 z-10 flex items-center gap-1.5 rounded-full bg-lp-ink/55 px-3 py-1.5 backdrop-blur-sm">
-            <BadgeIconComponent className="h-[13px] w-[13px] text-lp-gold-1" aria-hidden="true" />
-            <span className="text-[11.5px] font-bold text-white">{badgeLabel}</span>
-          </div>
+          {BadgeIconComponent && badgeLabel && (
+            <div className="absolute top-3.5 right-3.5 z-10 flex items-center gap-1.5 rounded-full bg-lp-ink/55 px-3 py-1.5 backdrop-blur-sm">
+              <BadgeIconComponent className="h-[13px] w-[13px] text-lp-gold-1" aria-hidden="true" />
+              <span className="text-[11.5px] font-bold text-white">{badgeLabel}</span>
+            </div>
+          )}
 
           <button
             onClick={() => setPlaying(true)}

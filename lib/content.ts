@@ -95,6 +95,43 @@ export const content = {
     ],
   },
 
+  palestrante: {
+    sectionLabel: "Na prática",
+    title: "Presente nos maiores eventos e salas de aula do food service",
+    photos: [
+      {
+        src: "/lp-06/palestrante/foto-1.webp",
+        width: 900,
+        height: 1200,
+        alt: "Palestrante da Universidade FFM em feira do setor de alimentação",
+      },
+      {
+        src: "/lp-06/palestrante/foto-2.webp",
+        width: 900,
+        height: 1002,
+        alt: "Palestrante conduzindo aula para empresários na Universidade FFM",
+      },
+      {
+        src: "/lp-06/palestrante/foto-3.webp",
+        width: 851,
+        height: 1280,
+        alt: "Palestrante falando ao público no palco da Burger Expo",
+      },
+    ],
+  },
+
+  universidade: {
+    sectionLabel: "Universidade FFM",
+    // Trecho entre *asteriscos* ganha o destaque dourado.
+    title:
+      "A única universidade da América Latina que reúne e ensina donos de deliveries, na *teoria e na prática*, o fast food em um só lugar.",
+    subtitle:
+      "Uma estrutura de ensino com cozinha profissional de alta performance, onde empresários aprendem métodos de gestão e produção e acompanham sua aplicação na prática, para levar soluções reais aos próprios restaurantes.",
+    videoId: "elBUZwHueEE",
+    videoTitle: "Conheça a Universidade Fast Food Milionário",
+    videoRole: "Universidade FFM",
+  },
+
   entregaveis: {
     sectionLabel: "O que você recebe",
     title:

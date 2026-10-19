@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Image from "next/image";
 import LeadForm from "@/components/lead-form";
 import { content } from "@/lib/content";
@@ -5,7 +6,8 @@ import type { Theme } from "@/lib/variants";
 
 const { hero } = content;
 
-function renderHeadline(text: string) {
+// "\n" vira quebra só no desktop; no mobile o texto flui pela largura.
+function renderLine(text: string) {
   return text.split("*").map((part, i) =>
     i % 2 === 1 ? (
       <span key={i} className="lp-gold-text">
@@ -15,6 +17,15 @@ function renderHeadline(text: string) {
       part
     )
   );
+}
+
+function renderHeadline(text: string) {
+  return text.split("\n").map((line, i) => (
+    <Fragment key={i}>
+      {i > 0 && <br className="hidden md:block" />}
+      {renderLine(line)}
+    </Fragment>
+  ));
 }
 
 export default function LpHero({
