@@ -20,6 +20,7 @@ export default function Testimonials({
   const videos = testimonials.videos.map((video) => (
     <VideoCard
       key={video.videoId}
+      tall={layout === "carousel"}
       videoId={video.videoId}
       badgeIcon={video.badgeIcon}
       badgeLabel={video.badgeLabel}
@@ -35,7 +36,7 @@ export default function Testimonials({
       data-section="testimonials"
       className="bg-lp-off py-20"
     >
-      <div className="mx-auto max-w-[1180px] px-6">
+      <div className={`mx-auto px-6 ${layout === "carousel" ? "max-w-[1480px]" : "max-w-[1180px]"}`}>
         <ScrollFade>
           <div className="mx-auto mb-11 max-w-[640px] text-center">
             <Eyebrow center>{sectionLabel}</Eyebrow>
@@ -50,11 +51,11 @@ export default function Testimonials({
 
         {layout === "carousel" ? (
           <ScrollFade>
-            <ul className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-4 [scrollbar-width:thin] sm:gap-5">
+            <ul className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-4 [scrollbar-width:thin] sm:gap-6 lg:justify-center">
               {videos.map((video) => (
                 <li
                   key={video.key}
-                  className="w-[72%] max-w-[300px] shrink-0 snap-center sm:w-[calc((100%-2.5rem)/3)] sm:snap-start"
+                  className="w-[82%] max-w-[380px] shrink-0 snap-center sm:w-[340px] sm:snap-start lg:w-[380px]"
                 >
                   {video}
                 </li>

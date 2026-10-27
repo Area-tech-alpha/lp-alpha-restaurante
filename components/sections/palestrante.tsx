@@ -15,11 +15,10 @@ const CELL = [
 export default function Palestrante({
   sectionLabel = palestrante.sectionLabel,
   title = palestrante.title,
-  description,
 }: {
   sectionLabel?: string;
-  title?: string;
-  description?: string;
+  // null esconde o título (lp-09 mostra só o eyebrow + fotos).
+  title?: string | null;
 } = {}) {
   return (
     <section
@@ -30,13 +29,12 @@ export default function Palestrante({
     >
       <div className="mx-auto max-w-[1180px] px-6">
         <ScrollFade>
-          <div className="mx-auto mb-10 max-w-[640px] text-center">
+          <div className={`mx-auto max-w-[640px] text-center ${title ? "mb-10" : "mb-6"}`}>
             <Eyebrow center>{sectionLabel}</Eyebrow>
-            <h2 className="font-lp-heading mt-3.5 text-[clamp(1.9rem,4vw,2.7rem)] leading-[1.15] font-semibold text-lp-ink">
-              {title}
-            </h2>
-            {description && (
-              <p className="mt-3.5 text-base leading-relaxed text-lp-text-muted">{description}</p>
+            {title && (
+              <h2 className="font-lp-heading mt-3.5 text-[clamp(1.9rem,4vw,2.7rem)] leading-[1.15] font-semibold text-lp-ink">
+                {title}
+              </h2>
             )}
           </div>
         </ScrollFade>

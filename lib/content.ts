@@ -277,10 +277,6 @@ export const content = {
     },
     quemSomos: {
       sectionLabel: "Quem está por trás",
-      title: "Quem conduz o método Alpha dentro do food service",
-      // TODO(marketing): nome e bio do especialista que aparece nas fotos.
-      description:
-        "Presente nos maiores eventos e salas de aula do setor, a Alpha é uma assessoria, não uma agência: nossa equipe acompanha o seu restaurante de perto, do criativo ao resultado.",
     },
     oQueFazemos: {
       sectionLabel: "O que fazemos",

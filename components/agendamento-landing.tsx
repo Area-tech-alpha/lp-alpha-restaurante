@@ -41,11 +41,7 @@ export default function AgendamentoLanding({
           sectionLabel={lp.testimonials.sectionLabel}
           title={lp.testimonials.title}
         />
-        <Palestrante
-          sectionLabel={lp.quemSomos.sectionLabel}
-          title={lp.quemSomos.title}
-          description={lp.quemSomos.description}
-        />
+        <Palestrante sectionLabel={lp.quemSomos.sectionLabel} title={null} />
         <Entregaveis
           layout="carousel"
           showRoi={false}

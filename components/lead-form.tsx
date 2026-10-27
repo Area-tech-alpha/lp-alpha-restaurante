@@ -111,7 +111,7 @@ function CountrySelect({
 const { form } = content;
 
 type FieldKey = keyof typeof form.fields;
-type FieldCopy = { label: string; placeholder?: string };
+type FieldCopy = { label?: string; placeholder?: string; options?: readonly string[] };
 
 const FATURAMENTO_CNPJ_REQUIRED = "Até 30 mil";
 

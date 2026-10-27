@@ -19,6 +19,7 @@ export function VideoCard({
   name,
   role,
   wide = false,
+  tall = false,
 }: {
   videoId: string;
   badgeIcon?: BadgeIcon;
@@ -27,6 +28,8 @@ export function VideoCard({
   role: string;
   // 16:9 em largura total, com thumbnail em alta resolução.
   wide?: boolean;
+  // 9:16 (formato Shorts), usado no carrossel da lp-09.
+  tall?: boolean;
 }) {
   const [playing, setPlaying] = useState(false);
   const [nearViewport, setNearViewport] = useState(false);
@@ -59,7 +62,7 @@ export function VideoCard({
     <div
       ref={containerRef}
       className="group relative block overflow-hidden rounded-[22px] bg-lp-panel shadow-[0_20px_50px_-20px_rgba(20,16,5,0.18)] transition-transform duration-400 hover:-translate-y-2"
-      style={{ aspectRatio: wide ? "16 / 9" : "9 / 13" }}
+      style={{ aspectRatio: wide ? "16 / 9" : tall ? "9 / 16" : "9 / 13" }}
     >
       {playing ? (
         <iframe

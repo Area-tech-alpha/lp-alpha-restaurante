@@ -4,6 +4,11 @@ import { content } from "@/lib/content";
 
 const { formBlock } = content.agendamento;
 
+const fields = {
+  ...formBlock.fields,
+  faturamento: { options: [...content.form.fields.faturamento.options].reverse() },
+};
+
 export default function AgendamentoForm({ variant }: { variant: string }) {
   return (
     <section
@@ -44,7 +49,7 @@ export default function AgendamentoForm({ variant }: { variant: string }) {
         <div id="contato" data-section="form" className="rounded-[22px] border border-lp-border-gold bg-lp-panel p-5 sm:p-[26px]">
           <h3 className="mb-1 text-[17px] font-semibold text-lp-ink">{formBlock.formTitle}</h3>
           <span className="mb-4 block text-[12.5px] text-lp-text-dim">{formBlock.formSubtitle}</span>
-          <LeadForm variant={variant} fields={formBlock.fields} submitLabel={formBlock.submitLabel} />
+          <LeadForm variant={variant} fields={fields} submitLabel={formBlock.submitLabel} />
         </div>
       </div>
     </section>
