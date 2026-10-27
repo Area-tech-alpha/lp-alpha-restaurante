@@ -1,4 +1,4 @@
-import type { Lead } from "@prisma/client";
+import type { LeadAgendamento } from "@/lib/agendamento-token";
 
 export type AgendamentoInfo = {
   inicio: string;
@@ -12,28 +12,12 @@ export type AgendamentoInfo = {
 
 // Formato acordado com o Growth Hub. Isolado aqui porque ainda pode mudar; os
 // campos do lead espelham o payload do CRM em app/actions/submit-lead.ts.
-export function buildGrowthHubPayload(lead: Lead, variante: string, agendamento: AgendamentoInfo) {
+export function buildGrowthHubPayload(lead: LeadAgendamento, agendamento: AgendamentoInfo) {
+  const { leadKey, ...dados } = lead;
   return {
-    lead_id: lead.id,
-    nome: lead.nome,
-    email: lead.email,
-    telefone: lead.telefone,
-    empresa: lead.empresa,
-    segmento: lead.segmento,
-    faturamento: lead.faturamento,
-    cnpj: lead.cnpj,
-    investiria: lead.investiria,
+    lead_id: leadKey,
+    ...dados,
     origem: "alpha-restaurante",
-    variante,
-    utm_source: lead.utmSource,
-    utm_medium: lead.utmMedium,
-    utm_campaign: lead.utmCampaign,
-    utm_content: lead.utmContent,
-    utm_term: lead.utmTerm,
-    referrer: lead.referrer,
-    fbclid: lead.fbclid,
-    fbc: lead.fbc,
-    fbp: lead.fbp,
     agendamento,
   };
 }

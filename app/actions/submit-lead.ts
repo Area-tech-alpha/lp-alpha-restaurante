@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import { sendLeadToMetaCapi } from "@/lib/meta-capi";
 import { variantFromUrl } from "@/lib/variants";
 import { agendamentoPathAposCadastro } from "@/lib/agendamento";
+import { createAgendamentoToken } from "@/lib/agendamento-token";
+import { randomUUID } from "node:crypto";
 
 // Qualificado = faturamento acima de 30 mil, ou "Até 30 mil" respondendo "Sim" para
 // investiria. Fonte única da verdade: decide o redirect E se o evento "Lead" vai
@@ -160,12 +162,34 @@ export async function submitLead(
     leadId = "unknown";
   }
 
+  // O agendamento não depende do banco: os dados do lead vão criptografados na
+  // URL (lib/agendamento-token.ts), então funciona mesmo se o INSERT falhar.
   if (agendamentoPath) {
-    // Sem lead no banco não há como agendar: cai no destino padrão.
-    redirectTo =
-      leadId === "unknown"
-        ? qualificacao.redirectTo
-        : `${agendamentoPath}?lead=${encodeURIComponent(leadId)}`;
+    try {
+      const token = createAgendamentoToken({
+        leadKey: leadId !== "unknown" ? leadId : randomUUID(),
+        nome: parsed.data.nome,
+        email: parsed.data.email,
+        telefone: parsed.data.telefone,
+        empresa: parsed.data.empresa,
+        segmento: parsed.data.segmento,
+        faturamento: parsed.data.faturamento,
+        cnpj: parsed.data.cnpj ?? null,
+        investiria: parsed.data.investiria ?? null,
+        variante: formVariant ?? variant ?? "",
+        utm_source: utmFields.utmSource ?? null,
+        utm_medium: utmFields.utmMedium ?? null,
+        utm_campaign: utmFields.utmCampaign ?? null,
+        utm_content: utmFields.utmContent ?? null,
+        utm_term: utmFields.utmTerm ?? null,
+        referrer: utmFields.referrer ?? null,
+        ...metaIds,
+      });
+      redirectTo = `${agendamentoPath}?t=${token}`;
+    } catch (err) {
+      console.error("[submit-lead] Falha ao gerar token de agendamento:", err);
+      redirectTo = qualificacao.redirectTo;
+    }
   }
 
   // Formulário completo: marca a captura parcial da mesma sessão (se existir)

@@ -11,7 +11,7 @@ import { agendamentoSlugs, hasAgendamento, variants } from "@/lib/variants";
 
 const { pagina } = content.agendamento;
 
-// O ?lead= é lido no client (AgendamentoPicker), então a página continua SSG.
+// O ?t= é lido no client (AgendamentoPicker), então a página continua SSG.
 export const dynamicParams = false;
 
 export function generateStaticParams() {
@@ -91,7 +91,7 @@ export default async function AgendamentoPage({
             <span className="text-[13px] text-lp-text-dim">· {pagina.timezoneLabel}</span>
           </div>
           <Suspense fallback={<p className="py-10 text-center text-lp-text-muted">{pagina.loading}</p>}>
-            <AgendamentoPicker variant={variant} />
+            <AgendamentoPicker />
           </Suspense>
         </section>
       </main>

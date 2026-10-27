@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { JWT } from "google-auth-library";
 import type { BusyInterval } from "@/lib/agendamento";
 
@@ -86,25 +87,54 @@ type InsertEventInput = {
   end: Date;
   timezone: string;
   attendee: { email: string; displayName: string };
-  requestId: string;
+  leadKey: string;
   sendUpdates: string;
 };
 
 type CalendarEvent = {
   id: string;
-  htmlLink?: string;
+  status?: string;
+  start?: { dateTime?: string };
   hangoutLink?: string;
   conferenceData?: { entryPoints?: { entryPointType: string; uri: string }[] };
 };
 
+// Id do evento derivado do lead (o Google aceita ids próprios em base32hex):
+// um segundo insert do mesmo lead volta 409 em vez de criar outra reunião.
+// Isso substitui a trava que antes ficava no banco.
+function eventIdFor(leadKey: string) {
+  return `lp${createHash("sha256").update(leadKey).digest("hex").slice(0, 40)}`;
+}
+
+export class EventAlreadyExistsError extends Error {}
+
+// Reunião já marcada por esse lead (se houver), para a página mostrar
+// "você já tem uma reunião" em vez da grade.
+export async function findLeadEvent(organizerEmail: string, leadKey: string) {
+  try {
+    const event = await calendarFetch<CalendarEvent>(
+      organizerEmail,
+      `/calendars/primary/events/${eventIdFor(leadKey)}`,
+      { method: "GET" }
+    );
+    if (event.status === "cancelled" || !event.start?.dateTime) return null;
+    return { id: event.id, start: new Date(event.start.dateTime) };
+  } catch (err) {
+    if (err instanceof GoogleCalendarError && (err.status === 404 || err.status === 410)) return null;
+    throw err;
+  }
+}
+
 export async function insertEvent(input: InsertEventInput) {
   const params = new URLSearchParams({ conferenceDataVersion: "1", sendUpdates: input.sendUpdates });
+  const id = eventIdFor(input.leadKey);
   const event = await calendarFetch<CalendarEvent>(
     input.organizerEmail,
     `/calendars/primary/events?${params}`,
     {
       method: "POST",
       body: JSON.stringify({
+        id,
         summary: input.summary,
         description: input.description,
         start: { dateTime: input.start.toISOString(), timeZone: input.timezone },
@@ -112,11 +142,14 @@ export async function insertEvent(input: InsertEventInput) {
         attendees: [input.attendee],
         conferenceData: {
           // requestId idempotente: retry do mesmo lead não cria duas salas do Meet.
-          createRequest: { requestId: input.requestId, conferenceSolutionKey: { type: "hangoutsMeet" } },
+          createRequest: { requestId: id, conferenceSolutionKey: { type: "hangoutsMeet" } },
         },
       }),
     }
-  );
+  ).catch((err) => {
+    if (err instanceof GoogleCalendarError && err.status === 409) throw new EventAlreadyExistsError();
+    throw err;
+  });
   const meetLink =
     event.hangoutLink ??
     event.conferenceData?.entryPoints?.find((e) => e.entryPointType === "video")?.uri ??
