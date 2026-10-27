@@ -5,7 +5,30 @@ import { content } from "@/lib/content";
 
 const { testimonials } = content;
 
-export default function Testimonials() {
+// carousel: faixa horizontal com scroll-snap (CSS puro, sem JS) — usado na lp-09.
+export default function Testimonials({
+  layout = "grid",
+  sectionLabel = testimonials.sectionLabel,
+  title = testimonials.title,
+  subtitle = testimonials.subtitle,
+}: {
+  layout?: "grid" | "carousel";
+  sectionLabel?: string;
+  title?: string;
+  subtitle?: string;
+} = {}) {
+  const videos = testimonials.videos.map((video) => (
+    <VideoCard
+      key={video.videoId}
+      tall={layout === "carousel"}
+      videoId={video.videoId}
+      badgeIcon={video.badgeIcon}
+      badgeLabel={video.badgeLabel}
+      name={video.name}
+      role={video.role}
+    />
+  ));
+
   return (
     <section
       id="depoimentos"
@@ -13,32 +36,41 @@ export default function Testimonials() {
       data-section="testimonials"
       className="bg-lp-off py-20"
     >
-      <div className="mx-auto max-w-[1180px] px-6">
+      <div className={`mx-auto px-6 ${layout === "carousel" ? "max-w-[1480px]" : "max-w-[1180px]"}`}>
         <ScrollFade>
           <div className="mx-auto mb-11 max-w-[640px] text-center">
-            <Eyebrow center>{testimonials.sectionLabel}</Eyebrow>
+            <Eyebrow center>{sectionLabel}</Eyebrow>
             <h2 className="font-lp-heading text-[clamp(1.9rem,4vw,2.7rem)] leading-[1.15] font-semibold text-lp-ink mt-3.5">
-              {testimonials.title}
+              {title}
             </h2>
-            <p className="mt-3.5 text-base leading-relaxed text-lp-text-muted">
-              {testimonials.subtitle}
-            </p>
+            {subtitle && (
+              <p className="mt-3.5 text-base leading-relaxed text-lp-text-muted">{subtitle}</p>
+            )}
           </div>
         </ScrollFade>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-          {testimonials.videos.map((video, i) => (
-            <ScrollFade key={video.videoId} delay={i * 80}>
-              <VideoCard
-                videoId={video.videoId}
-                badgeIcon={video.badgeIcon}
-                badgeLabel={video.badgeLabel}
-                name={video.name}
-                role={video.role}
-              />
-            </ScrollFade>
-          ))}
-        </div>
+        {layout === "carousel" ? (
+          <ScrollFade>
+            <ul className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-4 [scrollbar-width:thin] sm:gap-6 lg:justify-center">
+              {videos.map((video) => (
+                <li
+                  key={video.key}
+                  className="w-[82%] max-w-[380px] shrink-0 snap-center sm:w-[340px] sm:snap-start lg:w-[380px]"
+                >
+                  {video}
+                </li>
+              ))}
+            </ul>
+          </ScrollFade>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            {videos.map((video, i) => (
+              <ScrollFade key={video.key} delay={i * 80}>
+                {video}
+              </ScrollFade>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

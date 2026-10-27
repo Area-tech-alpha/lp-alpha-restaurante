@@ -12,6 +12,7 @@ import Tracker from "@/components/analytics/tracker";
 import Clarity from "@/components/analytics/clarity";
 import StickyCta from "@/components/ui/sticky-cta";
 import CountdownBar from "@/components/ui/countdown-bar";
+import AgendamentoLanding from "@/components/agendamento-landing";
 import { content } from "@/lib/content";
 import { isVariantSlug, variants, variantSlugs, type Variant } from "@/lib/variants";
 
@@ -52,6 +53,17 @@ export default async function VariantPage({
   const { variant } = await params;
   if (!isVariantSlug(variant)) notFound();
   const config: Variant = variants[variant];
+
+  if (config.layout === "agendamento") {
+    return (
+      <AgendamentoLanding
+        variant={variant}
+        theme={config.theme}
+        headline={config.headline}
+        faqItems={faqItems}
+      />
+    );
+  }
 
   return (
     <div data-theme={config.theme} className="bg-lp-off">

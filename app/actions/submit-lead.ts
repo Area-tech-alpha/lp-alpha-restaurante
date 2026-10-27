@@ -6,6 +6,7 @@ import { leadSchema, LeadFormData } from "@/lib/validation";
 import { db } from "@/lib/db";
 import { sendLeadToMetaCapi } from "@/lib/meta-capi";
 import { variantFromUrl } from "@/lib/variants";
+import { agendamentoPathAposCadastro } from "@/lib/agendamento";
 
 // Qualificado = faturamento acima de 30 mil, ou "Até 30 mil" respondendo "Sim" para
 // investiria. Fonte única da verdade: decide o redirect E se o evento "Lead" vai
@@ -43,10 +44,13 @@ type ActionResult =
   | { success: true; redirectTo: string; qualified: boolean }
   | { success: false; error: string; reason: "validation" | "server" };
 
+// formVariant: slug da página onde o form foi renderizado. Só decide o destino
+// pós-cadastro (agendamento); a "variante" enviada ao CRM continua vindo da sessão.
 export async function submitLead(
   data: LeadFormData,
   sessionId?: string,
-  eventId?: string
+  eventId?: string,
+  formVariant?: string
 ): Promise<ActionResult> {
   const parsed = leadSchema.safeParse(data);
   if (!parsed.success) {
@@ -66,7 +70,10 @@ export async function submitLead(
     null;
 
   // investiria só é perguntado para faturamento "Até 30 mil".
-  const { redirectTo, qualified } = qualificarLead(parsed.data.faturamento, parsed.data.investiria);
+  const qualificacao = qualificarLead(parsed.data.faturamento, parsed.data.investiria);
+  const { qualified } = qualificacao;
+  const agendamentoPath = agendamentoPathAposCadastro({ variant: formVariant, qualified });
+  let redirectTo = agendamentoPath ?? qualificacao.redirectTo;
 
   // Busca UTMs da sessão para desnormalizar no lead
   let utmFields: {
@@ -148,6 +155,14 @@ export async function submitLead(
         .catch(() => {});
     }
     leadId = "unknown";
+  }
+
+  if (agendamentoPath) {
+    // Sem lead no banco não há como agendar: cai no destino padrão.
+    redirectTo =
+      leadId === "unknown"
+        ? qualificacao.redirectTo
+        : `${agendamentoPath}?lead=${encodeURIComponent(leadId)}`;
   }
 
   // Formulário completo: marca a captura parcial da mesma sessão (se existir)

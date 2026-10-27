@@ -12,7 +12,36 @@ const ICONS = {
   "file-bar-chart": FileBarChart,
 } as const;
 
-export default function Entregaveis({ showRoi = true }: { showRoi?: boolean }) {
+// carousel: cards em faixa horizontal com scroll-snap (CSS puro) — usado na lp-09.
+export default function Entregaveis({
+  showRoi = true,
+  layout = "grid",
+  sectionLabel = entregaveis.sectionLabel,
+  title = entregaveis.title,
+  subtitle = entregaveis.subtitle,
+}: {
+  showRoi?: boolean;
+  layout?: "grid" | "carousel";
+  sectionLabel?: string;
+  title?: string;
+  subtitle?: string;
+}) {
+  const cards = entregaveis.cards.map((card) => {
+    const Icon = ICONS[card.icon as keyof typeof ICONS];
+    return (
+      <div
+        key={card.title}
+        className="h-full rounded-[22px] border border-lp-border bg-lp-off p-7 transition-transform duration-300 hover:-translate-y-1 hover:border-lp-border-gold"
+      >
+        <div className="mb-[18px] flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[rgba(255,183,3,0.18)] to-[rgba(245,166,35,0.06)]">
+          <Icon className="h-[22px] w-[22px] text-lp-gold-2" aria-hidden="true" />
+        </div>
+        <h3 className="mb-2 text-[17px] font-semibold text-lp-ink">{card.title}</h3>
+        <p className="text-sm leading-[1.55] text-lp-text-muted">{card.description}</p>
+      </div>
+    );
+  });
+
   return (
     <section
       id="entregaveis"
@@ -23,32 +52,38 @@ export default function Entregaveis({ showRoi = true }: { showRoi?: boolean }) {
       <div className="mx-auto max-w-[1180px] px-6">
         <ScrollFade>
           <div className="mb-11 max-w-[640px]">
-            <Eyebrow>{entregaveis.sectionLabel}</Eyebrow>
+            <Eyebrow>{sectionLabel}</Eyebrow>
             <h2 className="font-lp-heading text-[clamp(1.9rem,4vw,2.7rem)] leading-[1.15] font-semibold text-lp-ink mt-3.5">
-              {entregaveis.title}
+              {title}
             </h2>
-            <p className="mt-3.5 text-base leading-relaxed text-lp-text-muted">
-              {entregaveis.subtitle}
-            </p>
+            {subtitle && (
+              <p className="mt-3.5 text-base leading-relaxed text-lp-text-muted">{subtitle}</p>
+            )}
           </div>
         </ScrollFade>
 
-        <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-4">
-          {entregaveis.cards.map((card, i) => {
-            const Icon = ICONS[card.icon as keyof typeof ICONS];
-            return (
-              <ScrollFade key={card.title} delay={i * 80}>
-                <div className="h-full rounded-[22px] border border-lp-border bg-lp-off p-7 transition-transform duration-300 hover:-translate-y-1 hover:border-lp-border-gold">
-                  <div className="mb-[18px] flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[rgba(255,183,3,0.18)] to-[rgba(245,166,35,0.06)]">
-                    <Icon className="h-[22px] w-[22px] text-lp-gold-2" aria-hidden="true" />
-                  </div>
-                  <h3 className="mb-2 text-[17px] font-semibold text-lp-ink">{card.title}</h3>
-                  <p className="text-sm leading-[1.55] text-lp-text-muted">{card.description}</p>
-                </div>
+        {layout === "carousel" ? (
+          <ScrollFade>
+            <ul className="-mx-6 flex snap-x snap-mandatory gap-[18px] overflow-x-auto px-6 pb-4 [scrollbar-width:thin]">
+              {cards.map((card) => (
+                <li
+                  key={card.key}
+                  className="w-[80%] max-w-[320px] shrink-0 snap-center sm:w-[calc((100%-18px)/2)] sm:max-w-none sm:snap-start lg:w-[calc((100%-54px)/4)]"
+                >
+                  {card}
+                </li>
+              ))}
+            </ul>
+          </ScrollFade>
+        ) : (
+          <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-4">
+            {cards.map((card, i) => (
+              <ScrollFade key={card.key} delay={i * 80}>
+                {card}
               </ScrollFade>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
 
         {showRoi && (
         <ScrollFade>
