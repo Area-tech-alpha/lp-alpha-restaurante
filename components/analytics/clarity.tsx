@@ -8,7 +8,9 @@ export default function Clarity() {
 
   return (
     <Script
-      id="clarity"
+      // Não pode ser "clarity": elemento com id vira window.<id> no navegador
+      // (DOM clobbering) e o window.clarity passaria a ser o <script>, não a função.
+      id="clarity-init"
       // lazyOnload protege o Lighthouse; o Clarity tira snapshot do DOM ao
       // carregar, então só se perde o primeiro ~1-2s da sessão.
       strategy="lazyOnload"
