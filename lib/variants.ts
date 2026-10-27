@@ -12,6 +12,9 @@ export type Variant = {
   universidade?: boolean;
   // Galeria de fotos do palestrante logo após o hero.
   palestrante?: boolean;
+  // "agendamento": composição estilo Laquila (components/sections/agendamento-*)
+  // + página /[variant]/agendamento. Sem layout, usa a composição padrão.
+  layout?: "agendamento";
 };
 
 
@@ -59,6 +62,12 @@ export const variants = {
     headline:
       "*Terceirize o seu marketing* e dobre o faturamento do seu delivery nos próximos 3 meses",
   },
+  "lp-09": {
+    theme: "black",
+    headline:
+      "Seu restaurante precisa de uma assessoria que *nasceu dentro do food service*",
+    layout: "agendamento",
+  },
 } as const satisfies Record<string, Variant>;
 
 export type VariantSlug = keyof typeof variants;
@@ -68,6 +77,12 @@ export const variantSlugs = Object.keys(variants) as VariantSlug[];
 export function isVariantSlug(value: string): value is VariantSlug {
   return value in variants;
 }
+
+export function hasAgendamento(slug: string): slug is VariantSlug {
+  return isVariantSlug(slug) && (variants[slug] as Variant).layout === "agendamento";
+}
+
+export const agendamentoSlugs = variantSlugs.filter(hasAgendamento);
 
 // Extrai o slug da variação a partir da URL de entrada da sessão (landingUrl).
 export function variantFromUrl(url: string | null | undefined): string | null {

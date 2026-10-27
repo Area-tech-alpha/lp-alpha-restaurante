@@ -225,6 +225,100 @@ export const content = {
     cta: "Quero vender 15x mais",
   },
 
+  // Variações com layout "agendamento" (lp-09): estrutura inspirada na LP da
+  // Laquila, form -> escolha de horário -> evento no Google Agenda do closer.
+  agendamento: {
+    hero: {
+      subtitle:
+        "Somos a engrenagem invisível dos maiores restaurantes do Brasil. Fale com um especialista e descubra o método que a Alpha aplica todos os dias, dentro do food service.",
+      cta: "Falar com um especialista",
+      // TODO(design): foto definitiva do hero. Provisória: polaroids do time Alpha.
+      image: {
+        src: "/Imagem2-1.webp",
+        width: 468,
+        height: 1069,
+        alt: "Time Alpha, escritório e cultura da Assessoria Alpha",
+      },
+    },
+    // Números da LP original da Alpha (docs/SPEC.md §2).
+    // TODO(marketing): confirmar se continuam atuais antes do go-live.
+    marquee: [
+      "+600 restaurantes atendidos",
+      "+500M em vendas para os nossos clientes",
+      "+5 anos de experiência",
+    ],
+    formBlock: {
+      eyebrow: "Atenção",
+      title: "Faltam poucos segundos para você mudar a realidade do seu restaurante",
+      steps: [
+        {
+          title: "Complete o formulário",
+          description:
+            "Preencha suas informações ao lado. Seus dados ficam seguros e serão usados apenas para o nosso contato.",
+        },
+        {
+          title: "Escolha o melhor horário",
+          description:
+            "Na próxima tela você escolhe o dia e a hora da sua sessão com um especialista em marketing gastronômico.",
+        },
+      ],
+      formTitle: "Falar com um especialista",
+      formSubtitle: "Leva menos de 1 minuto.",
+      submitLabel: "Escolher meu horário",
+      fields: {
+        telefone: { label: "WhatsApp", placeholder: "WhatsApp" },
+        // empresa vira o título da reunião no Google Agenda.
+        empresa: { label: "Nome do restaurante", placeholder: "Nome do seu restaurante" },
+      },
+    },
+    testimonials: {
+      sectionLabel: "Depoimentos",
+      title: "Restaurantes com resultado. Isso é Alpha.",
+    },
+    quemSomos: {
+      sectionLabel: "Quem está por trás",
+      title: "Quem conduz o método Alpha dentro do food service",
+      // TODO(marketing): nome e bio do especialista que aparece nas fotos.
+      description:
+        "Presente nos maiores eventos e salas de aula do setor, a Alpha é uma assessoria, não uma agência: nossa equipe acompanha o seu restaurante de perto, do criativo ao resultado.",
+    },
+    oQueFazemos: {
+      sectionLabel: "O que fazemos",
+      title: "A Alpha estrutura o marketing do seu restaurante a partir da sua necessidade",
+    },
+    pagina: {
+      metaTitle: "Agendamento | Assessoria Alpha",
+      brand: "Assessoria Alpha",
+      pill: "Agendamento estratégico",
+      title: "Escolha o melhor horário para conversar com a Alpha.",
+      subtitle:
+        "Agende uma sessão com um dos nossos especialistas e descubra o método criado dentro do food service, pensado para restaurantes que querem previsibilidade de vendas.",
+      chips: [
+        "Especialistas em marketing gastronômico",
+        "Diagnóstico personalizado",
+        "Próximos passos claros",
+      ],
+      cardTitle: "Escolha o melhor dia e hora",
+      timezoneLabel: "Horário de Brasília",
+      loading: "Carregando horários…",
+      empty: "Nenhum horário disponível nos próximos dias. Nosso time vai entrar em contato com você.",
+      selectedLabel: "Horário selecionado:",
+      confirm: "Confirmar agendamento",
+      confirming: "Confirmando…",
+      successTitle: "Reunião confirmada!",
+      successText:
+        "Enviamos o convite com o link do Google Meet para o seu e-mail. Até lá!",
+      alreadyScheduledTitle: "Você já tem uma reunião agendada",
+      errors: {
+        generic: "Não foi possível concluir o agendamento. Tente novamente.",
+        load: "Não foi possível carregar os horários. Tente novamente.",
+        slotTaken: "Esse horário acabou de ser preenchido, escolha outro.",
+        leadNotFound: "Não encontramos o seu cadastro. Preencha o formulário novamente.",
+        retry: "Tentar novamente",
+      },
+    },
+  },
+
   footer: {
     logoAlt: "Alpha Assessoria",
     copyright: "Alpha Assessoria. Todos os direitos reservados.",

@@ -108,7 +108,10 @@ function CountrySelect({
   );
 }
 
-const { form: c } = content;
+const { form } = content;
+
+type FieldKey = keyof typeof form.fields;
+type FieldCopy = { label: string; placeholder?: string };
 
 const FATURAMENTO_CNPJ_REQUIRED = "Até 30 mil";
 
@@ -154,7 +157,25 @@ const selectClass =
 
 const errorClass = "text-[#d33] text-[11.5px] mt-1.5";
 
-export default function LeadForm() {
+// variant: slug da página — o servidor usa para decidir se o lead vai para o
+// agendamento. fields/submitLabel: troca de textos por variação sem duplicar o form.
+export default function LeadForm({
+  variant,
+  fields,
+  submitLabel = form.submitLabel,
+}: {
+  variant?: string;
+  fields?: Partial<Record<FieldKey, FieldCopy>>;
+  submitLabel?: string;
+} = {}) {
+  const c = {
+    fields: Object.fromEntries(
+      Object.entries(form.fields).map(([key, value]) => [
+        key,
+        { ...value, ...fields?.[key as FieldKey] },
+      ])
+    ) as typeof form.fields,
+  };
   const [status, setStatus] = useState<Status>("idle");
   const [globalError, setGlobalError] = useState("");
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
@@ -254,7 +275,7 @@ export default function LeadForm() {
     try {
       const sessionId = tracker()?.sessionId() ?? undefined;
       const eventId = crypto.randomUUID();
-      const res = await submitLead(result.data, sessionId, eventId);
+      const res = await submitLead(result.data, sessionId, eventId, variant);
       if (res.success) {
         tracker()?.trackSubmitSuccess("", res.qualified, eventId);
         // Pequeno atraso antes do redirect: o fbq('track', 'Lead', ...) dispara um
@@ -561,7 +582,7 @@ export default function LeadForm() {
         disabled={isSending}
         className="mt-1 w-full rounded-full bg-lp-gold-2 bg-gradient-to-r from-lp-gold-1 to-lp-gold-2 px-[26px] py-[13px] font-lp-heading text-[15.5px] font-bold text-lp-on-gold shadow-[0_10px_30px_rgba(245,166,35,0.3)] transition-transform hover:-translate-y-[3px] hover:shadow-[0_16px_40px_rgba(245,166,35,0.42)] disabled:opacity-60 disabled:hover:translate-y-0 cursor-pointer"
       >
-        {isSending ? "Enviando..." : c.submitLabel}
+        {isSending ? "Enviando..." : submitLabel}
       </button>
     </form>
   );

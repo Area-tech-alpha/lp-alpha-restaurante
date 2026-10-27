@@ -12,7 +12,15 @@ const CELL = [
   "aspect-[3/4] md:aspect-auto",
 ];
 
-export default function Palestrante() {
+export default function Palestrante({
+  sectionLabel = palestrante.sectionLabel,
+  title = palestrante.title,
+  description,
+}: {
+  sectionLabel?: string;
+  title?: string;
+  description?: string;
+} = {}) {
   return (
     <section
       id="palestrante"
@@ -23,10 +31,13 @@ export default function Palestrante() {
       <div className="mx-auto max-w-[1180px] px-6">
         <ScrollFade>
           <div className="mx-auto mb-10 max-w-[640px] text-center">
-            <Eyebrow center>{palestrante.sectionLabel}</Eyebrow>
+            <Eyebrow center>{sectionLabel}</Eyebrow>
             <h2 className="font-lp-heading mt-3.5 text-[clamp(1.9rem,4vw,2.7rem)] leading-[1.15] font-semibold text-lp-ink">
-              {palestrante.title}
+              {title}
             </h2>
+            {description && (
+              <p className="mt-3.5 text-base leading-relaxed text-lp-text-muted">{description}</p>
+            )}
           </div>
         </ScrollFade>
 

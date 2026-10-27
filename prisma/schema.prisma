@@ -62,8 +62,20 @@ model Lead {
   fbc            String?
   fbp            String?
 
+  // Agendamento (variações com layout "agendamento", ex: /lp-09/agendamento).
+  // agendadoPara é gravado ANTES de criar o evento, como trava: o índice único
+  // impede dois leads no mesmo horário do mesmo closer mesmo com requests
+  // simultâneos (o freebusy sozinho tem janela de corrida).
+  agendadoPara        DateTime?
+  googleEventId       String?
+  closerEmail         String?
+  agendamentoCriadoEm DateTime?
+  growthHubSentAt     DateTime?
+  growthHubStatus     Int?
+
   createdAt      DateTime  @default(now())
 
+  @@unique([closerEmail, agendadoPara])
   @@map("leads")
 }
 
