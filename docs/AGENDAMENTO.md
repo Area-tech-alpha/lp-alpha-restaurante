@@ -1,9 +1,19 @@
 # Agendamento no Google Agenda (lp-09)
 
 Fluxo: o lead preenche o formulário em `/lp-09`. Se for qualificado, vai para
-`/lp-09/agendamento?lead=<id>`, escolhe um horário e a reunião é criada **na agenda
+`/lp-09/agendamento?t=<token>`, escolhe um horário e a reunião é criada **na agenda
 do closer**, com Google Meet e o lead como convidado. Depois disso, os dados vão
 para o webhook do Growth Hub.
+
+**O agendamento não usa o banco de dados.** Os dados do lead vão do formulário até a
+página de horários num token criptografado (AES-256-GCM) no `?t=` da URL; quem abre
+o link não consegue ler nem alterar o conteúdo. As travas também ficam no Google:
+- **lead já agendou:** o id do evento é derivado do lead, então um segundo
+  agendamento do mesmo lead é recusado pelo próprio Google;
+- **horário ocupado:** o freebusy da agenda do closer é rechecado logo antes de
+  criar o evento.
+
+Todos os agendamentos caem numa única agenda, a do `CLOSER_CALENDAR_EMAIL`.
 
 Para o evento nascer na agenda do closer, com ele como organizador, usamos uma
 **Service Account com Domain-Wide Delegation** no Google Workspace, que se faz
@@ -16,8 +26,9 @@ passar pelo e-mail do closer. Não há OAuth nem tela de consentimento.
 | Regras (duração do slot, janela 08:30–18:00, nº de dias, dias úteis, feriados, timezone, `sendUpdates`) | `lib/agendamento-config.ts` |
 | Montagem da grade de dias e slots (lógica pura) | `lib/agendamento.ts` |
 | Quem vai para o agendamento depois do form | `agendamentoPathAposCadastro` em `lib/agendamento.ts` |
-| Chamadas ao Google (freebusy e criação do evento) | `lib/google-calendar.ts` |
-| APIs | `GET /api/agendamento/slots?lead=<id>` e `POST /api/agendamento` |
+| Token com os dados do lead | `lib/agendamento-token.ts` |
+| Chamadas ao Google (freebusy, criação e busca do evento) | `lib/google-calendar.ts` |
+| APIs | `GET /api/agendamento/slots?t=<token>` e `POST /api/agendamento` |
 | Payload do Growth Hub | `lib/growth-hub.ts` |
 | Textos da página | `content.agendamento` em `lib/content.ts` |
 
@@ -88,24 +99,11 @@ GROWTH_HUB_WEBHOOK_URL=
   quando a reunião é gravada no Meet. Ele não faz parte do título.
 - Se `GROWTH_HUB_WEBHOOK_URL` estiver vazia, o envio é ignorado (com log) e o
   agendamento funciona normalmente.
+- O token usa como chave a `AGENDAMENTO_TOKEN_SECRET` ou, se ela não existir, o
+  `AUTH_SECRET` que já está em produção (login do `/dashboard`). Trocar a chave
+  invalida os links de agendamento que ainda não foram usados. O link vale 7 dias.
 
-## 4. Banco de dados
-
-A migration `prisma/migrations/20261027120000_add_lead_agendamento` adiciona ao
-`leads` as colunas `agendadoPara`, `googleEventId`, `closerEmail`,
-`agendamentoCriadoEm`, `growthHubSentAt` e `growthHubStatus`, além de um índice
-único `(closerEmail, agendadoPara)`. Esse índice impede que dois leads reservem o
-mesmo horário mesmo com requisições simultâneas.
-
-```bash
-npx prisma migrate deploy
-```
-
-> Cancelamentos: o índice único continua "segurando" o horário de um lead mesmo que
-> o closer apague o evento no Google. Para liberar o horário, zere `agendadoPara` e
-> `closerEmail` desse lead no banco.
-
-## 5. Trocar do e-mail de teste para o closer real
+## 4. Trocar do e-mail de teste para o closer real
 
 1. Confirme que `douglas.junior@assessorialpha.com` é um usuário ativo do mesmo
    Workspace. A delegação vale para qualquer usuário do domínio, então não é preciso
@@ -116,35 +114,35 @@ npx prisma migrate deploy
 3. Faça um redeploy, porque variáveis de ambiente só valem a partir do próximo
    deploy.
 4. Teste com um lead de verdade e um horário qualquer. Confira o evento na agenda
-   do Douglas e depois apague o evento e zere o lead no banco.
+   do Douglas e depois apague o evento.
 
-Os agendamentos antigos continuam ligados ao `closerEmail` de teste no banco e não
-bloqueiam a agenda do novo closer.
+Os eventos já criados continuam na agenda de teste; só os novos agendamentos vão
+para o novo closer.
 
-## 6. Testar localmente
+## 5. Testar localmente
 
 ```bash
-cp .env.example .env.local   # preencher DATABASE_URL, CRM_WEBHOOK_URL e as variáveis acima
-npx prisma migrate deploy    # use um banco de dev, não o de produção
+cp .env.example .env.local   # preencher CRM_WEBHOOK_URL, AUTH_SECRET e as variáveis acima
 npm run dev
 ```
 
 1. Abra <http://localhost:3000/lp-09> e envie o form com faturamento acima de 30 mil
-   (lead qualificado). Você deve ser levado para `/lp-09/agendamento?lead=<id>`.
+   (lead qualificado). Você deve ser levado para `/lp-09/agendamento?t=<token>`.
 2. Escolha um horário, confirme e verifique o evento com Meet na agenda de
    `CLOSER_CALENDAR_EMAIL`.
-3. Para testar a API isoladamente:
+3. Para testar a API isoladamente (copie o `<token>` da URL do passo 1):
 
    ```bash
-   curl "http://localhost:3000/api/agendamento/slots?lead=<id>"
+   curl "http://localhost:3000/api/agendamento/slots?t=<token>"
    curl -X POST http://localhost:3000/api/agendamento \
      -H "Content-Type: application/json" \
-     -d '{"leadId":"<id>","start":"2026-10-28T13:30:00.000Z","variant":"lp-09"}'
+     -d '{"token":"<token>","start":"2026-10-28T13:30:00.000Z"}'
    ```
 
 Respostas de erro do `POST`: `400 invalid_slot` (fora da grade ou no passado),
-`404 lead_not_found`, `409 already_scheduled`, `409 slot_taken` (a página recarrega
-os horários sozinha) e `502/503` (falha no Google ou no banco).
+`404 lead_not_found` (token inválido ou com mais de 7 dias), `409 already_scheduled`,
+`409 slot_taken` (a página recarrega os horários sozinha) e `502/503` (falha no
+Google).
 
 ## Problemas comuns
 

@@ -17,10 +17,10 @@ type State =
   | { kind: "done"; confirmed: Confirmed; already: boolean }
   | { kind: "fatal"; message: string; retry: boolean };
 
-async function fetchAgenda(leadId: string | null): Promise<State> {
-  if (!leadId) return { kind: "fatal", message: c.errors.leadNotFound, retry: false };
+async function fetchAgenda(token: string | null): Promise<State> {
+  if (!token) return { kind: "fatal", message: c.errors.leadNotFound, retry: false };
   try {
-    const res = await fetch(`/api/agendamento/slots?lead=${encodeURIComponent(leadId)}`, {
+    const res = await fetch(`/api/agendamento/slots?t=${encodeURIComponent(token)}`, {
       cache: "no-store",
     });
     if (res.status === 404 || res.status === 400) {
@@ -35,8 +35,9 @@ async function fetchAgenda(leadId: string | null): Promise<State> {
   }
 }
 
-export default function AgendamentoPicker({ variant }: { variant: string }) {
-  const leadId = useSearchParams().get("lead");
+export default function AgendamentoPicker() {
+  // Dados do lead criptografados pelo submit-lead (lib/agendamento-token.ts).
+  const token = useSearchParams().get("t");
   const [state, setState] = useState<State>({ kind: "loading" });
   const [activeDay, setActiveDay] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -47,28 +48,28 @@ export default function AgendamentoPicker({ variant }: { variant: string }) {
     setState({ kind: "loading" });
     setSelected(null);
     setActiveDay(0);
-    setState(await fetchAgenda(leadId));
-  }, [leadId]);
+    setState(await fetchAgenda(token));
+  }, [token]);
 
   useEffect(() => {
     let cancelled = false;
-    fetchAgenda(leadId).then((next) => {
+    fetchAgenda(token).then((next) => {
       if (!cancelled) setState(next);
     });
     return () => {
       cancelled = true;
     };
-  }, [leadId]);
+  }, [token]);
 
   async function confirm() {
-    if (!selected || !leadId) return;
+    if (!selected || !token) return;
     setSubmitting(true);
     setNotice("");
     try {
       const res = await fetch("/api/agendamento", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leadId, start: selected, variant }),
+        body: JSON.stringify({ token, start: selected }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
