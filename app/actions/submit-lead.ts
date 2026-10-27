@@ -142,6 +142,9 @@ export async function submitLead(
         ...utmFields,
         ...metaIds,
       },
+      // Sem select o Prisma faz RETURNING de todas as colunas: se o deploy sair
+      // antes de uma migration que adiciona colunas, o INSERT quebra em todas as LPs.
+      select: { id: true },
     });
     leadId = lead.id;
   } catch (err) {
@@ -212,6 +215,7 @@ export async function submitLead(
       await db.lead.update({
         where: { id: leadId },
         data: { webhookSentAt: new Date(), webhookStatus },
+        select: { id: true },
       }).catch(() => { });
     }
 
