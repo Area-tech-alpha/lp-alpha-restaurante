@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Oswald, Archivo, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
@@ -8,24 +7,28 @@ import { OrganizationJsonLd } from "@/components/json-ld";
 import { META_PIXEL_ID } from "@/lib/meta-pixels";
 import "./globals.css";
 
-const anton = Anton({
+// Anton/Oswald/Archivo/Inter: subset latin baixado do Google Fonts e versionado
+// em public/fonts. O next/font/google baixava a cada build e às vezes o build
+// quebrava quando o Google devolvia uma URL de fonte sem extensão.
+// Oswald, Archivo e Inter são variáveis: um arquivo cobre a faixa de pesos.
+const anton = localFont({
+  src: "../public/fonts/Anton-latin.woff2",
   weight: "400",
   variable: "--font-anton",
-  subsets: ["latin"],
   display: "swap",
 });
 
-const oswald = Oswald({
-  weight: ["400", "500", "600", "700"],
+const oswald = localFont({
+  src: "../public/fonts/Oswald-latin.woff2",
+  weight: "400 700",
   variable: "--font-oswald",
-  subsets: ["latin"],
   display: "swap",
 });
 
-const archivo = Archivo({
-  weight: ["400", "500", "600", "700"],
+const archivo = localFont({
+  src: "../public/fonts/Archivo-latin.woff2",
+  weight: "400 700",
   variable: "--font-archivo",
-  subsets: ["latin"],
   display: "swap",
 });
 
@@ -51,10 +54,10 @@ const generalSans = localFont({
   display: "swap",
 });
 
-const inter = Inter({
-  weight: ["400", "500", "600"],
+const inter = localFont({
+  src: "../public/fonts/Inter-latin.woff2",
+  weight: "400 600",
   variable: "--font-inter",
-  subsets: ["latin"],
   display: "swap",
 });
 
