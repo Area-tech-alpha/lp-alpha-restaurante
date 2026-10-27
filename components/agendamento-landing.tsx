@@ -3,7 +3,6 @@ import AgendamentoHero from "@/components/sections/agendamento-hero";
 import Marquee from "@/components/sections/marquee";
 import AgendamentoForm from "@/components/sections/agendamento-form";
 import Testimonials from "@/components/sections/testimonials";
-import Palestrante from "@/components/sections/palestrante";
 import Entregaveis from "@/components/sections/entregaveis";
 import Faq from "@/components/sections/faq";
 import Footer from "@/components/sections/footer";
@@ -41,7 +40,6 @@ export default function AgendamentoLanding({
           sectionLabel={lp.testimonials.sectionLabel}
           title={lp.testimonials.title}
         />
-        <Palestrante sectionLabel={lp.quemSomos.sectionLabel} title={null} />
         <Entregaveis
           layout="carousel"
           showRoi={false}

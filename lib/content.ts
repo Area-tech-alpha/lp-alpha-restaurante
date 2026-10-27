@@ -275,9 +275,6 @@ export const content = {
       sectionLabel: "Depoimentos",
       title: "Restaurantes com resultado. Isso é Alpha.",
     },
-    quemSomos: {
-      sectionLabel: "Quem está por trás",
-    },
     oQueFazemos: {
       sectionLabel: "O que fazemos",
       title: "A Alpha estrutura o marketing do seu restaurante a partir da sua necessidade",
