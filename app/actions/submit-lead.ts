@@ -7,7 +7,9 @@ import { db } from "@/lib/db";
 import { sendLeadToMetaCapi } from "@/lib/meta-capi";
 import { variantFromUrl } from "@/lib/variants";
 import { agendamentoPathAposCadastro } from "@/lib/agendamento";
-import { createAgendamentoToken } from "@/lib/agendamento-token";
+import { createAgendamentoToken, type LeadAgendamento } from "@/lib/agendamento-token";
+import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
+import { getCloserEmail } from "@/lib/google-calendar";
 import { randomUUID } from "node:crypto";
 
 // Qualificado = faturamento acima de 30 mil, ou "Até 30 mil" respondendo "Sim" para
@@ -56,6 +58,14 @@ function comTeto<T>(query: PromiseLike<T>, ms: number): Promise<T> {
   ]).finally(() => clearTimeout(timer));
 }
 
+// webhookStatus 0 = não chegou a ter resposta do CRM (rede ou env faltando).
+async function enviarAoCrmComCloser(lead: LeadAgendamento) {
+  const result = await sendLeadToCrm(buildCrmLeadPayload(lead, getCloserEmail()));
+  return result.status === "sent"
+    ? { ok: result.ok, status: result.httpStatus }
+    : { ok: false, status: 0 };
+}
+
 type ActionResult =
   | { success: true; redirectTo: string; qualified: boolean }
   | { success: false; error: string; reason: "validation" | "server" };
@@ -73,8 +83,16 @@ export async function submitLead(
     return { success: false, error: "Dados inválidos. Verifique o formulário.", reason: "validation" };
   }
 
+  // investiria só é perguntado para faturamento "Até 30 mil".
+  const qualificacao = qualificarLead(parsed.data.faturamento, parsed.data.investiria);
+  const { qualified } = qualificacao;
+  const agendamentoPath = agendamentoPathAposCadastro({ variant: formVariant, qualified });
+  let redirectTo = agendamentoPath ?? qualificacao.redirectTo;
+
+  // Variação com agendamento: o qualificado vai para o CRM da Matriz com o closer
+  // (lib/crm.ts) e nunca passa pelo n8n/Growth Hub. Só o desqualificado usa o webhook.
   const webhookUrl = process.env.CRM_WEBHOOK_URL;
-  if (!webhookUrl) {
+  if (!agendamentoPath && !webhookUrl) {
     console.error("[submit-lead] CRM_WEBHOOK_URL não definida");
     return { success: false, error: "Serviço indisponível. Tente mais tarde.", reason: "server" };
   }
@@ -84,12 +102,6 @@ export async function submitLead(
     headersList.get("x-forwarded-for")?.split(",")[0].trim() ??
     headersList.get("x-real-ip") ??
     null;
-
-  // investiria só é perguntado para faturamento "Até 30 mil".
-  const qualificacao = qualificarLead(parsed.data.faturamento, parsed.data.investiria);
-  const { qualified } = qualificacao;
-  const agendamentoPath = agendamentoPathAposCadastro({ variant: formVariant, qualified });
-  let redirectTo = agendamentoPath ?? qualificacao.redirectTo;
 
   // Busca UTMs da sessão para desnormalizar no lead
   let utmFields: {
@@ -184,9 +196,8 @@ export async function submitLead(
 
   // O agendamento não depende do banco: os dados do lead vão criptografados na
   // URL (lib/agendamento-token.ts), então funciona mesmo se o INSERT falhar.
-  if (agendamentoPath) {
-    try {
-      const token = createAgendamentoToken({
+  const leadAgendamento: LeadAgendamento | null = agendamentoPath
+    ? {
         leadKey: leadId !== "unknown" ? leadId : randomUUID(),
         nome: parsed.data.nome,
         email: parsed.data.email,
@@ -204,7 +215,12 @@ export async function submitLead(
         utm_term: utmFields.utmTerm ?? null,
         referrer: utmFields.referrer ?? null,
         ...metaIds,
-      });
+      }
+    : null;
+
+  if (agendamentoPath && leadAgendamento) {
+    try {
+      const token = createAgendamentoToken(leadAgendamento);
       redirectTo = `${agendamentoPath}?t=${token}`;
     } catch (err) {
       console.error("[submit-lead] Falha ao gerar token de agendamento:", err);
@@ -249,11 +265,13 @@ export async function submitLead(
   };
 
   try {
-    const res = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const res = leadAgendamento
+      ? await enviarAoCrmComCloser(leadAgendamento)
+      : await fetch(webhookUrl as string, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
     const webhookStatus = res.status;
 

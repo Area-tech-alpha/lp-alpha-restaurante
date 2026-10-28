@@ -1,9 +1,18 @@
 # Agendamento no Google Agenda (lp-09)
 
-Fluxo: o lead preenche o formulário em `/lp-09`. Se for qualificado, vai para
-`/lp-09/agendamento?t=<token>`, escolhe um horário e a reunião é criada **na agenda
-do closer**, com Google Meet e o lead como convidado. Depois disso, os dados vão
-para o webhook do Growth Hub.
+Fluxo: o lead preenche o formulário em `/lp-09`.
+
+- **Desqualificado** (até 30 mil respondendo "Não" para investir): segue o fluxo de
+  todas as LPs, `CRM_WEBHOOK_URL` → n8n → Growth Hub.
+- **Qualificado:** **nunca passa pelo Growth Hub.** No envio do form ele entra no CRM
+  da Matriz (`POST {CRM_API_URL}/external/leads`, `destination: "hq"`) já com o
+  closer de `CLOSER_CALENDAR_EMAIL`, e vai para `/lp-09/agendamento?t=<token>`. Ao
+  escolher o horário, a reunião é criada **na agenda do closer**, com Google Meet e o
+  lead como convidado, e anexada ao mesmo lead no CRM: estágio "Reunião agendada" e
+  call pendente. Quem não agenda fica no CRM com o closer, em "Novo Lead".
+
+O lead do form e a reunião se juntam no CRM pelo e-mail/telefone (até 7 dias, a
+validade do link). Se o envio do form tiver falhado, o do agendamento cria o lead.
 
 **O agendamento não usa o banco de dados.** Os dados do lead vão do formulário até a
 página de horários num token criptografado (AES-256-GCM) no `?t=` da URL; quem abre
@@ -29,7 +38,7 @@ passar pelo e-mail do closer. Não há OAuth nem tela de consentimento.
 | Token com os dados do lead | `lib/agendamento-token.ts` |
 | Chamadas ao Google (freebusy, criação e busca do evento) | `lib/google-calendar.ts` |
 | APIs | `GET /api/agendamento/slots?t=<token>` e `POST /api/agendamento` |
-| Payload do Growth Hub | `lib/growth-hub.ts` |
+| Envio do lead qualificado ao CRM (closer + reunião) | `lib/crm.ts` |
 | Textos da página | `content.agendamento` em `lib/content.ts` |
 
 ## 1. Google Cloud: projeto, API e Service Account
@@ -85,10 +94,11 @@ Em `.env.local` (local) e em **Vercel → Settings → Environment Variables**:
 ```bash
 GOOGLE_SA_CLIENT_EMAIL=lp-agendamento@<projeto>.iam.gserviceaccount.com   # "client_email" do JSON
 GOOGLE_SA_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"  # "private_key" do JSON
-CLOSER_CALENDAR_EMAIL=calebe.tech@assessorialpha.com
+CLOSER_CALENDAR_EMAIL=douglas.junior@assessorialpha.com
 CLOSER_INITIAL=D
 MEETING_TITLE_PREFIX=Consultoria
-GROWTH_HUB_WEBHOOK_URL=
+CRM_API_URL=https://<api do CRM>
+CRM_EXTERNAL_LEADS_API_KEY=   # EXTERNAL_LEADS_API_KEY do Dashboard-Comercial-Back-V2
 ```
 
 - A `GOOGLE_SA_PRIVATE_KEY` pode ser colada com os `\n` literais, do jeito que vem
@@ -97,8 +107,11 @@ GROWTH_HUB_WEBHOOK_URL=
   exemplo `Consultoria: D | Mestre do Frango`. O sufixo
   `- 2026/10/21 17:05 GMT-03:00 - Recording` é adicionado pelo próprio Google
   quando a reunião é gravada no Meet. Ele não faz parte do título.
-- Se `GROWTH_HUB_WEBHOOK_URL` estiver vazia, o envio é ignorado (com log) e o
-  agendamento funciona normalmente.
+- `CLOSER_CALENDAR_EMAIL` é ao mesmo tempo a agenda e o closer do lead no CRM: o
+  e-mail precisa ser de um usuário ativo do CRM. Se não for, o lead entra na Matriz
+  sem closer (log `closer_email sem usuário ativo` no CRM).
+- Sem `CRM_API_URL`/`CRM_EXTERNAL_LEADS_API_KEY`, o lead qualificado não é aceito
+  ("Erro ao enviar") — de propósito, para não cair no Growth Hub.
 - O token usa como chave a `AGENDAMENTO_TOKEN_SECRET` ou, se ela não existir, o
   `AUTH_SECRET` que já está em produção (login do `/dashboard`). Trocar a chave
   invalida os links de agendamento que ainda não foram usados. O link vale 7 dias.
