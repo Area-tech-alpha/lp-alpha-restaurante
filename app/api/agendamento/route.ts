@@ -11,7 +11,7 @@ import {
   insertEvent,
   queryFreeBusy,
 } from "@/lib/google-calendar";
-import { buildGrowthHubPayload, sendToGrowthHub } from "@/lib/growth-hub";
+import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
 
 // Sem banco: o lead vem do token (lib/agendamento-token.ts) e as travas
 // ("já agendou", "horário ocupado") são checadas no Google Agenda do closer.
@@ -83,19 +83,17 @@ export async function POST(req: NextRequest) {
     return error("calendar_unavailable", 502);
   }
 
+  // Lead agendado nunca vai para o Growth Hub: a reunião é presa ao lead que o form
+  // já criou no CRM da Matriz (ou cria o lead, se aquele envio tiver falhado).
   after(async () => {
-    const result = await sendToGrowthHub(
-      buildGrowthHubPayload(lead, {
-        inicio: start.toISOString(),
-        fim: end.toISOString(),
-        timezone: agendamentoConfig.timezone,
-        closer_email: closer,
+    const result = await sendLeadToCrm(
+      buildCrmLeadPayload(lead, closer, {
+        scheduled_at: start.toISOString(),
+        meeting_link: event.meetLink,
         google_event_id: event.id,
-        meet_link: event.meetLink,
-        titulo,
       })
     );
-    console.log("[agendamento] Criado", { leadKey: lead.leadKey, eventId: event.id, growthHub: result });
+    console.log("[agendamento] Criado", { leadKey: lead.leadKey, eventId: event.id, crm: result });
   });
 
   return NextResponse.json({
