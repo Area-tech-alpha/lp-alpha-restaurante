@@ -7,7 +7,10 @@ function createClient(): PrismaClient {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error("DATABASE_URL não definida");
 
-  const adapter = new PrismaPg({ connectionString });
+  // Sem connectionTimeoutMillis o pg espera indefinidamente quando o banco está
+  // inacessível, e o envio do formulário (que tenta salvar o lead antes do
+  // webhook do CRM) ficava preso dezenas de segundos.
+  const adapter = new PrismaPg({ connectionString, connectionTimeoutMillis: 4000 });
   return new PrismaClient({ adapter });
 }
 
