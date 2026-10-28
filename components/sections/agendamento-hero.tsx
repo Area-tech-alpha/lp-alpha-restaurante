@@ -54,7 +54,8 @@ export default function AgendamentoHero({ headline }: { headline: string }) {
               sizes="(min-width: 1024px) 600px, (min-width: 768px) 560px, 100vw"
               className="fade-in-load h-auto w-full [animation-delay:100ms]"
             />
-            <div className="mt-4 grid grid-cols-2 items-start gap-4">
+            {/* Margem negativa compensa o vão das polaroids rotacionadas; as molduras não se tocam. */}
+            <div className="-mt-[4%] grid grid-cols-2 items-start gap-1">
               {others.map((polaroid, i) => (
                 <Image
                   key={polaroid.src}
@@ -64,7 +65,7 @@ export default function AgendamentoHero({ headline }: { headline: string }) {
                   height={polaroid.height}
                   sizes="(min-width: 1024px) 300px, (min-width: 768px) 280px, 50vw"
                   style={{ animationDelay: `${250 + i * 150}ms` }}
-                  className="fade-in-load h-auto w-full"
+                  className={`fade-in-load h-auto w-full ${i === 0 ? "translate-x-[4%]" : "-translate-x-[4%]"}`}
                 />
               ))}
             </div>
