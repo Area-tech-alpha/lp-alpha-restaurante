@@ -42,6 +42,20 @@ function resolveMetaClickIds(
   return { fbclid, fbc, fbp };
 }
 
+// O banco é secundário (o CRM é a fonte primária): com ele fora do ar cada
+// consulta esperava o timeout de conexão em sequência e o envio levava ~30s.
+// Cada consulta no caminho do usuário tem um teto; se uma estoura, as demais
+// são puladas e o resto do registro vai para o after().
+function comTeto<T>(query: PromiseLike<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return Promise.race([
+    Promise.resolve(query),
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`db_timeout_${ms}ms`)), ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
 type ActionResult =
   | { success: true; redirectTo: string; qualified: boolean }
   | { success: false; error: string; reason: "validation" | "server" };
@@ -89,10 +103,11 @@ export async function submitLead(
   let variant: string | null = null;
   let sessionFbclid: string | null = null;
   let sessionStartedAt: Date | null = null;
+  let dbOk = true;
 
   if (sessionId) {
     try {
-      const session = await db.session.findUnique({
+      const session = await comTeto(db.session.findUnique({
         where: { id: sessionId },
         select: {
           utmSource: true,
@@ -105,7 +120,7 @@ export async function submitLead(
           fbclid: true,
           startedAt: true,
         },
-      });
+      }), 2000);
       if (session) {
         const { landingUrl, fbclid, startedAt, ...utms } = session;
         utmFields = utms;
@@ -113,8 +128,10 @@ export async function submitLead(
         sessionFbclid = fbclid;
         sessionStartedAt = startedAt;
       }
-    } catch {
+    } catch (err) {
       // UTMs são melhores-esforços — não bloquear o lead por isso
+      console.error("[submit-lead] Banco indisponível ao buscar sessão:", err);
+      dbOk = false;
     }
   }
 
@@ -125,41 +142,44 @@ export async function submitLead(
   );
 
   // Salva lead no banco
-  let leadId: string;
-  try {
-    const lead = await db.lead.create({
-      data: {
-        nome: parsed.data.nome,
-        email: parsed.data.email,
-        telefone: parsed.data.telefone,
-        empresa: parsed.data.empresa,
-        segmento: parsed.data.segmento,
-        faturamento: parsed.data.faturamento,
-        cnpj: parsed.data.cnpj ?? null,
-        investiria: parsed.data.investiria ?? null,
-        qualified,
-        redirectUrl: redirectTo,
-        ipAddress: ip,
-        sessionId: sessionId ?? null,
-        ...utmFields,
-        ...metaIds,
-      },
-      // Sem select o Prisma faz RETURNING de todas as colunas: se o deploy sair
-      // antes de uma migration que adiciona colunas, o INSERT quebra em todas as LPs.
-      select: { id: true },
-    });
-    leadId = lead.id;
-  } catch (err) {
-    console.error("[submit-lead] Erro ao salvar lead no banco:", err);
-    // Continua mesmo sem salvar — o webhook é a fonte primária.
-    // Loga um evento (best-effort) pra esse lead não desaparecer em silêncio
-    // do dashboard: ele chega ao CRM mas fica invisível no funil/KPIs.
-    if (sessionId) {
-      await db.event
-        .create({ data: { sessionId, type: "lead_db_write_failed" } })
-        .catch(() => {});
+  let leadId = "unknown";
+  if (dbOk) {
+    try {
+      const lead = await comTeto(db.lead.create({
+        data: {
+          nome: parsed.data.nome,
+          email: parsed.data.email,
+          telefone: parsed.data.telefone,
+          empresa: parsed.data.empresa,
+          segmento: parsed.data.segmento,
+          faturamento: parsed.data.faturamento,
+          cnpj: parsed.data.cnpj ?? null,
+          investiria: parsed.data.investiria ?? null,
+          qualified,
+          redirectUrl: redirectTo,
+          ipAddress: ip,
+          sessionId: sessionId ?? null,
+          ...utmFields,
+          ...metaIds,
+        },
+        // Sem select o Prisma faz RETURNING de todas as colunas: se o deploy sair
+        // antes de uma migration que adiciona colunas, o INSERT quebra em todas as LPs.
+        select: { id: true },
+      }), 3000);
+      leadId = lead.id;
+    } catch (err) {
+      console.error("[submit-lead] Erro ao salvar lead no banco:", err);
+      // Continua mesmo sem salvar — o webhook é a fonte primária.
+      // Loga um evento (best-effort) pra esse lead não desaparecer em silêncio
+      // do dashboard: ele chega ao CRM mas fica invisível no funil/KPIs.
+      if (sessionId) {
+        after(() =>
+          db.event
+            .create({ data: { sessionId, type: "lead_db_write_failed" } })
+            .then(() => {}, () => {})
+        );
+      }
     }
-    leadId = "unknown";
   }
 
   // O agendamento não depende do banco: os dados do lead vão criptografados na
@@ -197,9 +217,11 @@ export async function submitLead(
   // reengajar quem já virou lead. Best-effort — não existe partial_lead pra
   // toda sessão (ex: autofill sem passar pelo onBlur), e tudo bem.
   if (sessionId && leadId !== "unknown") {
-    await db.partialLead
-      .update({ where: { sessionId }, data: { convertedAt: new Date() } })
-      .catch(() => {});
+    after(() =>
+      db.partialLead
+        .update({ where: { sessionId }, data: { convertedAt: new Date() } })
+        .then(() => {}, () => {})
+    );
   }
 
   // Envia ao webhook n8n (inclui lead_id para a automação atualizar whatsapp_sent_at)
@@ -236,11 +258,13 @@ export async function submitLead(
     const webhookStatus = res.status;
 
     if (leadId !== "unknown") {
-      await db.lead.update({
-        where: { id: leadId },
-        data: { webhookSentAt: new Date(), webhookStatus },
-        select: { id: true },
-      }).catch(() => { });
+      after(() =>
+        db.lead.update({
+          where: { id: leadId },
+          data: { webhookSentAt: new Date(), webhookStatus },
+          select: { id: true },
+        }).then(() => {}, () => {})
+      );
     }
 
     if (!res.ok) {
