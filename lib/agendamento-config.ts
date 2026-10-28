@@ -10,9 +10,9 @@ export const agendamentoConfig = {
   daysToShow: 3,
   // 0 = domingo ... 6 = sábado (Date#getUTCDay).
   businessDays: [1, 2, 3, 4, 5],
-  // Feriados nacionais (YYYY-MM-DD) que caem em dia útil. Manter atualizado
-  // anualmente — o freebusy não enxerga feriado se o closer não bloquear a agenda.
-  holidays: ["2026-11-02", "2026-11-20", "2026-12-25", "2027-01-01"] as readonly string[],
+  // Só os dias em que o time realmente não atende (YYYY-MM-DD). Finados e
+  // Consciência Negra ficaram de fora a pedido: o time trabalha nesses dias.
+  holidays: ["2026-12-25", "2027-01-01"] as readonly string[],
   // Teto de dias corridos para achar `daysToShow` dias com horário livre
   // (agenda lotada não pode fazer a busca rodar para sempre).
   maxLookaheadDays: 21,
