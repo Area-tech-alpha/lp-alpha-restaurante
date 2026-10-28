@@ -7,9 +7,9 @@ Fluxo: o lead preenche o formulário em `/lp-09`.
 - **Qualificado:** **nunca passa pelo Growth Hub.** No envio do form ele entra no CRM
   da Matriz (`POST {CRM_API_URL}/external/leads`, `destination: "hq"`) já com o
   closer de `CLOSER_CALENDAR_EMAIL`, e vai para `/lp-09/agendamento?t=<token>`. Ao
-  escolher o horário, a reunião é criada **na agenda do closer**, com Google Meet e o
+  escolher o horário, a reunião é criada **na agenda do closer/SDR**, com Google Meet e o
   lead como convidado, e anexada ao mesmo lead no CRM: estágio "Reunião agendada" e
-  call pendente. Quem não agenda fica no CRM com o closer, em "Novo Lead".
+  call pendente. Quem não agenda fica no CRM com o closer/SDR, em "Novo Lead".
 
 O lead do form e a reunião se juntam no CRM pelo e-mail/telefone (até 7 dias, a
 validade do link). Se o envio do form tiver falhado, o do agendamento cria o lead.
@@ -19,20 +19,20 @@ página de horários num token criptografado (AES-256-GCM) no `?t=` da URL; quem
 o link não consegue ler nem alterar o conteúdo. As travas também ficam no Google:
 - **lead já agendou:** o id do evento é derivado do lead, então um segundo
   agendamento do mesmo lead é recusado pelo próprio Google;
-- **horário ocupado:** o freebusy da agenda do closer é rechecado logo antes de
+- **horário ocupado:** o freebusy da agenda do closer/SDR é rechecado logo antes de
   criar o evento.
 
 Todos os agendamentos caem numa única agenda, a do `CLOSER_CALENDAR_EMAIL`.
 
-Para o evento nascer na agenda do closer, com ele como organizador, usamos uma
+Para o evento nascer na agenda do closer/SDR, com ele como organizador, usamos uma
 **Service Account com Domain-Wide Delegation** no Google Workspace, que se faz
-passar pelo e-mail do closer. Não há OAuth nem tela de consentimento.
+passar pelo e-mail do dono da agenda. Não há OAuth nem tela de consentimento.
 
 ## Onde fica cada coisa
 
 | O quê | Onde |
 |---|---|
-| Regras (duração do slot, janela 08:30–18:00, nº de dias, dias úteis, feriados, timezone, `sendUpdates`) | `lib/agendamento-config.ts` |
+| Regras (duração do slot, janela 08:30–18:00, nº de dias, dias da semana (seg a sáb), dias bloqueados (vazio: feriado aparece normal; o dono da agenda bloqueia no Google se quiser), timezone, `sendUpdates`) | `lib/agendamento-config.ts` |
 | Montagem da grade de dias e slots (lógica pura) | `lib/agendamento.ts` |
 | Quem vai para o agendamento depois do form | `agendamentoPathAposCadastro` em `lib/agendamento.ts` |
 | Token com os dados do lead | `lib/agendamento-token.ts` |
@@ -94,17 +94,20 @@ Em `.env.local` (local) e em **Vercel → Settings → Environment Variables**:
 ```bash
 GOOGLE_SA_CLIENT_EMAIL=lp-agendamento@<projeto>.iam.gserviceaccount.com   # "client_email" do JSON
 GOOGLE_SA_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"  # "private_key" do JSON
-CLOSER_CALENDAR_EMAIL=douglas.junior@assessorialpha.com
-CLOSER_INITIAL=D
+CLOSER_CALENDAR_EMAIL=calebe.tech@assessorialpha.com
+CLOSER_INITIAL=Y
 MEETING_TITLE_PREFIX=Consultoria
 CRM_API_URL=https://<api do CRM>
 CRM_EXTERNAL_LEADS_API_KEY=   # EXTERNAL_LEADS_API_KEY do Dashboard-Comercial-Back-V2
 ```
 
+> O nome da variável continua `CLOSER_*` por compatibilidade; ela vale para
+> qualquer pessoa do Workspace que vá atender a reunião.
+
 - A `GOOGLE_SA_PRIVATE_KEY` pode ser colada com os `\n` literais, do jeito que vem
   no JSON. O código converte para quebras de linha reais.
 - Título gerado: `{MEETING_TITLE_PREFIX}: {CLOSER_INITIAL} | {empresa}`, por
-  exemplo `Consultoria: D | Mestre do Frango`. O sufixo
+  exemplo `Consultoria: Y | Mestre do Frango`. O sufixo
   `- 2026/10/21 17:05 GMT-03:00 - Recording` é adicionado pelo próprio Google
   quando a reunião é gravada no Meet. Ele não faz parte do título.
 - `CLOSER_CALENDAR_EMAIL` é ao mesmo tempo a agenda e o closer do lead no CRM: o
@@ -116,21 +119,21 @@ CRM_EXTERNAL_LEADS_API_KEY=   # EXTERNAL_LEADS_API_KEY do Dashboard-Comercial-Ba
   `AUTH_SECRET` que já está em produção (login do `/dashboard`). Trocar a chave
   invalida os links de agendamento que ainda não foram usados. O link vale 7 dias.
 
-## 4. Trocar do e-mail de teste para o closer real
+## 4. Trocar o e-mail da agenda (teste → produção)
 
-1. Confirme que `douglas.junior@assessorialpha.com` é um usuário ativo do mesmo
+1. Confirme que `yoshio.aragao@assessorialpha.com` é um usuário ativo do mesmo
    Workspace. A delegação vale para qualquer usuário do domínio, então não é preciso
    refazer a etapa 2.
 2. Na Vercel (Production), altere:
-   - `CLOSER_CALENDAR_EMAIL=douglas.junior@assessorialpha.com`
-   - `CLOSER_INITIAL=D` (confira a inicial)
+   - `CLOSER_CALENDAR_EMAIL=yoshio.aragao@assessorialpha.com`
+   - `CLOSER_INITIAL=Y` (confira a inicial)
 3. Faça um redeploy, porque variáveis de ambiente só valem a partir do próximo
    deploy.
 4. Teste com um lead de verdade e um horário qualquer. Confira o evento na agenda
-   do Douglas e depois apague o evento.
+   do Yoshio e depois apague o evento.
 
 Os eventos já criados continuam na agenda de teste; só os novos agendamentos vão
-para o novo closer.
+para a agenda nova.
 
 ## 5. Testar localmente
 
