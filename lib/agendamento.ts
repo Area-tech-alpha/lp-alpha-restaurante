@@ -78,7 +78,7 @@ function slotMinutesOfDay(config: AgendamentoConfig) {
   return out;
 }
 
-// Dias úteis candidatos, a partir de amanhã (hoje nunca entra).
+// Dias candidatos (seg a sáb), a partir de amanhã (hoje nunca entra).
 function candidateDays(now: Date, config: AgendamentoConfig): CivilDate[] {
   const today = zonedParts(now, config.timezone);
   const out: CivilDate[] = [];
@@ -138,7 +138,7 @@ export function buildAgenda(
   return days;
 }
 
-// Validação estrutural do POST: o horário pertence à grade de um dia útil
+// Validação estrutural do POST: o horário pertence à grade de um dia de seg a sáb
 // futuro dentro da janela? A ocupação é checada à parte, no freebusy.
 export function isGridSlot(start: Date, now: Date, config: AgendamentoConfig = agendamentoConfig) {
   if (Number.isNaN(start.getTime()) || start <= now) return false;

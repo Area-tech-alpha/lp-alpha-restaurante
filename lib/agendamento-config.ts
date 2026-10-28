@@ -8,10 +8,10 @@ export const agendamentoConfig = {
   // Último INÍCIO de reunião, não o fim do expediente.
   lastSlotStart: "18:00",
   daysToShow: 3,
-  // 0 = domingo ... 6 = sábado (Date#getUTCDay).
-  businessDays: [1, 2, 3, 4, 5],
-  // Dias bloqueados (YYYY-MM-DD). Vazio a pedido: feriado aparece como dia útil
-  // normal; para fechar um dia, basta o closer bloquear a agenda (o freebusy tira).
+  // 0 = domingo ... 6 = sábado (Date#getUTCDay). Seg a sáb; domingo (0) nunca entra.
+  businessDays: [1, 2, 3, 4, 5, 6],
+  // Dias bloqueados (YYYY-MM-DD). Vazio a pedido: feriado aparece como um dia
+  // normal; para fechar um dia, basta o dono da agenda bloqueá-lo no Google (o freebusy tira).
   holidays: [] as readonly string[],
   // Teto de dias corridos para achar `daysToShow` dias com horário livre
   // (agenda lotada não pode fazer a busca rodar para sempre).

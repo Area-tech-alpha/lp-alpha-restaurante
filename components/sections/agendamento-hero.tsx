@@ -4,6 +4,7 @@ import { renderHeadline } from "@/components/sections/lp-hero";
 import { content } from "@/lib/content";
 
 const { hero } = content.agendamento;
+const [featured, ...others] = hero.polaroids;
 
 export default function AgendamentoHero({ headline }: { headline: string }) {
   return (
@@ -30,7 +31,7 @@ export default function AgendamentoHero({ headline }: { headline: string }) {
           />
         </a>
 
-        <div className="grid grid-cols-1 items-center gap-10 md:grid-cols-[1.15fr_.85fr]">
+        <div className="grid grid-cols-1 items-center gap-10 md:grid-cols-[1fr_1fr]">
           <div className="fade-in-load text-center md:text-left">
             <h1 className="font-lp-display text-[clamp(2rem,4.6vw,3.4rem)] leading-[1.08] font-semibold text-lp-ink uppercase">
               {renderHeadline(headline)}
@@ -43,16 +44,30 @@ export default function AgendamentoHero({ headline }: { headline: string }) {
             </LpCtaButton>
           </div>
 
-          <div className="relative mx-auto w-full max-w-[340px] md:max-w-[380px]">
+          <div className="mx-auto w-full max-w-[560px] lg:max-w-[600px]">
             <Image
-              src={hero.image.src}
-              alt={hero.image.alt}
-              width={hero.image.width}
-              height={hero.image.height}
+              src={featured.src}
+              alt={featured.alt}
+              width={featured.width}
+              height={featured.height}
               priority
-              sizes="(max-width: 768px) 340px, 380px"
-              className="h-auto w-full max-md:max-h-[520px] max-md:object-contain"
+              sizes="(min-width: 1024px) 600px, (min-width: 768px) 560px, 100vw"
+              className="fade-in-load h-auto w-full [animation-delay:100ms]"
             />
+            <div className="mt-4 grid grid-cols-2 items-start gap-4">
+              {others.map((polaroid, i) => (
+                <Image
+                  key={polaroid.src}
+                  src={polaroid.src}
+                  alt={polaroid.alt}
+                  width={polaroid.width}
+                  height={polaroid.height}
+                  sizes="(min-width: 1024px) 300px, (min-width: 768px) 280px, 50vw"
+                  style={{ animationDelay: `${250 + i * 150}ms` }}
+                  className="fade-in-load h-auto w-full"
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
