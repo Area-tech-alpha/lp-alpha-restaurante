@@ -310,6 +310,10 @@ export const content = {
       loading: "Carregando horários…",
       empty: "Nenhum horário disponível nos próximos dias. Nosso time vai entrar em contato com você.",
       selectedLabel: "Horário selecionado:",
+      // Chaves = ids de agendamentoConfig.periods.
+      periodos: { manha: "Manhã", tarde: "Tarde", noite: "Noite" },
+      periodoIndisponivel: "Indisponível",
+      periodoHorario: { singular: "horário", plural: "horários" },
       confirm: "Confirmar agendamento",
       confirming: "Confirmando…",
       successTitle: "Reunião confirmada!",
@@ -319,7 +323,7 @@ export const content = {
       errors: {
         generic: "Não foi possível concluir o agendamento. Tente novamente.",
         load: "Não foi possível carregar os horários. Tente novamente.",
-        slotTaken: "Esse horário acabou de ser preenchido, escolha outro.",
+        slotUnavailable: "Esse horário não está mais disponível, escolha outro.",
         leadNotFound: "Não encontramos o seu cadastro. Preencha o formulário novamente.",
         retry: "Tentar novamente",
       },

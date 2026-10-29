@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CalendarCheck, Loader2 } from "lucide-react";
+import { CalendarCheck, ChevronDown, Loader2 } from "lucide-react";
 import { content } from "@/lib/content";
 import { clarityEvent } from "@/lib/clarity";
 import type { AgendaDay } from "@/lib/agendamento";
+import type { PeriodId } from "@/lib/agendamento-config";
 
 const { pagina: c } = content.agendamento;
 
@@ -40,6 +41,7 @@ export default function AgendamentoPicker() {
   const token = useSearchParams().get("t");
   const [state, setState] = useState<State>({ kind: "loading" });
   const [activeDay, setActiveDay] = useState(0);
+  const [openPeriod, setOpenPeriod] = useState<PeriodId | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState("");
@@ -48,6 +50,7 @@ export default function AgendamentoPicker() {
     setState({ kind: "loading" });
     setSelected(null);
     setActiveDay(0);
+    setOpenPeriod(null);
     setState(await fetchAgenda(token));
   }, [token]);
 
@@ -75,8 +78,8 @@ export default function AgendamentoPicker() {
       if (res.ok) {
         clarityEvent("agendamento_confirmado");
         setState({ kind: "done", confirmed: data.confirmed, already: false });
-      } else if (data.error === "slot_taken" || data.error === "invalid_slot") {
-        setNotice(c.errors.slotTaken);
+      } else if (data.error === "invalid_slot") {
+        setNotice(c.errors.slotUnavailable);
         await load();
       } else if (data.error === "already_scheduled") {
         await load();
@@ -142,7 +145,9 @@ export default function AgendamentoPicker() {
   }
 
   const day = days[Math.min(activeDay, days.length - 1)];
-  const selectedSlot = days.flatMap((d) => d.slots.map((s) => ({ ...s, day: d.label }))).find((s) => s.start === selected);
+  const selectedSlot = days
+    .flatMap((d) => d.periods.flatMap((p) => p.slots.map((s) => ({ ...s, day: d.label }))))
+    .find((s) => s.start === selected);
 
   return (
     <div>
@@ -163,7 +168,10 @@ export default function AgendamentoPicker() {
               id={`tab-${d.date}`}
               aria-selected={active}
               aria-controls="agendamento-slots"
-              onClick={() => setActiveDay(i)}
+              onClick={() => {
+                setActiveDay(i);
+                setOpenPeriod(null);
+              }}
               className={`rounded-xl border px-2 py-3 font-lp-heading text-[14px] font-bold tracking-[.03em] transition-colors ${
                 active
                   ? "border-lp-gold-2 bg-gradient-to-br from-lp-gold-1 to-lp-gold-2 text-lp-on-gold"
@@ -176,28 +184,71 @@ export default function AgendamentoPicker() {
         })}
       </div>
 
-      <div
-        id="agendamento-slots"
-        role="tabpanel"
-        aria-labelledby={`tab-${day.date}`}
-        className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5"
-      >
-        {day.slots.map((slot) => {
-          const isSelected = slot.start === selected;
+      <div id="agendamento-slots" role="tabpanel" aria-labelledby={`tab-${day.date}`} className="mt-5 flex flex-col gap-2">
+        {day.periods.map((period) => {
+          const count = period.slots.length;
+          const available = count > 0;
+          const open = available && openPeriod === period.id;
+          const panelId = `periodo-${day.date}-${period.id}`;
           return (
-            <button
-              key={slot.start}
-              type="button"
-              aria-pressed={isSelected}
-              onClick={() => setSelected(slot.start)}
-              className={`rounded-lg border py-2.5 text-[14px] font-semibold tabular-nums transition-colors ${
-                isSelected
-                  ? "border-lp-gold-1 bg-lp-gold-2/15 text-lp-gold-1"
-                  : "border-lp-border bg-lp-panel text-lp-text hover:border-lp-border-gold"
+            <div
+              key={period.id}
+              className={`rounded-xl border transition-colors ${
+                open ? "border-lp-border-gold bg-lp-panel" : "border-lp-border bg-lp-panel"
               }`}
             >
-              {slot.label}
-            </button>
+              <h3>
+                <button
+                  type="button"
+                  id={`${panelId}-botao`}
+                  aria-expanded={open}
+                  aria-controls={panelId}
+                  disabled={!available}
+                  onClick={() => setOpenPeriod(open ? null : period.id)}
+                  className="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3.5 text-left disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className="font-lp-heading text-[15px] font-bold text-lp-ink">{c.periodos[period.id]}</span>
+                  <span className="flex items-center gap-2 text-[13px] text-lp-text-muted">
+                    {available
+                      ? `${count} ${count === 1 ? c.periodoHorario.singular : c.periodoHorario.plural}`
+                      : c.periodoIndisponivel}
+                    {available && (
+                      <ChevronDown
+                        className={`h-4 w-4 text-lp-gold-1 transition-transform ${open ? "rotate-180" : ""}`}
+                        aria-hidden="true"
+                      />
+                    )}
+                  </span>
+                </button>
+              </h3>
+              {open && (
+                <div
+                  id={panelId}
+                  role="region"
+                  aria-labelledby={`${panelId}-botao`}
+                  className="grid grid-cols-3 gap-2 px-4 pb-4 sm:grid-cols-4 md:grid-cols-5"
+                >
+                  {period.slots.map((slot) => {
+                    const isSelected = slot.start === selected;
+                    return (
+                      <button
+                        key={slot.start}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => setSelected(slot.start)}
+                        className={`rounded-lg border py-2.5 text-[14px] font-semibold tabular-nums transition-colors ${
+                          isSelected
+                            ? "border-lp-gold-1 bg-lp-gold-2/15 text-lp-gold-1"
+                            : "border-lp-border bg-lp-panel text-lp-text hover:border-lp-border-gold"
+                        }`}
+                      >
+                        {slot.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>

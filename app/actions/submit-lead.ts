@@ -9,6 +9,7 @@ import { variantFromUrl } from "@/lib/variants";
 import { agendamentoPathAposCadastro } from "@/lib/agendamento";
 import { createAgendamentoToken, type LeadAgendamento } from "@/lib/agendamento-token";
 import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
+import { scheduleAgendamentoFollowup } from "@/lib/agendamento-followup";
 import { getCloserEmail } from "@/lib/google-calendar";
 import { randomUUID } from "node:crypto";
 
@@ -287,6 +288,7 @@ export async function submitLead(
         const crmLeadId = "crmLeadId" in res ? res.crmLeadId : null;
         const token = createAgendamentoToken({ ...leadAgendamento, crmLeadId });
         redirectTo = `${agendamentoPath}?t=${token}`;
+        after(() => scheduleAgendamentoFollowup(token));
       } catch (err) {
         console.error("[submit-lead] Falha ao gerar token de agendamento:", err);
         redirectTo = qualificacao.redirectTo;

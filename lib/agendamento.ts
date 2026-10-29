@@ -1,13 +1,12 @@
-import { agendamentoConfig, type AgendamentoConfig } from "@/lib/agendamento-config";
+import { agendamentoConfig, type AgendamentoConfig, type PeriodId } from "@/lib/agendamento-config";
 import { hasAgendamento } from "@/lib/variants";
 
-// Regras de grade/dias da página /[variant]/agendamento. Sem I/O: recebe "agora"
-// e os intervalos ocupados, para ser usado tanto no GET de slots quanto na
-// validação do POST.
+// Regras de grade/dias da página /[variant]/agendamento. Sem I/O: recebe "agora",
+// para ser usado tanto no GET de slots quanto na validação do POST.
 
-export type BusyInterval = { start: Date; end: Date };
 export type Slot = { start: string; label: string };
-export type AgendaDay = { date: string; label: string; slots: Slot[] };
+export type AgendaPeriod = { id: PeriodId; slots: Slot[] };
+export type AgendaDay = { date: string; label: string; periods: AgendaPeriod[] };
 
 // Destino depois do submit do formulário. Hoje só leads qualificados de
 // variações com agendamento vão escolher horário — regra isolada aqui porque
@@ -74,21 +73,23 @@ function dateKey(day: CivilDate) {
   return `${day.y}-${pad(day.m)}-${pad(day.d)}`;
 }
 
-function slotMinutesOfDay(day: CivilDate, config: AgendamentoConfig) {
-  const override = config.sameDayOverride;
-  const first = parseHHMM(override?.date === dateKey(day) ? override.firstSlot : config.firstSlot);
-  const last = parseHHMM(config.lastSlotStart);
-  const out: number[] = [];
-  for (let t = first; t <= last; t += config.slotMinutes) out.push(t);
-  return out;
+// Minutos do dia (no fuso da agenda) de cada horário de cada período, sem filtro de "agora".
+function periodSlots(config: AgendamentoConfig) {
+  return config.periods.map((period) => {
+    const minutes: number[] = [];
+    for (let t = parseHHMM(period.start); t + config.slotMinutes <= parseHHMM(period.end); t += config.slotMinutes) {
+      minutes.push(t);
+    }
+    return { id: period.id, minutes };
+  });
 }
 
-// Dias candidatos (seg a sáb), a partir de amanhã. Hoje só entra no dia de sameDayOverride.
+// Dias candidatos (seg a sáb), a partir de HOJE.
 function candidateDays(now: Date, config: AgendamentoConfig): CivilDate[] {
   const p = zonedParts(now, config.timezone);
   const today: CivilDate = { y: p.y, m: p.m, d: p.d };
-  const out: CivilDate[] = config.sameDayOverride?.date === dateKey(today) ? [today] : [];
-  for (let i = 1; i <= config.maxLookaheadDays; i++) {
+  const out: CivilDate[] = [];
+  for (let i = 0; i <= config.maxLookaheadDays; i++) {
     const day = addDays(today, i);
     if (!(config.businessDays as readonly number[]).includes(weekday(day))) continue;
     if (config.holidays.includes(dateKey(day))) continue;
@@ -97,45 +98,34 @@ function candidateDays(now: Date, config: AgendamentoConfig): CivilDate[] {
   return out;
 }
 
-function overlaps(start: Date, end: Date, busy: BusyInterval[]) {
-  return busy.some((b) => start < b.end && end > b.start);
+function earliestStart(now: Date, config: AgendamentoConfig) {
+  return new Date(now.getTime() + config.minNoticeMinutes * 60000);
 }
 
 export function meetingEnd(start: Date, config: AgendamentoConfig = agendamentoConfig) {
   return new Date(start.getTime() + config.meetingMinutes * 60000);
 }
 
-// Janela que o GET de slots precisa consultar no freebusy.
-export function lookaheadWindow(now: Date, config: AgendamentoConfig = agendamentoConfig) {
-  const days = candidateDays(now, config);
-  const first = days[0];
-  const last = days[days.length - 1];
-  return {
-    timeMin: zonedToUtc(first, 0, config.timezone),
-    timeMax: zonedToUtc(addDays(last, 1), 0, config.timezone),
-  };
-}
-
-export function buildAgenda(
-  now: Date,
-  busy: BusyInterval[],
-  config: AgendamentoConfig = agendamentoConfig
-): AgendaDay[] {
+// Sem checagem de agenda ocupada: vários leads podem marcar o mesmo horário.
+export function buildAgenda(now: Date, config: AgendamentoConfig = agendamentoConfig): AgendaDay[] {
+  const minStart = earliestStart(now, config);
   const days: AgendaDay[] = [];
 
   for (const day of candidateDays(now, config)) {
-    const slots: Slot[] = [];
-    for (const minutes of slotMinutesOfDay(day, config)) {
-      const start = zonedToUtc(day, minutes, config.timezone);
-      if (start <= now) continue;
-      if (overlaps(start, meetingEnd(start, config), busy)) continue;
-      slots.push({ start: start.toISOString(), label: `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}` });
-    }
-    if (slots.length === 0) continue;
+    const periods = periodSlots(config).map(({ id, minutes }) => ({
+      id,
+      slots: minutes.flatMap((m): Slot[] => {
+        const start = zonedToUtc(day, m, config.timezone);
+        if (start < minStart) return [];
+        return [{ start: start.toISOString(), label: `${pad(Math.floor(m / 60))}:${pad(m % 60)}` }];
+      }),
+    }));
+    // Hoje sem nenhum horário restante (ex.: 21:45) não ocupa uma das abas.
+    if (periods.every((p) => p.slots.length === 0)) continue;
     days.push({
       date: dateKey(day),
       label: `${WEEKDAYS[weekday(day)]} ${pad(day.d)}/${MONTHS[day.m - 1]}`,
-      slots,
+      periods,
     });
     if (days.length === config.daysToShow) break;
   }
@@ -143,12 +133,13 @@ export function buildAgenda(
   return days;
 }
 
-// Validação estrutural do POST: o horário pertence à grade de um dia de seg a sáb
-// futuro dentro da janela? A ocupação é checada à parte, no freebusy.
+// Validação do POST: o horário pertence à grade de um dia de seg a sáb dentro da
+// janela e começa em >= agora + minNoticeMinutes?
 export function isGridSlot(start: Date, now: Date, config: AgendamentoConfig = agendamentoConfig) {
-  if (Number.isNaN(start.getTime()) || start <= now) return false;
+  if (Number.isNaN(start.getTime()) || start < earliestStart(now, config)) return false;
+  const grid = periodSlots(config).flatMap((p) => p.minutes);
   return candidateDays(now, config).some((day) =>
-    slotMinutesOfDay(day, config).some((minutes) => zonedToUtc(day, minutes, config.timezone).getTime() === start.getTime())
+    grid.some((minutes) => zonedToUtc(day, minutes, config.timezone).getTime() === start.getTime())
   );
 }
 

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { agendamentoConfig } from "@/lib/agendamento-config";
-import { buildAgenda, formatSlot, lookaheadWindow } from "@/lib/agendamento";
+import { buildAgenda, formatSlot } from "@/lib/agendamento";
 import { readAgendamentoToken } from "@/lib/agendamento-token";
-import { findLeadEvent, getCloserEmail, queryFreeBusy } from "@/lib/google-calendar";
+import { findLeadEvent, getCloserEmail } from "@/lib/google-calendar";
 
 export const dynamic = "force-dynamic";
 
@@ -11,18 +11,13 @@ export async function GET(req: NextRequest) {
   if (!lead) return NextResponse.json({ error: "lead_not_found" }, { status: 404 });
 
   try {
-    const closer = getCloserEmail();
-    const existing = await findLeadEvent(closer, lead.leadKey);
+    const existing = await findLeadEvent(getCloserEmail(), lead.leadKey);
     if (existing) {
       return NextResponse.json({ alreadyScheduled: true, confirmed: formatSlot(existing.start) });
     }
 
-    const now = new Date();
-    const { timeMin, timeMax } = lookaheadWindow(now);
-    const busy = await queryFreeBusy(closer, timeMin, timeMax);
-
     return NextResponse.json(
-      { timezone: agendamentoConfig.timezone, days: buildAgenda(now, busy) },
+      { timezone: agendamentoConfig.timezone, days: buildAgenda(new Date()) },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (err) {
