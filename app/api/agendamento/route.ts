@@ -12,6 +12,7 @@ import {
   queryFreeBusy,
 } from "@/lib/google-calendar";
 import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
+import { buildAgendamentoWebhookPayload, sendAgendamentoWebhook } from "@/lib/agendamento-webhook";
 
 // Sem banco: o lead vem do token (lib/agendamento-token.ts) e as travas
 // ("já agendou", "horário ocupado") são checadas no Google Agenda do closer.
@@ -94,6 +95,12 @@ export async function POST(req: NextRequest) {
       })
     );
     console.log("[agendamento] Criado", { leadKey: lead.leadKey, eventId: event.id, crm: result });
+
+    // Token emitido antes deste deploy não tem crmLeadId: cai no id do envio acima.
+    const crmLeadId = lead.crmLeadId ?? (result.status === "sent" ? result.crmLeadId : undefined) ?? null;
+    const payload = buildAgendamentoWebhookPayload(crmLeadId, lead.empresa, start);
+    const webhook = await sendAgendamentoWebhook(payload);
+    console.log("[agendamento] Webhook", { leadKey: lead.leadKey, eventId: event.id, payload, webhook });
   });
 
   return NextResponse.json({
