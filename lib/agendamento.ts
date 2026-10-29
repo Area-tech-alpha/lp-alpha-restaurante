@@ -70,22 +70,28 @@ function weekday(day: CivilDate) {
   return new Date(Date.UTC(day.y, day.m - 1, day.d)).getUTCDay();
 }
 
-function slotMinutesOfDay(config: AgendamentoConfig) {
-  const first = parseHHMM(config.firstSlot);
+function dateKey(day: CivilDate) {
+  return `${day.y}-${pad(day.m)}-${pad(day.d)}`;
+}
+
+function slotMinutesOfDay(day: CivilDate, config: AgendamentoConfig) {
+  const override = config.sameDayOverride;
+  const first = parseHHMM(override?.date === dateKey(day) ? override.firstSlot : config.firstSlot);
   const last = parseHHMM(config.lastSlotStart);
   const out: number[] = [];
   for (let t = first; t <= last; t += config.slotMinutes) out.push(t);
   return out;
 }
 
-// Dias candidatos (seg a sáb), a partir de amanhã (hoje nunca entra).
+// Dias candidatos (seg a sáb), a partir de amanhã. Hoje só entra no dia de sameDayOverride.
 function candidateDays(now: Date, config: AgendamentoConfig): CivilDate[] {
-  const today = zonedParts(now, config.timezone);
-  const out: CivilDate[] = [];
+  const p = zonedParts(now, config.timezone);
+  const today: CivilDate = { y: p.y, m: p.m, d: p.d };
+  const out: CivilDate[] = config.sameDayOverride?.date === dateKey(today) ? [today] : [];
   for (let i = 1; i <= config.maxLookaheadDays; i++) {
     const day = addDays(today, i);
     if (!(config.businessDays as readonly number[]).includes(weekday(day))) continue;
-    if (config.holidays.includes(`${day.y}-${pad(day.m)}-${pad(day.d)}`)) continue;
+    if (config.holidays.includes(dateKey(day))) continue;
     out.push(day);
   }
   return out;
@@ -115,12 +121,11 @@ export function buildAgenda(
   busy: BusyInterval[],
   config: AgendamentoConfig = agendamentoConfig
 ): AgendaDay[] {
-  const grid = slotMinutesOfDay(config);
   const days: AgendaDay[] = [];
 
   for (const day of candidateDays(now, config)) {
     const slots: Slot[] = [];
-    for (const minutes of grid) {
+    for (const minutes of slotMinutesOfDay(day, config)) {
       const start = zonedToUtc(day, minutes, config.timezone);
       if (start <= now) continue;
       if (overlaps(start, meetingEnd(start, config), busy)) continue;
@@ -128,7 +133,7 @@ export function buildAgenda(
     }
     if (slots.length === 0) continue;
     days.push({
-      date: `${day.y}-${pad(day.m)}-${pad(day.d)}`,
+      date: dateKey(day),
       label: `${WEEKDAYS[weekday(day)]} ${pad(day.d)}/${MONTHS[day.m - 1]}`,
       slots,
     });
@@ -142,9 +147,8 @@ export function buildAgenda(
 // futuro dentro da janela? A ocupação é checada à parte, no freebusy.
 export function isGridSlot(start: Date, now: Date, config: AgendamentoConfig = agendamentoConfig) {
   if (Number.isNaN(start.getTime()) || start <= now) return false;
-  const grid = slotMinutesOfDay(config);
   return candidateDays(now, config).some((day) =>
-    grid.some((minutes) => zonedToUtc(day, minutes, config.timezone).getTime() === start.getTime())
+    slotMinutesOfDay(day, config).some((minutes) => zonedToUtc(day, minutes, config.timezone).getTime() === start.getTime())
   );
 }
 

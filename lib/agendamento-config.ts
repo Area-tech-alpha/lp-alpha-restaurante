@@ -18,6 +18,8 @@ export const agendamentoConfig = {
   maxLookaheadDays: 21,
   // "all" | "externalOnly" | "none": quem recebe o e-mail de convite do Google.
   sendUpdates: "all",
+  // Exceção pontual: inclui o dia de hoje na grade a partir de um horário. Expira sozinha (só vale na data indicada).
+  sameDayOverride: { date: "2026-10-29", firstSlot: "12:00" } as { date: string; firstSlot: string } | null,
 } as const;
 
 export type AgendamentoConfig = typeof agendamentoConfig;
