@@ -62,8 +62,8 @@ function comTeto<T>(query: PromiseLike<T>, ms: number): Promise<T> {
 async function enviarAoCrmComCloser(lead: LeadAgendamento) {
   const result = await sendLeadToCrm(buildCrmLeadPayload(lead, getCloserEmail()));
   return result.status === "sent"
-    ? { ok: result.ok, status: result.httpStatus }
-    : { ok: false, status: 0 };
+    ? { ok: result.ok, status: result.httpStatus, crmLeadId: result.crmLeadId ?? null }
+    : { ok: false, status: 0, crmLeadId: null };
 }
 
 type ActionResult =
@@ -199,6 +199,7 @@ export async function submitLead(
   const leadAgendamento: LeadAgendamento | null = agendamentoPath
     ? {
         leadKey: leadId !== "unknown" ? leadId : randomUUID(),
+        crmLeadId: null,
         nome: parsed.data.nome,
         email: parsed.data.email,
         telefone: parsed.data.telefone,
@@ -217,16 +218,6 @@ export async function submitLead(
         ...metaIds,
       }
     : null;
-
-  if (agendamentoPath && leadAgendamento) {
-    try {
-      const token = createAgendamentoToken(leadAgendamento);
-      redirectTo = `${agendamentoPath}?t=${token}`;
-    } catch (err) {
-      console.error("[submit-lead] Falha ao gerar token de agendamento:", err);
-      redirectTo = qualificacao.redirectTo;
-    }
-  }
 
   // Formulário completo: marca a captura parcial da mesma sessão (se existir)
   // como convertida, pra a automação de recuperação (n8n) não tentar mais
@@ -288,6 +279,18 @@ export async function submitLead(
     if (!res.ok) {
       console.error(`[submit-lead] Webhook retornou ${res.status}`);
       return { success: false, error: "Erro ao enviar. Tente novamente em instantes.", reason: "server" };
+    }
+
+    // Token só depois do CRM: leva o crmLeadId até o webhook do agendamento.
+    if (agendamentoPath && leadAgendamento) {
+      try {
+        const crmLeadId = "crmLeadId" in res ? res.crmLeadId : null;
+        const token = createAgendamentoToken({ ...leadAgendamento, crmLeadId });
+        redirectTo = `${agendamentoPath}?t=${token}`;
+      } catch (err) {
+        console.error("[submit-lead] Falha ao gerar token de agendamento:", err);
+        redirectTo = qualificacao.redirectTo;
+      }
     }
 
     const capiInput = {
