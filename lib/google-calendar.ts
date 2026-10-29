@@ -1,14 +1,10 @@
 import { createHash } from "node:crypto";
 import { JWT } from "google-auth-library";
-import type { BusyInterval } from "@/lib/agendamento";
 
 // Service Account com Domain-Wide Delegation impersonando o closer (subject):
 // o evento nasce NA agenda dele, com ele como organizer. Passo a passo de
 // configuração em docs/AGENDAMENTO.md.
-const SCOPES = [
-  "https://www.googleapis.com/auth/calendar.events",
-  "https://www.googleapis.com/auth/calendar.freebusy",
-];
+const SCOPES = ["https://www.googleapis.com/auth/calendar.events"];
 
 const API = "https://www.googleapis.com/calendar/v3";
 
@@ -52,31 +48,6 @@ async function calendarFetch<T>(subject: string, path: string, init: RequestInit
     throw new GoogleCalendarError(`Calendar API ${res.status}: ${body.slice(0, 500)}`, res.status);
   }
   return res.json() as Promise<T>;
-}
-
-type FreeBusyResponse = {
-  calendars: Record<string, { busy?: { start: string; end: string }[]; errors?: { reason: string }[] }>;
-};
-
-export async function queryFreeBusy(
-  calendarEmail: string,
-  timeMin: Date,
-  timeMax: Date
-): Promise<BusyInterval[]> {
-  const data = await calendarFetch<FreeBusyResponse>(calendarEmail, "/freeBusy", {
-    method: "POST",
-    body: JSON.stringify({
-      timeMin: timeMin.toISOString(),
-      timeMax: timeMax.toISOString(),
-      items: [{ id: calendarEmail }],
-    }),
-  });
-  const calendar = data.calendars[calendarEmail];
-  // Erro por calendário vem com 200; tratar como "tudo livre" poderia marcar em cima de reunião.
-  if (!calendar || calendar.errors?.length) {
-    throw new GoogleCalendarError(`freeBusy sem acesso ao calendário: ${JSON.stringify(calendar?.errors)}`);
-  }
-  return (calendar.busy ?? []).map((b) => ({ start: new Date(b.start), end: new Date(b.end) }));
 }
 
 type InsertEventInput = {

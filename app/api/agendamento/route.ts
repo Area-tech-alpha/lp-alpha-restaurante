@@ -9,13 +9,13 @@ import {
   findLeadEvent,
   getCloserEmail,
   insertEvent,
-  queryFreeBusy,
 } from "@/lib/google-calendar";
 import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
 import { buildAgendamentoWebhookPayload, sendAgendamentoWebhook } from "@/lib/agendamento-webhook";
 
-// Sem banco: o lead vem do token (lib/agendamento-token.ts) e as travas
-// ("já agendou", "horário ocupado") são checadas no Google Agenda do closer.
+// Sem banco: o lead vem do token (lib/agendamento-token.ts) e a trava "já agendou"
+// é checada no Google Agenda do closer. Horário ocupado NÃO é checado: vários
+// leads podem marcar o mesmo horário.
 const bodySchema = z.object({
   token: z.string().min(1),
   start: z.iso.datetime({ offset: true }),
@@ -62,10 +62,6 @@ export async function POST(req: NextRequest) {
   try {
     closer = getCloserEmail();
     if (await findLeadEvent(closer, lead.leadKey)) return error("already_scheduled", 409);
-
-    // Rechecagem logo antes de criar: o horário pode ter sido ocupado desde que a grade carregou.
-    const busy = await queryFreeBusy(closer, start, end);
-    if (busy.some((b) => start < b.end && end > b.start)) return error("slot_taken", 409);
 
     event = await insertEvent({
       organizerEmail: closer,

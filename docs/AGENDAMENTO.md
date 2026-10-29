@@ -9,18 +9,32 @@ Fluxo: o lead preenche o formulário em `/lp-09`.
   closer de `CLOSER_CALENDAR_EMAIL`, e vai para `/lp-09/agendamento?t=<token>`. Ao
   escolher o horário, a reunião é criada **na agenda do closer/SDR**, com Google Meet e o
   lead como convidado, e anexada ao mesmo lead no CRM: estágio "Reunião agendada" e
-  call pendente. Quem não agenda fica no CRM com o closer/SDR, em "Novo Lead".
+  call pendente. Quem não agenda fica no CRM com o closer/SDR, em "Novo Lead", e
+  **5 minutos depois é enviado ao comercial** (ver "Follow-up: lead que não agendou").
 
 O lead do form e a reunião se juntam no CRM pelo e-mail/telefone (até 7 dias, a
 validade do link). Se o envio do form tiver falhado, o do agendamento cria o lead.
 
 **O agendamento não usa o banco de dados.** Os dados do lead vão do formulário até a
 página de horários num token criptografado (AES-256-GCM) no `?t=` da URL; quem abre
-o link não consegue ler nem alterar o conteúdo. As travas também ficam no Google:
+o link não consegue ler nem alterar o conteúdo. A única trava fica no Google:
 - **lead já agendou:** o id do evento é derivado do lead, então um segundo
-  agendamento do mesmo lead é recusado pelo próprio Google;
-- **horário ocupado:** o freebusy da agenda do closer/SDR é rechecado logo antes de
-  criar o evento.
+  agendamento do mesmo lead é recusado pelo próprio Google.
+
+**Não há checagem de agenda ocupada:** a grade não consulta o freebusy e vários leads
+podem marcar o mesmo horário.
+
+## Grade de horários
+
+- Slots de 30 em 30 min (`:00` e `:30`), em três períodos `[início, fim)`:
+  **Manhã** 08:00–11:30, **Tarde** 13:00–17:30, **Noite** 18:00–21:30.
+- Dias de seg a sáb (domingo nunca). **Hoje entra** e conta como um dos 3 dias
+  (hoje qui → QUI, SEX, SÁB; num domingo → SEG, TER, QUA). Se hoje não tiver mais
+  nenhum horário (ex.: 21:45), a grade pula para os 3 próximos dias úteis.
+- Antecedência mínima de 30 min (`minNoticeMinutes`): só aparece slot que começa em
+  `>= agora + 30 min`, e o `POST` recusa (`invalid_slot`) qualquer outro.
+- Na página, cada dia tem três gavetas (Manhã / Tarde / Noite) com a contagem de
+  horários; período sem horário aparece desabilitado como "Indisponível".
 
 Todos os agendamentos caem numa única agenda, a do `CLOSER_CALENDAR_EMAIL`.
 
@@ -32,12 +46,13 @@ passar pelo e-mail do dono da agenda. Não há OAuth nem tela de consentimento.
 
 | O quê | Onde |
 |---|---|
-| Regras (duração do slot, janela 08:30–18:00, nº de dias, dias da semana (seg a sáb), dias bloqueados (vazio: feriado aparece normal; o dono da agenda bloqueia no Google se quiser), timezone, `sendUpdates`) | `lib/agendamento-config.ts` |
+| Regras (duração do slot, períodos manhã/tarde/noite, antecedência mínima, nº de dias, dias da semana (seg a sáb), dias bloqueados, timezone, `sendUpdates`) | `lib/agendamento-config.ts` |
 | Montagem da grade de dias e slots (lógica pura) | `lib/agendamento.ts` |
 | Quem vai para o agendamento depois do form | `agendamentoPathAposCadastro` em `lib/agendamento.ts` |
 | Token com os dados do lead | `lib/agendamento-token.ts` |
-| Chamadas ao Google (freebusy, criação e busca do evento) | `lib/google-calendar.ts` |
-| APIs | `GET /api/agendamento/slots?t=<token>` e `POST /api/agendamento` |
+| Chamadas ao Google (criação e busca do evento) | `lib/google-calendar.ts` |
+| APIs | `GET /api/agendamento/slots?t=<token>`, `POST /api/agendamento` e `POST /api/agendamento/followup` (QStash) |
+| Follow-up de 5 min (QStash + webhook do comercial) | `lib/agendamento-followup.ts` |
 | Envio do lead qualificado ao CRM (closer + reunião) | `lib/crm.ts` |
 | Textos da página | `content.agendamento` em `lib/content.ts` |
 
@@ -78,14 +93,13 @@ Quem faz esta etapa é um **super admin do Workspace**.
    - **Escopos OAuth** (separados por vírgula, exatamente assim):
 
      ```
-     https://www.googleapis.com/auth/calendar.events,https://www.googleapis.com/auth/calendar.freebusy
+     https://www.googleapis.com/auth/calendar.events
      ```
 5. Clique em **Autorizar**. A propagação pode levar de alguns minutos até ~24h. Se
    aparecer `unauthorized_client` logo depois, é só aguardar.
 
-`calendar.events` permite criar eventos (com Meet) e `calendar.freebusy` permite
-consultar os horários ocupados. Nenhum dos dois dá acesso ao conteúdo de outros
-eventos da agenda.
+`calendar.events` permite criar eventos (com Meet) e buscar o evento do próprio lead.
+(O escopo `calendar.freebusy` não é mais usado; pode continuar autorizado sem problema.)
 
 ## 3. Variáveis de ambiente
 
@@ -156,9 +170,42 @@ npm run dev
    ```
 
 Respostas de erro do `POST`: `400 invalid_slot` (fora da grade ou no passado),
-`404 lead_not_found` (token inválido ou com mais de 7 dias), `409 already_scheduled`,
-`409 slot_taken` (a página recarrega os horários sozinha) e `502/503` (falha no
-Google).
+`404 lead_not_found` (token inválido ou com mais de 7 dias), `409 already_scheduled`
+e `502/503` (falha no Google). Com `invalid_slot` a página avisa e recarrega a grade.
+
+Testes da grade e do follow-up (sem rede): `npm test`.
+
+## Follow-up: lead que não agendou em 5 min
+
+1. No envio do form, depois de gerar o token, o lead qualificado da variação com
+   agendamento ganha uma mensagem no **Upstash QStash** com `delay` de 300s para
+   `POST {SITE_URL}/api/agendamento/followup` com `{ token }`. Falha ao agendar só
+   loga (`[agendamento-followup]`); o envio do form nunca quebra por isso.
+2. A rota verifica a assinatura do QStash (`QSTASH_CURRENT_SIGNING_KEY` /
+   `QSTASH_NEXT_SIGNING_KEY`; sem assinatura válida → `401`), lê o lead do token e
+   procura o evento do lead na agenda do closer:
+   - **agendou:** não faz nada (log `Lead agendou, não envia ao comercial`);
+   - **não agendou:** `POST` JSON para `COMERCIAL_WEBHOOK_URL` com o mesmo payload do
+     `CRM_WEBHOOK_URL` (`lead_id`, contato, empresa, segmento, faturamento, cnpj,
+     investiria, `origem`, `variante`, UTMs, referrer, fbclid/fbc/fbp) mais
+     `crm_lead_id` e `motivo: "nao_agendou_5min"`. Timeout 10s; o status é logado.
+3. Responde `200` nos dois casos (inclusive se o webhook do comercial falhar ou o
+   token for inválido), para o QStash não repetir. Só devolve `503` se a consulta ao
+   Google falhar — aí o QStash tenta de novo.
+
+Variáveis (Vercel → Production):
+
+```bash
+COMERCIAL_WEBHOOK_URL=        # webhook do comercial
+QSTASH_TOKEN=                 # Upstash Console → QStash → Request
+QSTASH_CURRENT_SIGNING_KEY=   # Upstash Console → QStash → Signing Keys
+QSTASH_NEXT_SIGNING_KEY=
+SITE_URL=https://cadastro.assessorialpha.com
+```
+
+> O QStash precisa alcançar `SITE_URL` pela internet: não funciona com `localhost`
+> nem com preview da Vercel protegido por senha/Deployment Protection. Sem
+> `QSTASH_TOKEN`/`SITE_URL` o follow-up é só pulado (com log).
 
 ## Problemas comuns
 
