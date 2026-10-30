@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Receiver } from "@upstash/qstash";
 import { z } from "zod";
 import { readAgendamentoToken } from "@/lib/agendamento-token";
-import { findLeadEvent, getCloserEmail } from "@/lib/google-calendar";
+import { findLeadEvent, getAgendaOrganizer } from "@/lib/google-calendar";
 import { buildComercialPayload, sendLeadToComercial } from "@/lib/agendamento-followup";
 
 // Chamado pelo QStash 5 min depois do envio do form (lib/agendamento-followup.ts).
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    if (await findLeadEvent(getCloserEmail(), lead.leadKey)) {
+    if (await findLeadEvent(getAgendaOrganizer().organizerEmail, lead.leadKey)) {
       console.log("[agendamento/followup] Lead agendou, não envia ao comercial", { leadKey: lead.leadKey });
       return NextResponse.json({ ok: true, action: "scheduled" });
     }

@@ -36,7 +36,8 @@ podem marcar o mesmo horário.
 - Na página, cada dia tem três gavetas (Manhã / Tarde / Noite) com a contagem de
   horários; período sem horário aparece desabilitado como "Indisponível".
 
-Todos os agendamentos caem numa única agenda, a do `CLOSER_CALENDAR_EMAIL`.
+Todos os agendamentos caem numa única agenda: a do `AGENDA_ORGANIZER_EMAIL`, se
+definida, ou a do `CLOSER_CALENDAR_EMAIL` (ver "Esconder o e-mail do closer").
 
 Para o evento nascer na agenda do closer/SDR, com ele como organizador, usamos uma
 **Service Account com Domain-Wide Delegation** no Google Workspace, que se faz
@@ -171,9 +172,62 @@ npm run dev
 
 Respostas de erro do `POST`: `400 invalid_slot` (fora da grade ou no passado),
 `404 lead_not_found` (token inválido ou com mais de 7 dias), `409 already_scheduled`
-e `502/503` (falha no Google). Com `invalid_slot` a página avisa e recarrega a grade.
+`429 rate_limited` e `502/503` (falha no Google). Com `invalid_slot` a página avisa e recarrega a grade.
 
 Testes da grade e do follow-up (sem rede): `npm test`.
+
+## Esconder o e-mail do closer
+
+O e-mail do closer/SDR **nunca vai para o navegador**: as rotas públicas
+(`/api/agendamento`, `/api/agendamento/slots`, `/api/agendamento/followup`) e a
+server action do form só devolvem códigos de erro e textos fixos, e
+`CLOSER_CALENDAR_EMAIL` só é lido no servidor. Ele só aparece em chamadas
+server-to-server (CRM, n8n, Google) e nos logs.
+
+O ponto em que o lead ainda podia vê-lo era o **convite do Google**, onde o
+organizer aparece. Para esconder:
+
+1. Crie (ou escolha) uma conta genérica do Workspace, ex.: `agenda@assessorialpha.com`.
+   Precisa ser um usuário ativo, com Google Agenda; a delegação da etapa 2 vale
+   para ela sem refazer nada.
+2. Defina `AGENDA_ORGANIZER_EMAIL=agenda@assessorialpha.com` na Vercel e faça redeploy.
+
+Com ela definida, o evento é criado **na agenda da conta genérica** (organizer), o
+closer entra como convidado já aceito, e o evento sai com
+`guestsCanSeeOtherGuests: false` e `guestsCanInviteOthers: false`: o lead vê só a
+conta genérica. A trava "lead já agendou" passa a procurar na agenda da conta
+genérica. A descrição do evento não leva o e-mail do closer. O CRM continua
+recebendo o closer em `closer_email`.
+
+Sem a variável, nada muda: o closer é o organizer.
+
+> Ao ligar a variável, reuniões criadas antes ficam na agenda do closer, e a trava
+> "já agendou" não as enxerga: um lead dos últimos 7 dias com link ainda válido
+> conseguiria marcar uma segunda reunião. Para evitar isso, ligue a variável num
+> horário de pouco movimento ou confira os duplicados no CRM.
+
+## Rate limit (lp-09)
+
+O envio do form nas variações com agendamento e o `POST /api/agendamento` passam
+por um rate limit no **Upstash Redis** (`lib/rate-limit.ts`), com janela fixa de 5
+min, checado depois da validação e antes de gravar no banco ou enviar ao CRM:
+
+| Chave | Limite |
+|---|---|
+| e-mail (trim + minúsculas) | 1 envio / 5 min |
+| telefone (E.164) | 1 envio / 5 min |
+| IP (`x-forwarded-for`) | 3 envios / 5 min (IP compartilhado não trava pessoas diferentes) |
+| IP no `POST /api/agendamento` | 10 / 5 min (a trava "1 agendamento por lead" continua) |
+
+- As chaves são `lp09:<tipo>:<sha256 do valor>`: o Redis nunca guarda e-mail,
+  telefone ou IP em claro.
+- Envio bloqueado: o form mostra "Recebemos seu cadastro há pouco. Tente novamente
+  em X min." (`content.form.rateLimited`) e nada é gravado ou enviado: nem banco,
+  CRM, CAPI/Pixel ou follow-up do QStash. No agendamento a resposta é
+  `429 rate_limited`.
+- **Fail-open:** sem `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`, com o Redis
+  fora do ar ou demorando mais de 1,5s, o envio passa e o erro é logado
+  (`[rate-limit]`).
 
 ## Follow-up: lead que não agendou em 5 min
 

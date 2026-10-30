@@ -83,6 +83,8 @@ export default function AgendamentoPicker() {
         await load();
       } else if (data.error === "already_scheduled") {
         await load();
+      } else if (data.error === "rate_limited") {
+        setNotice(c.errors.rateLimited);
       } else if (data.error === "lead_not_found") {
         setState({ kind: "fatal", message: c.errors.leadNotFound, retry: false });
       } else {
