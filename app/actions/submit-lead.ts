@@ -5,11 +5,13 @@ import { after } from "next/server";
 import { leadSchema, LeadFormData } from "@/lib/validation";
 import { db } from "@/lib/db";
 import { sendLeadToMetaCapi } from "@/lib/meta-capi";
-import { variantFromUrl } from "@/lib/variants";
+import { hasAgendamento, variantFromUrl } from "@/lib/variants";
 import { agendamentoPathAposCadastro } from "@/lib/agendamento";
 import { createAgendamentoToken, type LeadAgendamento } from "@/lib/agendamento-token";
 import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
 import { scheduleAgendamentoFollowup } from "@/lib/agendamento-followup";
+import { checkLeadRateLimit } from "@/lib/rate-limit";
+import { content } from "@/lib/content";
 import { getCloserEmail } from "@/lib/google-calendar";
 import { randomUUID } from "node:crypto";
 
@@ -69,7 +71,7 @@ async function enviarAoCrmComCloser(lead: LeadAgendamento) {
 
 type ActionResult =
   | { success: true; redirectTo: string; qualified: boolean }
-  | { success: false; error: string; reason: "validation" | "server" };
+  | { success: false; error: string; reason: "validation" | "server" | "rate_limited" };
 
 // formVariant: slug da página onde o form foi renderizado. Só decide o destino
 // pós-cadastro (agendamento); a "variante" enviada ao CRM continua vindo da sessão.
@@ -103,6 +105,20 @@ export async function submitLead(
     headersList.get("x-forwarded-for")?.split(",")[0].trim() ??
     headersList.get("x-real-ip") ??
     null;
+
+  // Antes de gravar/enviar qualquer coisa: barra reenvio do mesmo lead (e-mail,
+  // telefone) e abuso por IP. Só nas variações com agendamento (lp-09).
+  if (formVariant && hasAgendamento(formVariant)) {
+    const limit = await checkLeadRateLimit({ email: parsed.data.email, telefone: parsed.data.telefone, ip });
+    if (!limit.ok) {
+      console.warn("[submit-lead] Rate limit", { by: limit.by, variant: formVariant });
+      return {
+        success: false,
+        reason: "rate_limited",
+        error: content.form.rateLimited.replace("{min}", String(limit.retryAfterMinutes)),
+      };
+    }
+  }
 
   // Busca UTMs da sessão para desnormalizar no lead
   let utmFields: {

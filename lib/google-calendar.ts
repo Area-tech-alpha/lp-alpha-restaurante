@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { JWT } from "google-auth-library";
 
-// Service Account com Domain-Wide Delegation impersonando o closer (subject):
-// o evento nasce NA agenda dele, com ele como organizer. Passo a passo de
+// Service Account com Domain-Wide Delegation impersonando o organizer (subject):
+// o closer ou, se definida, a conta genérica AGENDA_ORGANIZER_EMAIL. Passo a passo de
 // configuração em docs/AGENDAMENTO.md.
 const SCOPES = ["https://www.googleapis.com/auth/calendar.events"];
 
@@ -18,6 +18,17 @@ export function getCloserEmail() {
   const email = process.env.CLOSER_CALENDAR_EMAIL;
   if (!email) throw new GoogleCalendarError("CLOSER_CALENDAR_EMAIL não definida");
   return email;
+}
+
+// Agenda onde o evento nasce (organizer). Com AGENDA_ORGANIZER_EMAIL (conta genérica
+// do Workspace), o lead vê só ela no convite e o closer entra como convidado oculto;
+// sem ela, o closer é o organizer (comportamento original).
+export function getAgendaOrganizer() {
+  const closer = getCloserEmail();
+  const organizer = process.env.AGENDA_ORGANIZER_EMAIL?.trim();
+  return organizer && organizer !== closer
+    ? { organizerEmail: organizer, hostEmail: closer as string | null }
+    : { organizerEmail: closer, hostEmail: null };
 }
 
 let client: JWT | null = null;
@@ -52,6 +63,8 @@ async function calendarFetch<T>(subject: string, path: string, init: RequestInit
 
 type InsertEventInput = {
   organizerEmail: string;
+  // Closer como convidado quando o organizer é a conta genérica (getAgendaOrganizer).
+  hostEmail: string | null;
   summary: string;
   description: string;
   start: Date;
@@ -110,7 +123,11 @@ export async function insertEvent(input: InsertEventInput) {
         description: input.description,
         start: { dateTime: input.start.toISOString(), timeZone: input.timezone },
         end: { dateTime: input.end.toISOString(), timeZone: input.timezone },
-        attendees: [input.attendee],
+        attendees: [
+          input.attendee,
+          ...(input.hostEmail ? [{ email: input.hostEmail, responseStatus: "accepted" }] : []),
+        ],
+        ...(input.hostEmail && { guestsCanSeeOtherGuests: false, guestsCanInviteOthers: false }),
         conferenceData: {
           // requestId idempotente: retry do mesmo lead não cria duas salas do Meet.
           createRequest: { requestId: id, conferenceSolutionKey: { type: "hangoutsMeet" } },

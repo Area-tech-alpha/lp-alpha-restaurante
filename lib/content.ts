@@ -63,6 +63,8 @@ export const content = {
       },
     },
     submitLabel: "Quero vender mais",
+    // {min} = minutos até liberar (lib/rate-limit.ts).
+    rateLimited: "Recebemos seu cadastro há pouco. Tente novamente em {min} min.",
   },
 
   testimonials: {
@@ -325,6 +327,7 @@ export const content = {
         load: "Não foi possível carregar os horários. Tente novamente.",
         slotUnavailable: "Esse horário não está mais disponível, escolha outro.",
         leadNotFound: "Não encontramos o seu cadastro. Preencha o formulário novamente.",
+        rateLimited: "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.",
         retry: "Tentar novamente",
       },
     },

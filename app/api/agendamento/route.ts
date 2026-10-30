@@ -7,14 +7,16 @@ import {
   EventAlreadyExistsError,
   buildMeetingTitle,
   findLeadEvent,
+  getAgendaOrganizer,
   getCloserEmail,
   insertEvent,
 } from "@/lib/google-calendar";
 import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
 import { buildAgendamentoWebhookPayload, sendAgendamentoWebhook } from "@/lib/agendamento-webhook";
+import { checkAgendamentoRateLimit, clientIp } from "@/lib/rate-limit";
 
 // Sem banco: o lead vem do token (lib/agendamento-token.ts) e a trava "já agendou"
-// é checada no Google Agenda do closer. Horário ocupado NÃO é checado: vários
+// é checada no Google Agenda do organizer (getAgendaOrganizer). Horário ocupado NÃO é checado: vários
 // leads podem marcar o mesmo horário.
 const bodySchema = z.object({
   token: z.string().min(1),
@@ -46,6 +48,8 @@ function buildDescription(lead: LeadAgendamento) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await checkAgendamentoRateLimit(clientIp(req.headers))).ok) return error("rate_limited", 429);
+
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return error("invalid_body", 400);
 
@@ -61,10 +65,12 @@ export async function POST(req: NextRequest) {
   let event: Awaited<ReturnType<typeof insertEvent>>;
   try {
     closer = getCloserEmail();
-    if (await findLeadEvent(closer, lead.leadKey)) return error("already_scheduled", 409);
+    const { organizerEmail, hostEmail } = getAgendaOrganizer();
+    if (await findLeadEvent(organizerEmail, lead.leadKey)) return error("already_scheduled", 409);
 
     event = await insertEvent({
-      organizerEmail: closer,
+      organizerEmail,
+      hostEmail,
       summary: titulo,
       description: buildDescription(lead),
       start,
