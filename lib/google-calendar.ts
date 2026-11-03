@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { JWT } from "google-auth-library";
 import type { BusyInterval } from "@/lib/agendamento";
 
-// Service Account com Domain-Wide Delegation impersonando o closer (subject):
+// Service Account com Domain-Wide Delegation impersonando o dono da agenda (subject):
 // o evento nasce NA agenda dele, com ele como organizer. Passo a passo de
 // configuração em docs/AGENDAMENTO.md.
 const SCOPES = [
@@ -18,7 +18,8 @@ export class GoogleCalendarError extends Error {
   }
 }
 
-export function getCloserEmail() {
+// O nome da env é histórico: a agenda hoje é de um SDR, que entra no CRM como SDR do lead.
+export function getAgendaEmail() {
   const email = process.env.CLOSER_CALENDAR_EMAIL;
   if (!email) throw new GoogleCalendarError("CLOSER_CALENDAR_EMAIL não definida");
   return email;

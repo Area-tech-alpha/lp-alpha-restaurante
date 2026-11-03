@@ -5,11 +5,15 @@ Fluxo: o lead preenche o formulário em `/lp-09`.
 - **Desqualificado** (até 30 mil respondendo "Não" para investir): segue o fluxo de
   todas as LPs, `CRM_WEBHOOK_URL` → n8n → Growth Hub.
 - **Qualificado:** **nunca passa pelo Growth Hub.** No envio do form ele entra no CRM
-  da Matriz (`POST {CRM_API_URL}/external/leads`, `destination: "hq"`) já com o
-  closer de `CLOSER_CALENDAR_EMAIL`, e vai para `/lp-09/agendamento?t=<token>`. Ao
-  escolher o horário, a reunião é criada **na agenda do closer**, com Google Meet e o
-  lead como convidado, e anexada ao mesmo lead no CRM: estágio "Reunião agendada" e
-  call pendente. Quem não agenda fica no CRM com o closer, em "Novo Lead".
+  da Matriz (`POST {CRM_API_URL}/external/leads`, `destination: "hq"`) com o dono da
+  agenda (`CLOSER_CALENDAR_EMAIL`, enviado como `sdr_email`) como dono do lead, e vai
+  para `/lp-09/agendamento?t=<token>`. Ao escolher o horário, a reunião é criada **na
+  agenda dele**, com Google Meet e o lead como convidado, e anexada ao mesmo lead no
+  CRM: estágio "Reunião agendada", ele como SDR e call pendente. Quem não agenda fica
+  no CRM só com ele como dono, em "Novo Lead".
+- **Closer:** a LP não define. Desde 03/11/2026 a agenda é de um SDR (antes era de um
+  closer); como closer, o SDR ficava travado pela pendência de resultado do closer. O
+  closer é escolhido no CRM quando o SDR passa o lead para "Reunião Realizada".
 
 O lead do form e a reunião se juntam no CRM pelo e-mail/telefone (até 7 dias, a
 validade do link). Se o envio do form tiver falhado, o do agendamento cria o lead.
@@ -19,14 +23,14 @@ página de horários num token criptografado (AES-256-GCM) no `?t=` da URL; quem
 o link não consegue ler nem alterar o conteúdo. As travas também ficam no Google:
 - **lead já agendou:** o id do evento é derivado do lead, então um segundo
   agendamento do mesmo lead é recusado pelo próprio Google;
-- **horário ocupado:** o freebusy da agenda do closer é rechecado logo antes de
-  criar o evento.
+- **horário ocupado:** o freebusy da agenda é rechecado logo antes de criar o evento.
 
-Todos os agendamentos caem numa única agenda, a do `CLOSER_CALENDAR_EMAIL`.
+Todos os agendamentos caem numa única agenda, a do `CLOSER_CALENDAR_EMAIL` (o nome
+da variável é histórico, de quando a agenda era de um closer).
 
-Para o evento nascer na agenda do closer, com ele como organizador, usamos uma
+Para o evento nascer nessa agenda, com o dono dela como organizador, usamos uma
 **Service Account com Domain-Wide Delegation** no Google Workspace, que se faz
-passar pelo e-mail do closer. Não há OAuth nem tela de consentimento.
+passar pelo e-mail dele. Não há OAuth nem tela de consentimento.
 
 ## Onde fica cada coisa
 
@@ -38,7 +42,7 @@ passar pelo e-mail do closer. Não há OAuth nem tela de consentimento.
 | Token com os dados do lead | `lib/agendamento-token.ts` |
 | Chamadas ao Google (freebusy, criação e busca do evento) | `lib/google-calendar.ts` |
 | APIs | `GET /api/agendamento/slots?t=<token>` e `POST /api/agendamento` |
-| Envio do lead qualificado ao CRM (closer + reunião) | `lib/crm.ts` |
+| Envio do lead qualificado ao CRM (SDR + reunião) | `lib/crm.ts` |
 | Textos da página | `content.agendamento` em `lib/content.ts` |
 
 ## 1. Google Cloud: projeto, API e Service Account
@@ -107,16 +111,21 @@ CRM_EXTERNAL_LEADS_API_KEY=   # EXTERNAL_LEADS_API_KEY do Dashboard-Comercial-Ba
   exemplo `Consultoria: D | Mestre do Frango`. O sufixo
   `- 2026/10/21 17:05 GMT-03:00 - Recording` é adicionado pelo próprio Google
   quando a reunião é gravada no Meet. Ele não faz parte do título.
-- `CLOSER_CALENDAR_EMAIL` é ao mesmo tempo a agenda e o closer do lead no CRM: o
-  e-mail precisa ser de um usuário ativo do CRM. Se não for, o lead entra na Matriz
-  sem closer (log `closer_email sem usuário ativo` no CRM).
+- `CLOSER_CALENDAR_EMAIL` é ao mesmo tempo a agenda e o SDR do lead no CRM (vai no
+  campo `sdr_email`): o e-mail precisa ser de um usuário ativo do CRM. Se não for, o
+  lead entra na Matriz sem responsável (log `sdr_email sem usuário ativo` no CRM).
+- O CRM precisa aceitar `sdr_email` (Dashboard-Comercial-Back-V2, 03/11/2026). Um CRM
+  mais antigo ignora o campo e o lead entra sem SDR, então suba o CRM antes da LP.
 - Sem `CRM_API_URL`/`CRM_EXTERNAL_LEADS_API_KEY`, o lead qualificado não é aceito
   ("Erro ao enviar") — de propósito, para não cair no Growth Hub.
 - O token usa como chave a `AGENDAMENTO_TOKEN_SECRET` ou, se ela não existir, o
   `AUTH_SECRET` que já está em produção (login do `/dashboard`). Trocar a chave
   invalida os links de agendamento que ainda não foram usados. O link vale 7 dias.
 
-## 4. Trocar do e-mail de teste para o closer real
+## 4. Trocar o dono da agenda
+
+Os passos abaixo são do primeiro setup, quando a agenda era do Douglas (closer). Para
+trocar de pessoa, use o e-mail dela no lugar e confira que ela é SDR no CRM.
 
 1. Confirme que `douglas.junior@assessorialpha.com` é um usuário ativo do mesmo
    Workspace. A delegação vale para qualquer usuário do domínio, então não é preciso
