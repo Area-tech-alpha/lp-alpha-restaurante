@@ -1,7 +1,7 @@
 import type { LeadAgendamento } from "@/lib/agendamento-token";
 
 // Lead qualificado de variação com agendamento (lp-09) vai direto para o CRM da
-// Matriz, com o closer da agenda, e nunca para o Growth Hub (sem leilão). O
+// Matriz, com o SDR dono da agenda, e nunca para o Growth Hub (sem leilão). O
 // desqualificado continua no fluxo de sempre (CRM_WEBHOOK_URL -> n8n -> Growth Hub).
 // Endpoint: POST {CRM_API_URL}/external/leads (Dashboard-Comercial-Back-V2).
 
@@ -19,10 +19,13 @@ function leadCategory(lead: LeadAgendamento) {
 
 // Sem lead_id/external_id de propósito: no intake do CRM esses campos viram o id
 // do Growth Hub. O lead do envio do form e o da reunião se juntam pelo contato.
-export function buildCrmLeadPayload(lead: LeadAgendamento, closerEmail: string, meeting?: CrmMeeting) {
+// `sdr_email`, não `closer_email`: quem atende a reunião é SDR, e o closer é escolhido
+// no CRM na passagem para "Reunião Realizada". Como closer, o SDR ficava travado
+// pela pendência de resultado do closer (03/11/2026).
+export function buildCrmLeadPayload(lead: LeadAgendamento, sdrEmail: string, meeting?: CrmMeeting) {
   return {
     destination: "hq",
-    closer_email: closerEmail,
+    sdr_email: sdrEmail,
     ...(meeting && { meeting }),
     source: "alpha-restaurante",
     niche: "food",
