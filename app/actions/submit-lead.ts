@@ -9,7 +9,7 @@ import { variantFromUrl } from "@/lib/variants";
 import { agendamentoPathAposCadastro } from "@/lib/agendamento";
 import { createAgendamentoToken, type LeadAgendamento } from "@/lib/agendamento-token";
 import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
-import { getCloserEmail } from "@/lib/google-calendar";
+import { getAgendaEmail } from "@/lib/google-calendar";
 import { randomUUID } from "node:crypto";
 
 // Qualificado = faturamento acima de 30 mil, ou "Até 30 mil" respondendo "Sim" para
@@ -59,8 +59,8 @@ function comTeto<T>(query: PromiseLike<T>, ms: number): Promise<T> {
 }
 
 // webhookStatus 0 = não chegou a ter resposta do CRM (rede ou env faltando).
-async function enviarAoCrmComCloser(lead: LeadAgendamento) {
-  const result = await sendLeadToCrm(buildCrmLeadPayload(lead, getCloserEmail()));
+async function enviarAoCrmComSdr(lead: LeadAgendamento) {
+  const result = await sendLeadToCrm(buildCrmLeadPayload(lead, getAgendaEmail()));
   return result.status === "sent"
     ? { ok: result.ok, status: result.httpStatus }
     : { ok: false, status: 0 };
@@ -89,7 +89,7 @@ export async function submitLead(
   const agendamentoPath = agendamentoPathAposCadastro({ variant: formVariant, qualified });
   let redirectTo = agendamentoPath ?? qualificacao.redirectTo;
 
-  // Variação com agendamento: o qualificado vai para o CRM da Matriz com o closer
+  // Variação com agendamento: o qualificado vai para o CRM da Matriz com o SDR
   // (lib/crm.ts) e nunca passa pelo n8n/Growth Hub. Só o desqualificado usa o webhook.
   const webhookUrl = process.env.CRM_WEBHOOK_URL;
   if (!agendamentoPath && !webhookUrl) {
@@ -266,7 +266,7 @@ export async function submitLead(
 
   try {
     const res = leadAgendamento
-      ? await enviarAoCrmComCloser(leadAgendamento)
+      ? await enviarAoCrmComSdr(leadAgendamento)
       : await fetch(webhookUrl as string, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

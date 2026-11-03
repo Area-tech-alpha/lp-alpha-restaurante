@@ -7,7 +7,7 @@ import {
   EventAlreadyExistsError,
   buildMeetingTitle,
   findLeadEvent,
-  getCloserEmail,
+  getAgendaEmail,
   insertEvent,
   queryFreeBusy,
 } from "@/lib/google-calendar";
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
   let closer: string;
   let event: Awaited<ReturnType<typeof insertEvent>>;
   try {
-    closer = getCloserEmail();
+    closer = getAgendaEmail();
     if (await findLeadEvent(closer, lead.leadKey)) return error("already_scheduled", 409);
 
     // Rechecagem logo antes de criar: o horário pode ter sido ocupado desde que a grade carregou.
