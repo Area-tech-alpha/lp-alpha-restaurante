@@ -7,14 +7,17 @@ import {
   EventAlreadyExistsError,
   buildMeetingTitle,
   findLeadEvent,
-  getAgendaEmail,
+  getAgendaOrganizer,
+  getCloserEmail,
   insertEvent,
-  queryFreeBusy,
 } from "@/lib/google-calendar";
 import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
+import { buildAgendamentoWebhookPayload, sendAgendamentoWebhook } from "@/lib/agendamento-webhook";
+import { checkAgendamentoRateLimit, clientIp } from "@/lib/rate-limit";
 
-// Sem banco: o lead vem do token (lib/agendamento-token.ts) e as travas
-// ("já agendou", "horário ocupado") são checadas no Google Agenda do closer.
+// Sem banco: o lead vem do token (lib/agendamento-token.ts) e a trava "já agendou"
+// é checada no Google Agenda do organizer (getAgendaOrganizer). Horário ocupado NÃO é checado: vários
+// leads podem marcar o mesmo horário.
 const bodySchema = z.object({
   token: z.string().min(1),
   start: z.iso.datetime({ offset: true }),
@@ -45,6 +48,8 @@ function buildDescription(lead: LeadAgendamento) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await checkAgendamentoRateLimit(clientIp(req.headers))).ok) return error("rate_limited", 429);
+
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return error("invalid_body", 400);
 
@@ -59,15 +64,13 @@ export async function POST(req: NextRequest) {
   let closer: string;
   let event: Awaited<ReturnType<typeof insertEvent>>;
   try {
-    closer = getAgendaEmail();
-    if (await findLeadEvent(closer, lead.leadKey)) return error("already_scheduled", 409);
-
-    // Rechecagem logo antes de criar: o horário pode ter sido ocupado desde que a grade carregou.
-    const busy = await queryFreeBusy(closer, start, end);
-    if (busy.some((b) => start < b.end && end > b.start)) return error("slot_taken", 409);
+    closer = getCloserEmail();
+    const { organizerEmail, hostEmail } = getAgendaOrganizer();
+    if (await findLeadEvent(organizerEmail, lead.leadKey)) return error("already_scheduled", 409);
 
     event = await insertEvent({
-      organizerEmail: closer,
+      organizerEmail,
+      hostEmail,
       summary: titulo,
       description: buildDescription(lead),
       start,
@@ -94,6 +97,12 @@ export async function POST(req: NextRequest) {
       })
     );
     console.log("[agendamento] Criado", { leadKey: lead.leadKey, eventId: event.id, crm: result });
+
+    // Token emitido antes deste deploy não tem crmLeadId: cai no id do envio acima.
+    const crmLeadId = lead.crmLeadId ?? (result.status === "sent" ? result.crmLeadId : undefined) ?? null;
+    const payload = buildAgendamentoWebhookPayload(crmLeadId, lead.empresa, start);
+    const webhook = await sendAgendamentoWebhook(payload);
+    console.log("[agendamento] Webhook", { leadKey: lead.leadKey, eventId: event.id, payload, webhook });
   });
 
   return NextResponse.json({

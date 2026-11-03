@@ -8,6 +8,9 @@ export type LeadAgendamento = {
   // Id do lead no banco quando o INSERT funcionou; senão um UUID gerado. Vai no
   // evento do Google para detectar "esse lead já agendou".
   leadKey: string;
+  // Id do lead no CRM da Matriz, devolvido pelo intake no envio do form. null se
+  // o CRM não devolveu (o envio da reunião tenta de novo). Tokens antigos não têm.
+  crmLeadId: string | null;
   nome: string;
   email: string;
   telefone: string;

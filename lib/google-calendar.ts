@@ -1,14 +1,10 @@
 import { createHash } from "node:crypto";
 import { JWT } from "google-auth-library";
-import type { BusyInterval } from "@/lib/agendamento";
 
-// Service Account com Domain-Wide Delegation impersonando o dono da agenda (subject):
-// o evento nasce NA agenda dele, com ele como organizer. Passo a passo de
+// Service Account com Domain-Wide Delegation impersonando o organizer (subject):
+// o closer ou, se definida, a conta genérica AGENDA_ORGANIZER_EMAIL. Passo a passo de
 // configuração em docs/AGENDAMENTO.md.
-const SCOPES = [
-  "https://www.googleapis.com/auth/calendar.events",
-  "https://www.googleapis.com/auth/calendar.freebusy",
-];
+const SCOPES = ["https://www.googleapis.com/auth/calendar.events"];
 
 const API = "https://www.googleapis.com/calendar/v3";
 
@@ -18,11 +14,21 @@ export class GoogleCalendarError extends Error {
   }
 }
 
-// O nome da env é histórico: a agenda hoje é de um SDR, que entra no CRM como SDR do lead.
-export function getAgendaEmail() {
+export function getCloserEmail() {
   const email = process.env.CLOSER_CALENDAR_EMAIL;
   if (!email) throw new GoogleCalendarError("CLOSER_CALENDAR_EMAIL não definida");
   return email;
+}
+
+// Agenda onde o evento nasce (organizer). Com AGENDA_ORGANIZER_EMAIL (conta genérica
+// do Workspace), o lead vê só ela no convite e o closer entra como convidado oculto;
+// sem ela, o closer é o organizer (comportamento original).
+export function getAgendaOrganizer() {
+  const closer = getCloserEmail();
+  const organizer = process.env.AGENDA_ORGANIZER_EMAIL?.trim();
+  return organizer && organizer !== closer
+    ? { organizerEmail: organizer, hostEmail: closer as string | null }
+    : { organizerEmail: closer, hostEmail: null };
 }
 
 let client: JWT | null = null;
@@ -55,33 +61,10 @@ async function calendarFetch<T>(subject: string, path: string, init: RequestInit
   return res.json() as Promise<T>;
 }
 
-type FreeBusyResponse = {
-  calendars: Record<string, { busy?: { start: string; end: string }[]; errors?: { reason: string }[] }>;
-};
-
-export async function queryFreeBusy(
-  calendarEmail: string,
-  timeMin: Date,
-  timeMax: Date
-): Promise<BusyInterval[]> {
-  const data = await calendarFetch<FreeBusyResponse>(calendarEmail, "/freeBusy", {
-    method: "POST",
-    body: JSON.stringify({
-      timeMin: timeMin.toISOString(),
-      timeMax: timeMax.toISOString(),
-      items: [{ id: calendarEmail }],
-    }),
-  });
-  const calendar = data.calendars[calendarEmail];
-  // Erro por calendário vem com 200; tratar como "tudo livre" poderia marcar em cima de reunião.
-  if (!calendar || calendar.errors?.length) {
-    throw new GoogleCalendarError(`freeBusy sem acesso ao calendário: ${JSON.stringify(calendar?.errors)}`);
-  }
-  return (calendar.busy ?? []).map((b) => ({ start: new Date(b.start), end: new Date(b.end) }));
-}
-
 type InsertEventInput = {
   organizerEmail: string;
+  // Closer como convidado quando o organizer é a conta genérica (getAgendaOrganizer).
+  hostEmail: string | null;
   summary: string;
   description: string;
   start: Date;
@@ -140,7 +123,11 @@ export async function insertEvent(input: InsertEventInput) {
         description: input.description,
         start: { dateTime: input.start.toISOString(), timeZone: input.timezone },
         end: { dateTime: input.end.toISOString(), timeZone: input.timezone },
-        attendees: [input.attendee],
+        attendees: [
+          input.attendee,
+          ...(input.hostEmail ? [{ email: input.hostEmail, responseStatus: "accepted" }] : []),
+        ],
+        ...(input.hostEmail && { guestsCanSeeOtherGuests: false, guestsCanInviteOthers: false }),
         conferenceData: {
           // requestId idempotente: retry do mesmo lead não cria duas salas do Meet.
           createRequest: { requestId: id, conferenceSolutionKey: { type: "hangoutsMeet" } },

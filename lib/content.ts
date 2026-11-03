@@ -63,6 +63,8 @@ export const content = {
       },
     },
     submitLabel: "Quero vender mais",
+    // {min} = minutos até liberar (lib/rate-limit.ts).
+    rateLimited: "Recebemos seu cadastro há pouco. Tente novamente em {min} min.",
   },
 
   testimonials: {
@@ -226,19 +228,33 @@ export const content = {
   },
 
   // Variações com layout "agendamento" (lp-09): estrutura inspirada na LP da
-  // Laquila, form -> escolha de horário -> evento no Google Agenda do closer.
+  // Laquila, form -> escolha de horário -> evento no Google Agenda do closer/SDR.
   agendamento: {
     hero: {
       subtitle:
         "Somos a engrenagem invisível dos maiores restaurantes do Brasil. Fale com um especialista e descubra o método que a Alpha aplica todos os dias, dentro do food service.",
       cta: "Falar com um especialista",
-      // TODO(design): foto definitiva do hero. Provisória: polaroids do time Alpha.
-      image: {
-        src: "/Imagem2-1.webp",
-        width: 468,
-        height: 1069,
-        alt: "Time Alpha, escritório e cultura da Assessoria Alpha",
-      },
+      // A primeira é a de destaque (LCP): o hero a renderiza grande e com priority.
+      polaroids: [
+        {
+          src: "/lp-09/polaroid-time-alpha.webp",
+          width: 1100,
+          height: 902,
+          alt: "Time Alpha reunido no escritório",
+        },
+        {
+          src: "/lp-09/polaroid-escritorio.webp",
+          width: 422,
+          height: 352,
+          alt: "Escritório da Assessoria Alpha",
+        },
+        {
+          src: "/lp-09/polaroid-cultura.webp",
+          width: 378,
+          height: 390,
+          alt: "Cultura do time Alpha: Sangue no olho",
+        },
+      ],
     },
     // Números da LP original da Alpha (docs/SPEC.md §2).
     // TODO(marketing): confirmar se continuam atuais antes do go-live.
@@ -296,6 +312,10 @@ export const content = {
       loading: "Carregando horários…",
       empty: "Nenhum horário disponível nos próximos dias. Nosso time vai entrar em contato com você.",
       selectedLabel: "Horário selecionado:",
+      // Chaves = ids de agendamentoConfig.periods.
+      periodos: { manha: "Manhã", tarde: "Tarde", noite: "Noite" },
+      periodoIndisponivel: "Indisponível",
+      periodoHorario: { singular: "horário", plural: "horários" },
       confirm: "Confirmar agendamento",
       confirming: "Confirmando…",
       successTitle: "Reunião confirmada!",
@@ -305,8 +325,9 @@ export const content = {
       errors: {
         generic: "Não foi possível concluir o agendamento. Tente novamente.",
         load: "Não foi possível carregar os horários. Tente novamente.",
-        slotTaken: "Esse horário acabou de ser preenchido, escolha outro.",
+        slotUnavailable: "Esse horário não está mais disponível, escolha outro.",
         leadNotFound: "Não encontramos o seu cadastro. Preencha o formulário novamente.",
+        rateLimited: "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.",
         retry: "Tentar novamente",
       },
     },

@@ -5,11 +5,14 @@ import { after } from "next/server";
 import { leadSchema, LeadFormData } from "@/lib/validation";
 import { db } from "@/lib/db";
 import { sendLeadToMetaCapi } from "@/lib/meta-capi";
-import { variantFromUrl } from "@/lib/variants";
+import { hasAgendamento, variantFromUrl } from "@/lib/variants";
 import { agendamentoPathAposCadastro } from "@/lib/agendamento";
 import { createAgendamentoToken, type LeadAgendamento } from "@/lib/agendamento-token";
 import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
-import { getAgendaEmail } from "@/lib/google-calendar";
+import { scheduleAgendamentoFollowup } from "@/lib/agendamento-followup";
+import { checkLeadRateLimit } from "@/lib/rate-limit";
+import { content } from "@/lib/content";
+import { getCloserEmail } from "@/lib/google-calendar";
 import { randomUUID } from "node:crypto";
 
 // Qualificado = faturamento acima de 30 mil, ou "Até 30 mil" respondendo "Sim" para
@@ -59,16 +62,16 @@ function comTeto<T>(query: PromiseLike<T>, ms: number): Promise<T> {
 }
 
 // webhookStatus 0 = não chegou a ter resposta do CRM (rede ou env faltando).
-async function enviarAoCrmComSdr(lead: LeadAgendamento) {
-  const result = await sendLeadToCrm(buildCrmLeadPayload(lead, getAgendaEmail()));
+async function enviarAoCrmComCloser(lead: LeadAgendamento) {
+  const result = await sendLeadToCrm(buildCrmLeadPayload(lead, getCloserEmail()));
   return result.status === "sent"
-    ? { ok: result.ok, status: result.httpStatus }
-    : { ok: false, status: 0 };
+    ? { ok: result.ok, status: result.httpStatus, crmLeadId: result.crmLeadId ?? null }
+    : { ok: false, status: 0, crmLeadId: null };
 }
 
 type ActionResult =
   | { success: true; redirectTo: string; qualified: boolean }
-  | { success: false; error: string; reason: "validation" | "server" };
+  | { success: false; error: string; reason: "validation" | "server" | "rate_limited" };
 
 // formVariant: slug da página onde o form foi renderizado. Só decide o destino
 // pós-cadastro (agendamento); a "variante" enviada ao CRM continua vindo da sessão.
@@ -89,7 +92,7 @@ export async function submitLead(
   const agendamentoPath = agendamentoPathAposCadastro({ variant: formVariant, qualified });
   let redirectTo = agendamentoPath ?? qualificacao.redirectTo;
 
-  // Variação com agendamento: o qualificado vai para o CRM da Matriz com o SDR
+  // Variação com agendamento: o qualificado vai para o CRM da Matriz com o closer
   // (lib/crm.ts) e nunca passa pelo n8n/Growth Hub. Só o desqualificado usa o webhook.
   const webhookUrl = process.env.CRM_WEBHOOK_URL;
   if (!agendamentoPath && !webhookUrl) {
@@ -102,6 +105,20 @@ export async function submitLead(
     headersList.get("x-forwarded-for")?.split(",")[0].trim() ??
     headersList.get("x-real-ip") ??
     null;
+
+  // Antes de gravar/enviar qualquer coisa: barra reenvio do mesmo lead (e-mail,
+  // telefone) e abuso por IP. Só nas variações com agendamento (lp-09).
+  if (formVariant && hasAgendamento(formVariant)) {
+    const limit = await checkLeadRateLimit({ email: parsed.data.email, telefone: parsed.data.telefone, ip });
+    if (!limit.ok) {
+      console.warn("[submit-lead] Rate limit", { by: limit.by, variant: formVariant });
+      return {
+        success: false,
+        reason: "rate_limited",
+        error: content.form.rateLimited.replace("{min}", String(limit.retryAfterMinutes)),
+      };
+    }
+  }
 
   // Busca UTMs da sessão para desnormalizar no lead
   let utmFields: {
@@ -199,6 +216,7 @@ export async function submitLead(
   const leadAgendamento: LeadAgendamento | null = agendamentoPath
     ? {
         leadKey: leadId !== "unknown" ? leadId : randomUUID(),
+        crmLeadId: null,
         nome: parsed.data.nome,
         email: parsed.data.email,
         telefone: parsed.data.telefone,
@@ -217,16 +235,6 @@ export async function submitLead(
         ...metaIds,
       }
     : null;
-
-  if (agendamentoPath && leadAgendamento) {
-    try {
-      const token = createAgendamentoToken(leadAgendamento);
-      redirectTo = `${agendamentoPath}?t=${token}`;
-    } catch (err) {
-      console.error("[submit-lead] Falha ao gerar token de agendamento:", err);
-      redirectTo = qualificacao.redirectTo;
-    }
-  }
 
   // Formulário completo: marca a captura parcial da mesma sessão (se existir)
   // como convertida, pra a automação de recuperação (n8n) não tentar mais
@@ -266,7 +274,7 @@ export async function submitLead(
 
   try {
     const res = leadAgendamento
-      ? await enviarAoCrmComSdr(leadAgendamento)
+      ? await enviarAoCrmComCloser(leadAgendamento)
       : await fetch(webhookUrl as string, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -288,6 +296,19 @@ export async function submitLead(
     if (!res.ok) {
       console.error(`[submit-lead] Webhook retornou ${res.status}`);
       return { success: false, error: "Erro ao enviar. Tente novamente em instantes.", reason: "server" };
+    }
+
+    // Token só depois do CRM: leva o crmLeadId até o webhook do agendamento.
+    if (agendamentoPath && leadAgendamento) {
+      try {
+        const crmLeadId = "crmLeadId" in res ? res.crmLeadId : null;
+        const token = createAgendamentoToken({ ...leadAgendamento, crmLeadId });
+        redirectTo = `${agendamentoPath}?t=${token}`;
+        after(() => scheduleAgendamentoFollowup(token));
+      } catch (err) {
+        console.error("[submit-lead] Falha ao gerar token de agendamento:", err);
+        redirectTo = qualificacao.redirectTo;
+      }
     }
 
     const capiInput = {
