@@ -5,12 +5,16 @@ Fluxo: o lead preenche o formulário em `/lp-09`.
 - **Desqualificado** (até 30 mil respondendo "Não" para investir): segue o fluxo de
   todas as LPs, `CRM_WEBHOOK_URL` → n8n → Growth Hub.
 - **Qualificado:** **nunca passa pelo Growth Hub.** No envio do form ele entra no CRM
-  da Matriz (`POST {CRM_API_URL}/external/leads`, `destination: "hq"`) já com o
-  closer de `CLOSER_CALENDAR_EMAIL`, e vai para `/lp-09/agendamento?t=<token>`. Ao
-  escolher o horário, a reunião é criada **na agenda do closer/SDR**, com Google Meet e o
-  lead como convidado, e anexada ao mesmo lead no CRM: estágio "Reunião agendada" e
-  call pendente. Quem não agenda fica no CRM com o closer/SDR, em "Novo Lead", e
-  **5 minutos depois é enviado ao comercial** (ver "Follow-up: lead que não agendou").
+  da Matriz (`POST {CRM_API_URL}/external/leads`, `destination: "hq"`) com o SDR de
+  `CLOSER_CALENDAR_EMAIL` (enviado como `sdr_email`) como dono, e vai para
+  `/lp-09/agendamento?t=<token>`. Ao escolher o horário, a reunião é criada **na agenda
+  do SDR**, com Google Meet e o lead como convidado, e anexada ao mesmo lead no CRM:
+  estágio "Reunião agendada", o SDR como SDR do lead e call pendente. Quem não agenda
+  fica no CRM com o SDR como dono, em "Novo Lead", e **5 minutos depois é enviado ao
+  comercial** (ver "Follow-up: lead que não agendou").
+- **Closer:** a LP não define. O closer é escolhido no CRM quando o SDR passa o lead
+  para "Reunião Realizada". Até 03/11/2026 a LP mandava a agenda em `closer_email`, e o
+  SDR virava closer do lead e ficava travado pela pendência de resultado do closer.
 
 O lead do form e a reunião se juntam no CRM pelo e-mail/telefone (até 7 dias, a
 validade do link). Se o envio do form tiver falhado, o do agendamento cria o lead.
@@ -54,7 +58,7 @@ passar pelo e-mail do dono da agenda. Não há OAuth nem tela de consentimento.
 | Chamadas ao Google (criação e busca do evento) | `lib/google-calendar.ts` |
 | APIs | `GET /api/agendamento/slots?t=<token>`, `POST /api/agendamento` e `POST /api/agendamento/followup` (QStash) |
 | Follow-up de 5 min (QStash + webhook do comercial) | `lib/agendamento-followup.ts` |
-| Envio do lead qualificado ao CRM (closer + reunião) | `lib/crm.ts` |
+| Envio do lead qualificado ao CRM (SDR + reunião) | `lib/crm.ts` |
 | Textos da página | `content.agendamento` em `lib/content.ts` |
 
 ## 1. Google Cloud: projeto, API e Service Account
@@ -125,9 +129,11 @@ CRM_EXTERNAL_LEADS_API_KEY=   # EXTERNAL_LEADS_API_KEY do Dashboard-Comercial-Ba
   exemplo `Consultoria: Y | Mestre do Frango`. O sufixo
   `- 2026/10/21 17:05 GMT-03:00 - Recording` é adicionado pelo próprio Google
   quando a reunião é gravada no Meet. Ele não faz parte do título.
-- `CLOSER_CALENDAR_EMAIL` é ao mesmo tempo a agenda e o closer do lead no CRM: o
-  e-mail precisa ser de um usuário ativo do CRM. Se não for, o lead entra na Matriz
-  sem closer (log `closer_email sem usuário ativo` no CRM).
+- `CLOSER_CALENDAR_EMAIL` é ao mesmo tempo a agenda e o SDR do lead no CRM (campo
+  `sdr_email`): o e-mail precisa ser de um usuário ativo do CRM. Se não for, o lead
+  entra na Matriz sem responsável (log `sdr_email sem usuário ativo` no CRM).
+- O CRM precisa aceitar `sdr_email` (Dashboard-Comercial-Back-V2, 03/11/2026). Um CRM
+  mais antigo ignora o campo e o lead entra sem SDR, então suba o CRM antes da LP.
 - Sem `CRM_API_URL`/`CRM_EXTERNAL_LEADS_API_KEY`, o lead qualificado não é aceito
   ("Erro ao enviar") — de propósito, para não cair no Growth Hub.
 - O token usa como chave a `AGENDAMENTO_TOKEN_SECRET` ou, se ela não existir, o
@@ -197,7 +203,7 @@ closer entra como convidado já aceito, e o evento sai com
 `guestsCanSeeOtherGuests: false` e `guestsCanInviteOthers: false`: o lead vê só a
 conta genérica. A trava "lead já agendou" passa a procurar na agenda da conta
 genérica. A descrição do evento não leva o e-mail do closer. O CRM continua
-recebendo o closer em `closer_email`.
+recebendo o dono da agenda em `sdr_email`.
 
 Sem a variável, nada muda: o closer é o organizer.
 
