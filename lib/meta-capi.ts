@@ -39,10 +39,10 @@ export type CapiResult = {
   token?: CapiTokenInfo;
 };
 
-// "Lead": envio do form (só qualificado). "Schedule": evento padrão da Meta para a
-// reunião que o próprio lead marca na lp-09 — de propósito diferente do "Reuniao
+// "Lead": envio do form (só qualificado). "Reuniao Agendada": evento personalizado
+// da reunião que o próprio lead marca na lp-09 — de propósito diferente do "Reuniao
 // Marcada" que o CRM manda quando o card muda de etapa no kanban.
-export type CapiEventName = "Lead" | "Schedule";
+export type CapiEventName = "Lead" | "Reuniao Agendada";
 
 // Nunca lança. Chamado dentro de after() para não atrasar a resposta do formulário,
 // e só para leads qualificados. O eventId deve ser o mesmo passado ao fbq no cliente
@@ -52,10 +52,10 @@ export function sendLeadToMetaCapi(input: CapiLeadInput): Promise<CapiResult> {
   return sendMetaCapiEvent("Lead", input);
 }
 
-// Reunião marcada na página de agendamento. Mesmo eventId do fbq("track", "Schedule")
-// do cliente; auditado como evento "meta_capi_schedule".
-export function sendScheduleToMetaCapi(input: CapiLeadInput): Promise<CapiResult> {
-  return sendMetaCapiEvent("Schedule", input);
+// Reunião marcada na página de agendamento. Mesmo eventId do
+// fbq("trackCustom", "Reuniao Agendada") do cliente; auditado como "meta_capi_schedule".
+export function sendMeetingScheduledToMetaCapi(input: CapiLeadInput): Promise<CapiResult> {
+  return sendMetaCapiEvent("Reuniao Agendada", input);
 }
 
 async function sendMetaCapiEvent(eventName: CapiEventName, input: CapiLeadInput): Promise<CapiResult> {

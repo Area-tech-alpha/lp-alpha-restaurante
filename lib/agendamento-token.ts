@@ -29,7 +29,7 @@ export type LeadAgendamento = {
   fbclid: string | null;
   fbc: string | null;
   fbp: string | null;
-  // Sessão do tracker no envio do form: vira o external_id do "Schedule" na CAPI (o
+  // Sessão do tracker no envio do form: vira o external_id do "Reuniao Agendada" na CAPI (o
   // mesmo do "Lead") e liga o log do evento à sessão. Tokens antigos não têm.
   sessionId?: string | null;
 };

@@ -14,7 +14,7 @@ import {
 import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
 import { buildAgendamentoWebhookPayload, sendAgendamentoWebhook } from "@/lib/agendamento-webhook";
 import { checkAgendamentoRateLimit, clientIp } from "@/lib/rate-limit";
-import { sendScheduleToMetaCapi } from "@/lib/meta-capi";
+import { sendMeetingScheduledToMetaCapi } from "@/lib/meta-capi";
 import { db } from "@/lib/db";
 
 // event_source_url sem a query: o ?t= é o token do lead e não deve ir para a Meta.
@@ -28,9 +28,9 @@ function sourceUrl(referer: string | null) {
   }
 }
 
-// "Schedule" para a Meta (pixel no cliente + CAPI aqui, mesmo event_id). Nunca lança.
-async function sendScheduleEvent(lead: LeadAgendamento, metaEventId: string, req: NextRequest) {
-  const result = await sendScheduleToMetaCapi({
+// "Reuniao Agendada" para a Meta (pixel no cliente + CAPI aqui, mesmo event_id). Nunca lança.
+async function sendMeetingScheduledEvent(lead: LeadAgendamento, metaEventId: string, req: NextRequest) {
+  const result = await sendMeetingScheduledToMetaCapi({
     eventId: metaEventId,
     eventSourceUrl: sourceUrl(req.headers.get("referer")),
     email: lead.email,
@@ -43,7 +43,7 @@ async function sendScheduleEvent(lead: LeadAgendamento, metaEventId: string, req
     externalId: lead.sessionId ?? undefined,
     variant: lead.variante || null,
   });
-  console.log("[agendamento] Meta Schedule", { leadKey: lead.leadKey, metaEventId, status: result.status });
+  console.log("[agendamento] Meta Reuniao Agendada", { leadKey: lead.leadKey, metaEventId, status: result.status });
   if (!lead.sessionId) return;
   await db.event
     .create({
@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
   // Um por reunião criada: o id do evento no Google é único e a trava "já agendou"
   // impede um segundo evento para o mesmo lead.
   const metaEventId = `schedule:${event.id}`;
-  after(() => sendScheduleEvent(lead, metaEventId, req));
+  after(() => sendMeetingScheduledEvent(lead, metaEventId, req));
 
   // Lead agendado nunca vai para o Growth Hub: a reunião é presa ao lead que o form
   // já criou no CRM da Matriz (ou cria o lead, se aquele envio tiver falhado).
