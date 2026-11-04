@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { CalendarCheck, ChevronDown, Loader2 } from "lucide-react";
 import { content } from "@/lib/content";
 import { clarityEvent } from "@/lib/clarity";
+import { metaOriginParams } from "@/lib/meta-event-origin";
 import type { AgendaDay } from "@/lib/agendamento";
 import type { PeriodId } from "@/lib/agendamento-config";
 
@@ -41,7 +42,12 @@ async function fetchAgenda(token: string | null): Promise<State> {
 // Tracker, então o fbq vem só do script do layout.
 function trackMeetingScheduledPixel(eventId: string | undefined, variant: string | null | undefined) {
   if (!eventId) return;
-  window.fbq?.("trackCustom", "Reuniao Agendada", variant ? { variant } : {}, { eventID: eventId });
+  window.fbq?.(
+    "trackCustom",
+    "Reuniao Agendada",
+    metaOriginParams("navegador", window.location.pathname, variant),
+    { eventID: eventId },
+  );
 }
 
 export default function AgendamentoPicker() {
