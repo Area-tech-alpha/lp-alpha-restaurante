@@ -39,15 +39,30 @@ export type CapiResult = {
   token?: CapiTokenInfo;
 };
 
+// "Lead": envio do form (só qualificado). "Reuniao Agendada": evento personalizado
+// da reunião que o próprio lead marca na lp-09 — de propósito diferente do "Reuniao
+// Marcada" que o CRM manda quando o card muda de etapa no kanban.
+export type CapiEventName = "Lead" | "Reuniao Agendada";
+
 // Nunca lança. Chamado dentro de after() para não atrasar a resposta do formulário,
 // e só para leads qualificados. O eventId deve ser o mesmo passado ao fbq no cliente
 // — é ele que permite ao Meta deduplicar pixel e servidor. O retorno é gravado como
 // evento "meta_capi_lead" para auditoria no dashboard.
-export async function sendLeadToMetaCapi(input: CapiLeadInput): Promise<CapiResult> {
+export function sendLeadToMetaCapi(input: CapiLeadInput): Promise<CapiResult> {
+  return sendMetaCapiEvent("Lead", input);
+}
+
+// Reunião marcada na página de agendamento. Mesmo eventId do
+// fbq("trackCustom", "Reuniao Agendada") do cliente; auditado como "meta_capi_schedule".
+export function sendMeetingScheduledToMetaCapi(input: CapiLeadInput): Promise<CapiResult> {
+  return sendMetaCapiEvent("Reuniao Agendada", input);
+}
+
+async function sendMetaCapiEvent(eventName: CapiEventName, input: CapiLeadInput): Promise<CapiResult> {
   const base = { hasFbp: !!input.fbp, hasFbc: !!input.fbc };
   const credentials = getMetaCapiToken();
   if (!credentials) {
-    console.warn("[meta-capi] META_CAPI_TOKEN não definido — Lead não enviado pelo servidor");
+    console.warn(`[meta-capi] META_CAPI_TOKEN não definido — ${eventName} não enviado pelo servidor`);
     return { ...base, status: "no_token" };
   }
   const { token, info: tokenInfo } = credentials;
@@ -72,7 +87,7 @@ export async function sendLeadToMetaCapi(input: CapiLeadInput): Promise<CapiResu
   const body: Record<string, unknown> = {
     data: [
       {
-        event_name: "Lead",
+        event_name: eventName,
         event_time: Math.floor(Date.now() / 1000),
         event_id: input.eventId,
         action_source: "website",
@@ -115,9 +130,9 @@ export async function sendLeadToMetaCapi(input: CapiLeadInput): Promise<CapiResu
       token: res.ok ? undefined : tokenInfo,
     };
     if (res.ok) {
-      console.info(`[meta-capi:${pixelId}] Lead ${input.eventId} recebido`, result);
+      console.info(`[meta-capi:${pixelId}] ${eventName} ${input.eventId} recebido`, result);
     } else {
-      console.error(`[meta-capi:${pixelId}] Lead ${input.eventId} HTTP ${res.status}`, result);
+      console.error(`[meta-capi:${pixelId}] ${eventName} ${input.eventId} HTTP ${res.status}`, result);
     }
     return result;
   } catch (err) {

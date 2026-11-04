@@ -36,6 +36,14 @@ async function fetchAgenda(token: string | null): Promise<State> {
   }
 }
 
+// Pixel do "Reuniao Agendada" com o mesmo eventID da CAPI (app/api/agendamento), pra
+// Meta deduplicar. Evento personalizado: trackCustom, não track. A página não tem o
+// Tracker, então o fbq vem só do script do layout.
+function trackMeetingScheduledPixel(eventId: string | undefined, variant: string | null | undefined) {
+  if (!eventId) return;
+  window.fbq?.("trackCustom", "Reuniao Agendada", variant ? { variant } : {}, { eventID: eventId });
+}
+
 export default function AgendamentoPicker() {
   // Dados do lead criptografados pelo submit-lead (lib/agendamento-token.ts).
   const token = useSearchParams().get("t");
@@ -77,6 +85,7 @@ export default function AgendamentoPicker() {
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         clarityEvent("agendamento_confirmado");
+        trackMeetingScheduledPixel(data.metaEventId, data.variant);
         setState({ kind: "done", confirmed: data.confirmed, already: false });
       } else if (data.error === "invalid_slot") {
         setNotice(c.errors.slotUnavailable);
