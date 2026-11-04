@@ -12,9 +12,9 @@ function summary(now: Date) {
   }));
 }
 
-const MANHA = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30"];
-const TARDE = ["13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"];
-const NOITE = ["18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30"];
+const MANHA = ["08:00", "09:00", "10:00", "11:00"];
+const TARDE = ["13:00", "14:00", "15:00", "16:00", "17:00"];
+const NOITE = ["18:00", "19:00", "20:00", "21:00"];
 
 test("hoje qui 17:05 → QUI só com Noite a partir de 18:00, depois SEX e SÁB completos", () => {
   const days = summary(at("2026-10-29T17:05"));
@@ -32,9 +32,9 @@ test("hoje 07:00 → Manhã a partir de 08:00", () => {
   assert.deepEqual(today.periods, { manha: MANHA, tarde: TARDE, noite: NOITE });
 });
 
-test("antecedência de 30 min: 07:31 tira 08:00, 17:00 ainda mostra 17:30", () => {
-  assert.equal(summary(at("2026-10-29T07:31"))[0].periods.manha[0], "08:30");
-  assert.deepEqual(summary(at("2026-10-29T17:00"))[0].periods.tarde, ["17:30"]);
+test("antecedência de 30 min: 07:31 tira 08:00, 17:00 não mostra outro horário à tarde", () => {
+  assert.equal(summary(at("2026-10-29T07:31"))[0].periods.manha[0], "09:00");
+  assert.deepEqual(summary(at("2026-10-29T17:00"))[0].periods.tarde, []);
 });
 
 test("num domingo → SEG, TER, QUA", () => {
@@ -55,12 +55,12 @@ test("isGridSlot aceita horários válidos da grade", () => {
   const now = at("2026-10-29T17:05");
   assert.equal(isGridSlot(at("2026-10-29T18:00"), now), true);
   assert.equal(isGridSlot(at("2026-10-30T08:00"), now), true);
-  assert.equal(isGridSlot(at("2026-10-30T17:30"), now), true);
-  assert.equal(isGridSlot(at("2026-10-30T21:30"), now), true);
-  assert.equal(isGridSlot(at("2026-10-29T17:30"), at("2026-10-29T17:00")), true);
+  assert.equal(isGridSlot(at("2026-10-30T17:00"), now), true);
+  assert.equal(isGridSlot(at("2026-10-30T21:00"), now), true);
+  assert.equal(isGridSlot(at("2026-10-29T18:00"), at("2026-10-29T17:00")), true);
 });
 
-test("isGridSlot rejeita 12:00, 12:30, 22:00, fora de :00/:30, domingo e < agora+30min", () => {
+test("isGridSlot rejeita 12:00, 12:30, 22:00, fora de :00, domingo e < agora+30min", () => {
   const now = at("2026-10-29T17:05");
   assert.equal(isGridSlot(at("2026-10-30T12:00"), now), false);
   assert.equal(isGridSlot(at("2026-10-30T12:30"), now), false);

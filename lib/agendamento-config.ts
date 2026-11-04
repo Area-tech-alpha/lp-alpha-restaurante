@@ -1,8 +1,8 @@
 // Fonte única das regras de agendamento: front e API leem daqui.
 export const agendamentoConfig = {
   timezone: "America/Sao_Paulo",
-  // Grade de 30 em 30 min a partir do início de cada período (:00 e :30).
-  slotMinutes: 30,
+  // Grade de 1 em 1 hora a partir do início de cada período (:00).
+  slotMinutes: 60,
   meetingMinutes: 30,
   // Intervalos [início, fim): o último horário de cada período é fim − slotMinutes.
   // Os nomes exibidos ficam em content.agendamento.pagina.periodos (chave = id).
