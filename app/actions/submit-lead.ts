@@ -233,6 +233,7 @@ export async function submitLead(
         utm_term: utmFields.utmTerm ?? null,
         referrer: utmFields.referrer ?? null,
         ...metaIds,
+        sessionId: sessionId ?? null,
       }
     : null;
 

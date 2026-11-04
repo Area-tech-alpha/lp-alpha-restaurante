@@ -14,6 +14,47 @@ import {
 import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
 import { buildAgendamentoWebhookPayload, sendAgendamentoWebhook } from "@/lib/agendamento-webhook";
 import { checkAgendamentoRateLimit, clientIp } from "@/lib/rate-limit";
+import { sendScheduleToMetaCapi } from "@/lib/meta-capi";
+import { db } from "@/lib/db";
+
+// event_source_url sem a query: o ?t= é o token do lead e não deve ir para a Meta.
+function sourceUrl(referer: string | null) {
+  if (!referer) return undefined;
+  try {
+    const url = new URL(referer);
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    return undefined;
+  }
+}
+
+// "Schedule" para a Meta (pixel no cliente + CAPI aqui, mesmo event_id). Nunca lança.
+async function sendScheduleEvent(lead: LeadAgendamento, metaEventId: string, req: NextRequest) {
+  const result = await sendScheduleToMetaCapi({
+    eventId: metaEventId,
+    eventSourceUrl: sourceUrl(req.headers.get("referer")),
+    email: lead.email,
+    phone: lead.telefone,
+    name: lead.nome,
+    ip: clientIp(req.headers),
+    userAgent: req.headers.get("user-agent"),
+    fbp: lead.fbp ?? undefined,
+    fbc: lead.fbc ?? undefined,
+    externalId: lead.sessionId ?? undefined,
+    variant: lead.variante || null,
+  });
+  console.log("[agendamento] Meta Schedule", { leadKey: lead.leadKey, metaEventId, status: result.status });
+  if (!lead.sessionId) return;
+  await db.event
+    .create({
+      data: {
+        sessionId: lead.sessionId,
+        type: "meta_capi_schedule",
+        data: { ...result, eventId: metaEventId, leadKey: lead.leadKey },
+      },
+    })
+    .catch((err) => console.error("[agendamento] Falha ao gravar log da CAPI:", err));
+}
 
 // Sem banco: o lead vem do token (lib/agendamento-token.ts) e a trava "já agendou"
 // é checada no Google Agenda do organizer (getAgendaOrganizer). Horário ocupado NÃO é checado: vários
@@ -86,6 +127,11 @@ export async function POST(req: NextRequest) {
     return error("calendar_unavailable", 502);
   }
 
+  // Um por reunião criada: o id do evento no Google é único e a trava "já agendou"
+  // impede um segundo evento para o mesmo lead.
+  const metaEventId = `schedule:${event.id}`;
+  after(() => sendScheduleEvent(lead, metaEventId, req));
+
   // Lead agendado nunca vai para o Growth Hub: a reunião é presa ao lead que o form
   // já criou no CRM da Matriz (ou cria o lead, se aquele envio tiver falhado).
   after(async () => {
@@ -111,5 +157,7 @@ export async function POST(req: NextRequest) {
     fim: end.toISOString(),
     confirmed: formatSlot(start),
     meetLink: event.meetLink,
+    metaEventId,
+    variant: lead.variante || null,
   });
 }

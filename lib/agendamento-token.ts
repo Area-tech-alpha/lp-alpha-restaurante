@@ -29,6 +29,9 @@ export type LeadAgendamento = {
   fbclid: string | null;
   fbc: string | null;
   fbp: string | null;
+  // Sessão do tracker no envio do form: vira o external_id do "Schedule" na CAPI (o
+  // mesmo do "Lead") e liga o log do evento à sessão. Tokens antigos não têm.
+  sessionId?: string | null;
 };
 
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
