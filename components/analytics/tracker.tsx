@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { clarityEvent, clarityIdentify, claritySet, clarityUpgrade } from "@/lib/clarity";
+import { metaOriginParams } from "@/lib/meta-event-origin";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -357,7 +358,12 @@ export default function Tracker({ variant }: { variant?: string }) {
           : typeof fbq.callMethod === "function"
             ? "sent"
             : "script_not_loaded";
-        fbq?.("track", "Lead", { variant }, eventId ? { eventID: eventId } : undefined);
+        fbq?.(
+          "track",
+          "Lead",
+          metaOriginParams("navegador", window.location.pathname, variant),
+          eventId ? { eventID: eventId } : undefined,
+        );
         queue({ type: "meta_pixel_lead", data: { eventId, status }, ts: now() });
       },
 
