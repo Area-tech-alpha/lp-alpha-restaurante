@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { OrganizationJsonLd } from "@/components/json-ld";
 import { META_PIXEL_ID } from "@/lib/meta-pixels";
+import { META_EVENT_ORIGIN } from "@/lib/meta-event-origin";
 import "./globals.css";
 
 // Anton/Oswald/Archivo/Inter: subset latin baixado do Google Fonts e versionado
@@ -143,7 +144,7 @@ export default function RootLayout({
               s.parentNode.insertBefore(t,s)}(window, document,'script',
               'https://connect.facebook.net/en_US/fbevents.js');
               fbq('init', '${META_PIXEL_ID}');
-              fbq('track', 'PageView');
+              fbq('track', 'PageView', {origem: '${META_EVENT_ORIGIN}', canal: 'navegador', pagina: location.pathname});
             `,
           }}
         />

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { getMetaCapiToken, META_PIXEL_ID, type CapiTokenInfo } from "@/lib/meta-pixels";
+import { metaOriginParams, pathFromUrl } from "@/lib/meta-event-origin";
 
 const GRAPH_API_VERSION = "v21.0";
 
@@ -93,7 +94,7 @@ async function sendMetaCapiEvent(eventName: CapiEventName, input: CapiLeadInput)
         action_source: "website",
         event_source_url: input.eventSourceUrl,
         user_data: userData,
-        custom_data: { variant: input.variant ?? undefined },
+        custom_data: metaOriginParams("servidor", pathFromUrl(input.eventSourceUrl), input.variant),
       },
     ],
   };
