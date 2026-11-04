@@ -26,8 +26,8 @@ podem marcar o mesmo horário.
 
 ## Grade de horários
 
-- Slots de 30 em 30 min (`:00` e `:30`), em três períodos `[início, fim)`:
-  **Manhã** 08:00–11:30, **Tarde** 13:00–17:30, **Noite** 18:00–21:30.
+- Slots de 1 em 1 hora (`:00`), em três períodos `[início, fim)`:
+  **Manhã** 08:00–11:00, **Tarde** 13:00–17:00, **Noite** 18:00–21:00.
 - Dias de seg a sáb (domingo nunca). **Hoje entra** e conta como um dos 3 dias
   (hoje qui → QUI, SEX, SÁB; num domingo → SEG, TER, QUA). Se hoje não tiver mais
   nenhum horário (ex.: 21:45), a grade pula para os 3 próximos dias úteis.
@@ -167,7 +167,7 @@ npm run dev
    curl "http://localhost:3000/api/agendamento/slots?t=<token>"
    curl -X POST http://localhost:3000/api/agendamento \
      -H "Content-Type: application/json" \
-     -d '{"token":"<token>","start":"2026-10-28T13:30:00.000Z"}'
+     -d '{"token":"<token>","start":"2026-10-28T13:00:00.000Z"}'
    ```
 
 Respostas de erro do `POST`: `400 invalid_slot` (fora da grade ou no passado),
