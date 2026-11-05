@@ -15,7 +15,7 @@ import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
 import { buildAgendamentoWebhookPayload, sendAgendamentoWebhook } from "@/lib/agendamento-webhook";
 import { checkAgendamentoRateLimit, clientIp } from "@/lib/rate-limit";
 import { sendMeetingScheduledToMetaCapi } from "@/lib/meta-capi";
-import { db } from "@/lib/db";
+import { erpApi } from "@/lib/erp-api";
 
 // event_source_url sem a query: o ?t= é o token do lead e não deve ir para a Meta.
 function sourceUrl(referer: string | null) {
@@ -45,14 +45,8 @@ async function sendMeetingScheduledEvent(lead: LeadAgendamento, metaEventId: str
   });
   console.log("[agendamento] Meta Reuniao Agendada", { leadKey: lead.leadKey, metaEventId, status: result.status });
   if (!lead.sessionId) return;
-  await db.event
-    .create({
-      data: {
-        sessionId: lead.sessionId,
-        type: "meta_capi_schedule",
-        data: { ...result, eventId: metaEventId, leadKey: lead.leadKey },
-      },
-    })
+  await erpApi
+    .trackEvent(lead.sessionId, "meta_capi_schedule", { ...result, eventId: metaEventId, leadKey: lead.leadKey })
     .catch((err) => console.error("[agendamento] Falha ao gravar log da CAPI:", err));
 }
 

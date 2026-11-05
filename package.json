@@ -4,16 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
-    "postinstall": "prisma generate",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "tsx --test tests/*.test.ts"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.8.0",
-    "@prisma/client": "^7.8.0",
-    "@types/pg": "^8.20.0",
     "@upstash/qstash": "^2.12.1",
     "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.40.0",
@@ -23,13 +19,9 @@
     "google-auth-library": "^11.3.1",
     "lucide-react": "^1.32.0",
     "next": "^15.5.28",
-    "next-auth": "^5.0.0-beta.32",
-    "pg": "^8.21.0",
-    "prisma": "^7.8.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-phone-number-input": "^3.4.16",
-    "recharts": "^3.8.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {
