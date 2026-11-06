@@ -93,6 +93,19 @@ export type LpLeadInput = {
   fbp?: string | null;
 };
 
+// Fila de SDRs da lp-09 (Dashcom, /external/lp/sdr-queue). O admin da Matriz monta a fila no CRM.
+export type LpSdrAssignment = {
+  assignmentId: string;
+  leadKey: string;
+  sdrUserId: string;
+  sdrName: string;
+  sdrEmail: string;
+  titleInitial: string;
+  status: string;
+  // false = a fila andou agora; true = o lead já tinha esse SDR (retry, link reaberto).
+  reused: boolean;
+};
+
 // Remove null/undefined: o Dashcom valida com whitelist e IsOptional não aceita null em string.
 function compact<T extends Record<string, unknown>>(obj: T): Partial<T> {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v != null)) as Partial<T>;
@@ -136,6 +149,28 @@ export const erpApi = {
     id: string,
     input: { webhookSentAt?: string; webhookStatus?: number; crmLeadId?: string | null }
   ) => call<{ id: string }>("PATCH", `/leads/${encodeURIComponent(id)}`, compact(input)),
+
+  // Gira a fila (ou devolve o SDR que o lead já tem). null = fila vazia ou sem SDR ativo.
+  assignSdr: (input: { leadKey: string; empresa?: string | null; site?: string }, timeoutMs?: number) =>
+    call<{ assignment: LpSdrAssignment | null }>("POST", "/sdr-queue/assign", compact(input), timeoutMs),
+
+  findSdrAssignment: (leadKey: string, timeoutMs?: number) =>
+    call<{ assignment: LpSdrAssignment | null }>(
+      "GET",
+      `/sdr-queue/assignments/${encodeURIComponent(leadKey)}`,
+      undefined,
+      timeoutMs
+    ),
+
+  confirmSdrAssignment: (
+    leadKey: string,
+    input: { googleEventId?: string; meetingAt?: string; crmLeadId?: string | null }
+  ) =>
+    call<{ id: string; status: string }>(
+      "PATCH",
+      `/sdr-queue/assignments/${encodeURIComponent(leadKey)}`,
+      compact(input)
+    ),
 
   upsertClaritySnapshot: (input: { date: string; dimensions: string; payload: unknown[] }) =>
     call<{ date: string; dimensions: string }>("PUT", "/clarity-snapshots", input, 15000),
