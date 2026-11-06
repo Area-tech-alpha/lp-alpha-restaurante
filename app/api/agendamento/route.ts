@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
 
     // Token emitido antes deste deploy não tem crmLeadId: cai no id do envio acima.
     const crmLeadId = lead.crmLeadId ?? (result.status === "sent" ? result.crmLeadId : undefined) ?? null;
-    const payload = buildAgendamentoWebhookPayload(crmLeadId, lead.empresa, start);
+    const payload = buildAgendamentoWebhookPayload(crmLeadId, lead.empresa, lead.faturamento, start);
     const webhook = await sendAgendamentoWebhook(payload);
     console.log("[agendamento] Webhook", { leadKey: lead.leadKey, eventId: event.id, payload, webhook });
   });
