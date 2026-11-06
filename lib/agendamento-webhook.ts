@@ -33,8 +33,13 @@ function formatMeeting(start: Date) {
   };
 }
 
-export function buildAgendamentoWebhookPayload(crmLeadId: string | null, empresa: string, start: Date) {
-  return { crm_lead_id: crmLeadId, nome_empresa: empresa, ...formatMeeting(start) };
+export function buildAgendamentoWebhookPayload(
+  crmLeadId: string | null,
+  empresa: string,
+  faturamento: string,
+  start: Date
+) {
+  return { crm_lead_id: crmLeadId, nome_empresa: empresa, faturamento, ...formatMeeting(start) };
 }
 
 export async function sendAgendamentoWebhook(
