@@ -14,8 +14,6 @@ const LOOKUP_TIMEOUT_MS = 3000;
 export type AgendaSdr = {
   email: string;
   name: string | null;
-  // Inicial no título da reunião ("Consultoria: Y | Empresa").
-  initial: string;
   // true = veio da fila (a LP confirma a reunião de volta no Dashcom).
   fromQueue: boolean;
 };
@@ -24,7 +22,6 @@ function fallbackSdr(): AgendaSdr {
   return {
     email: getCloserEmail(),
     name: process.env.CLOSER_NAME?.trim() || null,
-    initial: process.env.CLOSER_INITIAL || "",
     fromQueue: false,
   };
 }
@@ -41,7 +38,6 @@ export async function resolveAgendaSdr(lead: { leadKey: string; empresa: string 
       return {
         email: assignment.sdrEmail,
         name: assignment.sdrName,
-        initial: assignment.titleInitial,
         fromQueue: true,
       };
     }

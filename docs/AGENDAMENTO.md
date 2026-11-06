@@ -25,7 +25,7 @@ Até 06/11 toda reunião caía na agenda fixa de `CLOSER_CALENDAR_EMAIL` (Yoshio
 
 - O admin da Matriz monta a fila no CRM: **Admin → Gestão & Criação → Fila de SDRs da
   LP** (`/admin/lp-sdr-queue`). Lá ele inclui SDRs da Matriz (papel SDR), define a
-  ordem, pausa, tira da fila, muda a inicial do título e acompanha os agendamentos
+  ordem, pausa, tira da fila e acompanha os agendamentos
   (próximo da vez, contagem de hoje/7 dias e os 50 últimos).
 - Cada agendamento vai para o **primeiro SDR ativo** da fila, que passa para o **fim**.
   Com 3 SDRs: A, B, C → agendou com A → B, C, A. Pausado fica no lugar e é pulado.
@@ -141,7 +141,6 @@ Em `.env.local` (local) e em **Vercel → Settings → Environment Variables**:
 GOOGLE_SA_CLIENT_EMAIL=lp-agendamento@<projeto>.iam.gserviceaccount.com   # "client_email" do JSON
 GOOGLE_SA_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"  # "private_key" do JSON
 CLOSER_CALENDAR_EMAIL=calebe.tech@assessorialpha.com   # agenda fixa: fallback da fila
-CLOSER_INITIAL=Y
 CLOSER_NAME=Yoshio                                     # nome no webhook quando cai no fallback
 MEETING_TITLE_PREFIX=Consultoria
 LP_TRACKING_API_KEY=   # do Dashcom: tracking e fila de SDRs
@@ -154,9 +153,9 @@ CRM_EXTERNAL_LEADS_API_KEY=   # EXTERNAL_LEADS_API_KEY do Dashboard-Comercial-Ba
 
 - A `GOOGLE_SA_PRIVATE_KEY` pode ser colada com os `\n` literais, do jeito que vem
   no JSON. O código converte para quebras de linha reais.
-- Título gerado: `{MEETING_TITLE_PREFIX}: {inicial do SDR} | {empresa}`, por
-  exemplo `Consultoria: Y | Mestre do Frango`. A inicial vem da fila (editável na
-  tela; vazia = 1ª letra do nome) ou, no fallback, de `CLOSER_INITIAL`. O sufixo
+- Título gerado: `{MEETING_TITLE_PREFIX}: {empresa}`, por exemplo
+  `Consultoria: Mestre do Frango` (sem inicial do SDR desde 06/11/2026; a
+  `CLOSER_INITIAL` não é mais lida). O sufixo
   `- 2026/10/21 17:05 GMT-03:00 - Recording` é adicionado pelo próprio Google
   quando a reunião é gravada no Meet. Ele não faz parte do título.
 - No fallback, `CLOSER_CALENDAR_EMAIL` é ao mesmo tempo a agenda e o SDR do lead no
@@ -177,7 +176,6 @@ CRM_EXTERNAL_LEADS_API_KEY=   # EXTERNAL_LEADS_API_KEY do Dashboard-Comercial-Ba
    refazer a etapa 2.
 2. Na Vercel (Production), altere:
    - `CLOSER_CALENDAR_EMAIL=yoshio.aragao@assessorialpha.com`
-   - `CLOSER_INITIAL=Y` (confira a inicial)
 3. Faça um redeploy, porque variáveis de ambiente só valem a partir do próximo
    deploy.
 4. Teste com um lead de verdade e um horário qualquer. Confira o evento na agenda
