@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { Prisma } from "@prisma/client"
-import { db } from "@/lib/db"
+import { erpApi } from "@/lib/erp-api"
 import { fetchClarityInsights, SNAPSHOT_DIMENSIONS } from "@/lib/clarity-api"
 
 export const dynamic = "force-dynamic"
@@ -28,11 +27,8 @@ export async function GET(req: NextRequest) {
     for (const dims of SNAPSHOT_DIMENSIONS) {
       const payload = await fetchClarityInsights(dims)
       const dimensions = dims.join(",")
-      await db.claritySnapshot.upsert({
-        where: { date_dimensions: { date, dimensions } },
-        update: { payload: payload as unknown as Prisma.InputJsonValue, fetchedAt: new Date() },
-        create: { date, dimensions, payload: payload as unknown as Prisma.InputJsonValue },
-      })
+      // Vira um lp_events type=clarity_snapshot no ERP; o do mesmo dia/dimensões é substituído.
+      await erpApi.upsertClaritySnapshot({ date: date.toISOString().slice(0, 10), dimensions, payload })
       results.push({
         dimensions,
         rows: payload.reduce((n, m) => n + (m.information?.length ?? 0), 0),

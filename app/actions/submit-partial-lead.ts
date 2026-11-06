@@ -1,7 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
-import { db } from "@/lib/db";
+import { erpApi } from "@/lib/erp-api";
 import { partialEmailSchema, partialTelefoneSchema } from "@/lib/validation";
 
 type PartialLeadInput = {
@@ -10,12 +10,11 @@ type PartialLeadInput = {
   telefone?: string;
 };
 
-// Só grava em partial_leads — NÃO chama webhook: o webhook do CRM recebe apenas
-// o lead completo (submit-lead.ts), senão vira lead sem nome/empresa/faturamento.
+// Só grava a captura parcial em lp_leads (pelo Dashcom) — NÃO chama webhook: o webhook do CRM
+// recebe apenas o lead completo (submit-lead.ts), senão vira lead sem nome/empresa/faturamento.
 // Best-effort: nunca deve travar a UI nem aparecer como erro pro usuário.
-// Chamado no onBlur de e-mail/telefone em components/lead-form.tsx, antes do
-// envio final — captura contato de quem preenche e abandona o formulário,
-// para uma futura automação de recuperação de leads (n8n).
+// Chamado no onBlur de e-mail/telefone em components/lead-form.tsx, antes do envio final.
+// UTMs: o Dashcom copia da sessão.
 export async function submitPartialLead(input: PartialLeadInput): Promise<void> {
   if (!input.sessionId) return; // sem sessão não dá pra casar com o lead completo depois
 
@@ -34,46 +33,14 @@ export async function submitPartialLead(input: PartialLeadInput): Promise<void> 
     headersList.get("x-real-ip") ??
     null;
 
-  let utmFields: {
-    utmSource: string | null;
-    utmMedium: string | null;
-    utmCampaign: string | null;
-    utmContent: string | null;
-    utmTerm: string | null;
-    referrer: string | null;
-  } | null = null;
-
   try {
-    utmFields = await db.session.findUnique({
-      where: { id: input.sessionId },
-      select: {
-        utmSource: true,
-        utmMedium: true,
-        utmCampaign: true,
-        utmContent: true,
-        utmTerm: true,
-        referrer: true,
-      },
-    });
-  } catch {
-    // UTMs são melhor-esforço — segue sem elas se a sessão não existir/DB falhar
-  }
-
-  const data = {
-    ...(email ? { email } : {}),
-    ...(telefone ? { telefone } : {}),
-    ipAddress: ip,
-    ...(utmFields ?? {}),
-  };
-
-  try {
-    await db.partialLead.upsert({
-      where: { sessionId: input.sessionId },
-      create: { sessionId: input.sessionId, ...data },
-      update: data,
+    await erpApi.upsertPartialLead({
+      sessionId: input.sessionId,
+      email,
+      telefone,
+      ipAddress: ip?.slice(0, 64) ?? null,
     });
   } catch (err) {
     console.error("[submit-partial-lead] Erro ao salvar captura parcial:", err);
-    return;
   }
 }

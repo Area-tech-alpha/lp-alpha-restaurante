@@ -3,7 +3,7 @@
 import { cookies, headers } from "next/headers";
 import { after } from "next/server";
 import { leadSchema, LeadFormData } from "@/lib/validation";
-import { db } from "@/lib/db";
+import { erpApi, ErpApiError } from "@/lib/erp-api";
 import { sendLeadToMetaCapi } from "@/lib/meta-capi";
 import { hasAgendamento, variantFromUrl } from "@/lib/variants";
 import { agendamentoPathAposCadastro } from "@/lib/agendamento";
@@ -47,8 +47,8 @@ function resolveMetaClickIds(
   return { fbclid, fbc, fbp };
 }
 
-// O banco é secundário (o CRM é a fonte primária): com ele fora do ar cada
-// consulta esperava o timeout de conexão em sequência e o envio levava ~30s.
+// O ERP (lp_* via Dashcom) é secundário (o CRM é a fonte primária): com ele fora do ar
+// cada chamada esperava o timeout em sequência e o envio levava ~30s.
 // Cada consulta no caminho do usuário tem um teto; se uma estoura, as demais
 // são puladas e o resto do registro vai para o after().
 function comTeto<T>(query: PromiseLike<T>, ms: number): Promise<T> {
@@ -136,31 +136,20 @@ export async function submitLead(
 
   if (sessionId) {
     try {
-      const session = await comTeto(db.session.findUnique({
-        where: { id: sessionId },
-        select: {
-          utmSource: true,
-          utmMedium: true,
-          utmCampaign: true,
-          utmContent: true,
-          utmTerm: true,
-          referrer: true,
-          landingUrl: true,
-          fbclid: true,
-          startedAt: true,
-        },
-      }), 2000);
-      if (session) {
-        const { landingUrl, fbclid, startedAt, ...utms } = session;
-        utmFields = utms;
-        variant = variantFromUrl(landingUrl);
-        sessionFbclid = fbclid;
-        sessionStartedAt = startedAt;
-      }
+      const session = await comTeto(erpApi.getSession(sessionId, 2000), 2000);
+      const { landingUrl, fbclid, startedAt, utmSource, utmMedium, utmCampaign, utmContent, utmTerm, referrer } =
+        session;
+      utmFields = { utmSource, utmMedium, utmCampaign, utmContent, utmTerm, referrer };
+      variant = variantFromUrl(landingUrl);
+      sessionFbclid = fbclid;
+      sessionStartedAt = new Date(startedAt);
     } catch (err) {
-      // UTMs são melhores-esforços — não bloquear o lead por isso
-      console.error("[submit-lead] Banco indisponível ao buscar sessão:", err);
-      dbOk = false;
+      // Sessão inexistente (404) não é falha do ERP: o lead é gravado sem UTMs da sessão.
+      if (!(err instanceof ErpApiError && err.status === 404)) {
+        // UTMs são melhores-esforços — não bloquear o lead por isso
+        console.error("[submit-lead] ERP indisponível ao buscar sessão:", err);
+        dbOk = false;
+      }
     }
   }
 
@@ -170,12 +159,14 @@ export async function submitLead(
     sessionStartedAt
   );
 
-  // Salva lead no banco
-  let leadId = "unknown";
+  // Salva o lead em lp_leads. O id nasce aqui: o POST é idempotente e o mesmo id vai pro
+  // webhook, pro token do agendamento e pro log da CAPI mesmo se a gravação falhar.
+  const leadId = randomUUID();
+  let leadSaved = false;
   if (dbOk) {
     try {
-      const lead = await comTeto(db.lead.create({
-        data: {
+      await comTeto(erpApi.submitLead({
+          id: leadId,
           nome: parsed.data.nome,
           email: parsed.data.email,
           telefone: parsed.data.telefone,
@@ -190,23 +181,15 @@ export async function submitLead(
           sessionId: sessionId ?? null,
           ...utmFields,
           ...metaIds,
-        },
-        // Sem select o Prisma faz RETURNING de todas as colunas: se o deploy sair
-        // antes de uma migration que adiciona colunas, o INSERT quebra em todas as LPs.
-        select: { id: true },
-      }), 3000);
-      leadId = lead.id;
+      }, 3000), 3000);
+      leadSaved = true;
     } catch (err) {
-      console.error("[submit-lead] Erro ao salvar lead no banco:", err);
+      console.error("[submit-lead] Erro ao salvar lead no ERP:", err);
       // Continua mesmo sem salvar — o webhook é a fonte primária.
       // Loga um evento (best-effort) pra esse lead não desaparecer em silêncio
       // do dashboard: ele chega ao CRM mas fica invisível no funil/KPIs.
       if (sessionId) {
-        after(() =>
-          db.event
-            .create({ data: { sessionId, type: "lead_db_write_failed" } })
-            .then(() => {}, () => {})
-        );
+        after(() => erpApi.trackEvent(sessionId, "lead_db_write_failed").then(() => {}, () => {}));
       }
     }
   }
@@ -215,7 +198,7 @@ export async function submitLead(
   // URL (lib/agendamento-token.ts), então funciona mesmo se o INSERT falhar.
   const leadAgendamento: LeadAgendamento | null = agendamentoPath
     ? {
-        leadKey: leadId !== "unknown" ? leadId : randomUUID(),
+        leadKey: leadId,
         crmLeadId: null,
         nome: parsed.data.nome,
         email: parsed.data.email,
@@ -237,21 +220,12 @@ export async function submitLead(
       }
     : null;
 
-  // Formulário completo: marca a captura parcial da mesma sessão (se existir)
-  // como convertida, pra a automação de recuperação (n8n) não tentar mais
-  // reengajar quem já virou lead. Best-effort — não existe partial_lead pra
-  // toda sessão (ex: autofill sem passar pelo onBlur), e tudo bem.
-  if (sessionId && leadId !== "unknown") {
-    after(() =>
-      db.partialLead
-        .update({ where: { sessionId }, data: { convertedAt: new Date() } })
-        .then(() => {}, () => {})
-    );
-  }
+  // A captura parcial da mesma sessão (se existir) vira este lead no próprio Dashcom
+  // (submitted_at preenchido), então não há "convertida" pra marcar aqui.
 
   // Envia ao webhook n8n (inclui lead_id para a automação atualizar whatsapp_sent_at)
   const payload = {
-    lead_id: leadId,
+    lead_id: leadSaved ? leadId : "unknown",
     nome: parsed.data.nome,
     email: parsed.data.email,
     telefone: parsed.data.telefone,
@@ -284,13 +258,12 @@ export async function submitLead(
 
     const webhookStatus = res.status;
 
-    if (leadId !== "unknown") {
+    if (leadSaved) {
+      const crmLeadId = "crmLeadId" in res ? res.crmLeadId : null;
       after(() =>
-        db.lead.update({
-          where: { id: leadId },
-          data: { webhookSentAt: new Date(), webhookStatus },
-          select: { id: true },
-        }).then(() => {}, () => {})
+        erpApi
+          .updateLead(leadId, { webhookSentAt: new Date().toISOString(), webhookStatus, crmLeadId })
+          .then(() => {}, (err) => console.error("[submit-lead] Falha ao gravar retorno do webhook:", err))
       );
     }
 
@@ -335,14 +308,8 @@ export async function submitLead(
             ? { status: "no_event_id" }
             : await sendLeadToMetaCapi(capiInput);
       if (!sessionId) return;
-      await db.event
-        .create({
-          data: {
-            sessionId,
-            type: "meta_capi_lead",
-            data: { ...result, eventId: eventId ?? null, leadId, qualified },
-          },
-        })
+      await erpApi
+        .trackEvent(sessionId, "meta_capi_lead", { ...result, eventId: eventId ?? null, leadId, qualified })
         .catch((err) => console.error("[submit-lead] Falha ao gravar log da CAPI:", err));
     });
 

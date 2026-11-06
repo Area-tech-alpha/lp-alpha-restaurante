@@ -1,22 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
-import { db } from "@/lib/db";
+import { erpApi, ErpApiError, type LpEventInput } from "@/lib/erp-api";
 
 export const dynamic = "force-dynamic";
 
-type EventInput = {
-  type: string;
-  data?: Record<string, unknown>;
-  ts?: string;
-};
-
 type Body = {
   sessionId: string;
-  events: EventInput[];
+  events: LpEventInput[];
   // campos opcionais enviados pelo beacon no session_end
   maxScrollDepth?: number;
   timeOnPageSec?: number;
 };
+
+// Limite do Dashcom por chamada; o tracker manda lotes bem menores.
+const MAX_EVENTS = 200;
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,31 +23,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "invalid" }, { status: 400 });
     }
 
-    const hasSessionEnd = events.some((e) => e.type === "session_end");
-
-    await db.event.createMany({
-      data: events.map((e) => ({
-        sessionId,
-        type: e.type,
-        data: e.data != null ? (e.data as Prisma.InputJsonValue) : Prisma.JsonNull,
-        ts: e.ts ? new Date(e.ts) : new Date(),
+    await erpApi.trackEvents({
+      sessionId,
+      events: events.slice(0, MAX_EVENTS).map((e) => ({
+        type: String(e.type).slice(0, 50),
+        data: e.data && typeof e.data === "object" && !Array.isArray(e.data) ? e.data : undefined,
+        ts: e.ts,
       })),
-      skipDuplicates: true,
+      maxScrollDepth: Number.isInteger(maxScrollDepth)
+        ? Math.min(100, Math.max(0, maxScrollDepth as number))
+        : undefined,
+      timeOnPageSec: Number.isInteger(timeOnPageSec) ? Math.max(0, timeOnPageSec as number) : undefined,
     });
-
-    if (hasSessionEnd && (maxScrollDepth !== undefined || timeOnPageSec !== undefined)) {
-      await db.session.update({
-        where: { id: sessionId },
-        data: {
-          ...(maxScrollDepth !== undefined ? { maxScrollDepth } : {}),
-          ...(timeOnPageSec !== undefined ? { timeOnPageSec } : {}),
-        },
-      });
-    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[api/track] erro:", err);
-    return NextResponse.json({ error: "internal" }, { status: 500 });
+    const status = err instanceof ErpApiError && err.status === 404 ? 404 : 500;
+    if (status === 500) console.error("[api/track] erro:", err);
+    return NextResponse.json({ error: status === 404 ? "session_not_found" : "internal" }, { status });
   }
 }
