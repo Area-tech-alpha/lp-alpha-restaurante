@@ -146,9 +146,8 @@ export async function insertEvent(input: InsertEventInput) {
   return { id: event.id, meetLink };
 }
 
-// initial: do SDR da vez (fila) ou CLOSER_INITIAL no fallback.
-export function buildMeetingTitle(empresa: string, initial: string) {
+export function buildMeetingTitle(empresa: string) {
   const prefix = process.env.MEETING_TITLE_PREFIX || "Consultoria";
   // O sufixo " - <data> GMT-03:00 - Recording" é adicionado pelo Google na gravação do Meet.
-  return initial ? `${prefix}: ${initial} | ${empresa}` : `${prefix}: ${empresa}`;
+  return `${prefix}: ${empresa}`;
 }

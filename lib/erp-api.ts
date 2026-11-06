@@ -100,7 +100,6 @@ export type LpSdrAssignment = {
   sdrUserId: string;
   sdrName: string;
   sdrEmail: string;
-  titleInitial: string;
   status: string;
   // false = a fila andou agora; true = o lead já tinha esse SDR (retry, link reaberto).
   reused: boolean;

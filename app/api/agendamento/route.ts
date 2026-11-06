@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     event = await insertEvent({
       organizerEmail,
       hostEmail,
-      summary: buildMeetingTitle(lead.empresa, sdr.initial),
+      summary: buildMeetingTitle(lead.empresa),
       description: buildDescription(lead),
       start,
       end,

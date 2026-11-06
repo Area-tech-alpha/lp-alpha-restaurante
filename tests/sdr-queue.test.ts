@@ -10,7 +10,6 @@ const realFetch = globalThis.fetch;
 process.env.CRM_API_URL = "https://dashcom.test/";
 process.env.LP_TRACKING_API_KEY = "k";
 process.env.CLOSER_CALENDAR_EMAIL = "fixo@ex.com";
-process.env.CLOSER_INITIAL = "Y";
 process.env.CLOSER_NAME = "Yoshio";
 
 const calls: { url: string; init?: RequestInit }[] = [];
@@ -37,14 +36,13 @@ test("fila: usa o SDR que o Dashcom devolve e manda leadKey/empresa", async () =
         sdrUserId: "u1",
         sdrName: "Ana SDR",
         sdrEmail: "ana@ex.com",
-        titleInitial: "A",
         status: "RESERVED",
         reused: false,
       },
     })
   );
   const sdr = await resolveAgendaSdr(lead);
-  assert.deepEqual(sdr, { email: "ana@ex.com", name: "Ana SDR", initial: "A", fromQueue: true });
+  assert.deepEqual(sdr, { email: "ana@ex.com", name: "Ana SDR", fromQueue: true });
   assert.equal(calls[0].url, "https://dashcom.test/external/lp/sdr-queue/assign");
   assert.equal(calls[0].init?.method, "POST");
   assert.deepEqual(JSON.parse(String(calls[0].init?.body)), {
@@ -59,7 +57,6 @@ test("fila vazia: cai na agenda fixa (CLOSER_*)", async () => {
   assert.deepEqual(await resolveAgendaSdr(lead), {
     email: "fixo@ex.com",
     name: "Yoshio",
-    initial: "Y",
     fromQueue: false,
   });
 });
