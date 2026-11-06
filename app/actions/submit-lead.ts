@@ -12,7 +12,6 @@ import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
 import { scheduleAgendamentoFollowup } from "@/lib/agendamento-followup";
 import { checkLeadRateLimit } from "@/lib/rate-limit";
 import { content } from "@/lib/content";
-import { getCloserEmail } from "@/lib/google-calendar";
 import { randomUUID } from "node:crypto";
 
 // Qualificado = faturamento acima de 30 mil, ou "Até 30 mil" respondendo "Sim" para
@@ -62,8 +61,10 @@ function comTeto<T>(query: PromiseLike<T>, ms: number): Promise<T> {
 }
 
 // webhookStatus 0 = não chegou a ter resposta do CRM (rede ou env faltando).
-async function enviarAoCrmComCloser(lead: LeadAgendamento) {
-  const result = await sendLeadToCrm(buildCrmLeadPayload(lead, getCloserEmail()));
+// Sem SDR: o SDR sai da fila só quando o lead agenda (lib/sdr-queue.ts), e é ele que vira o dono.
+// Quem não agenda fica na Matriz sem dono (decisão de 06/11/2026).
+async function enviarAoCrm(lead: LeadAgendamento) {
+  const result = await sendLeadToCrm(buildCrmLeadPayload(lead, null));
   return result.status === "sent"
     ? { ok: result.ok, status: result.httpStatus, crmLeadId: result.crmLeadId ?? null }
     : { ok: false, status: 0, crmLeadId: null };
@@ -249,7 +250,7 @@ export async function submitLead(
 
   try {
     const res = leadAgendamento
-      ? await enviarAoCrmComCloser(leadAgendamento)
+      ? await enviarAoCrm(leadAgendamento)
       : await fetch(webhookUrl as string, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

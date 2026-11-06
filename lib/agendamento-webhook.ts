@@ -33,13 +33,22 @@ function formatMeeting(start: Date) {
   };
 }
 
+// sdr: dono da agenda onde a reunião caiu (próximo da fila ou o fixo do fallback).
 export function buildAgendamentoWebhookPayload(
   crmLeadId: string | null,
   empresa: string,
   faturamento: string,
-  start: Date
+  start: Date,
+  sdr: { name: string | null; email: string }
 ) {
-  return { crm_lead_id: crmLeadId, nome_empresa: empresa, faturamento, ...formatMeeting(start) };
+  return {
+    crm_lead_id: crmLeadId,
+    nome_empresa: empresa,
+    faturamento,
+    sdr_nome: sdr.name,
+    sdr_email: sdr.email,
+    ...formatMeeting(start),
+  };
 }
 
 export async function sendAgendamentoWebhook(

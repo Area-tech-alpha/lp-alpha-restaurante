@@ -118,10 +118,12 @@ test("POST /api/agendamento: 10 por IP a cada 5 min", async () => {
   assert.deepEqual(results, [...Array(10).fill(true), false]);
 });
 
-test("organizer: sem AGENDA_ORGANIZER_EMAIL o closer organiza; com ela o closer vira convidado", () => {
-  process.env.CLOSER_CALENDAR_EMAIL = "closer@ex.com";
+test("organizer: sem AGENDA_ORGANIZER_EMAIL o SDR da vez organiza; com ela o SDR vira convidado", () => {
   delete process.env.AGENDA_ORGANIZER_EMAIL;
-  assert.deepEqual(getAgendaOrganizer(), { organizerEmail: "closer@ex.com", hostEmail: null });
+  assert.deepEqual(getAgendaOrganizer("sdr@ex.com"), { organizerEmail: "sdr@ex.com", hostEmail: null });
   process.env.AGENDA_ORGANIZER_EMAIL = "agenda@ex.com";
-  assert.deepEqual(getAgendaOrganizer(), { organizerEmail: "agenda@ex.com", hostEmail: "closer@ex.com" });
+  assert.deepEqual(getAgendaOrganizer("sdr@ex.com"), { organizerEmail: "agenda@ex.com", hostEmail: "sdr@ex.com" });
+  // A conta genérica na fila não vira convidada de si mesma.
+  assert.deepEqual(getAgendaOrganizer("Agenda@ex.com"), { organizerEmail: "Agenda@ex.com", hostEmail: null });
+  delete process.env.AGENDA_ORGANIZER_EMAIL;
 });

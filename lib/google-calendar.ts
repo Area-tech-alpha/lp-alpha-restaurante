@@ -2,8 +2,8 @@ import { createHash } from "node:crypto";
 import { JWT } from "google-auth-library";
 
 // Service Account com Domain-Wide Delegation impersonando o organizer (subject):
-// o closer ou, se definida, a conta genérica AGENDA_ORGANIZER_EMAIL. Passo a passo de
-// configuração em docs/AGENDAMENTO.md.
+// o SDR da vez (lib/sdr-queue.ts) ou, se definida, a conta genérica AGENDA_ORGANIZER_EMAIL.
+// Passo a passo de configuração em docs/AGENDAMENTO.md.
 const SCOPES = ["https://www.googleapis.com/auth/calendar.events"];
 
 const API = "https://www.googleapis.com/calendar/v3";
@@ -14,6 +14,8 @@ export class GoogleCalendarError extends Error {
   }
 }
 
+// Agenda fixa: fallback da fila de SDRs (fila vazia ou Dashcom fora) e agenda dos eventos de
+// antes da fila.
 export function getCloserEmail() {
   const email = process.env.CLOSER_CALENDAR_EMAIL;
   if (!email) throw new GoogleCalendarError("CLOSER_CALENDAR_EMAIL não definida");
@@ -21,14 +23,13 @@ export function getCloserEmail() {
 }
 
 // Agenda onde o evento nasce (organizer). Com AGENDA_ORGANIZER_EMAIL (conta genérica
-// do Workspace), o lead vê só ela no convite e o closer entra como convidado oculto;
-// sem ela, o closer é o organizer (comportamento original).
-export function getAgendaOrganizer() {
-  const closer = getCloserEmail();
+// do Workspace), o lead vê só ela no convite e o SDR entra como convidado oculto;
+// sem ela, o SDR é o organizer (comportamento original).
+export function getAgendaOrganizer(sdrEmail: string) {
   const organizer = process.env.AGENDA_ORGANIZER_EMAIL?.trim();
-  return organizer && organizer !== closer
-    ? { organizerEmail: organizer, hostEmail: closer as string | null }
-    : { organizerEmail: closer, hostEmail: null };
+  return organizer && organizer.toLowerCase() !== sdrEmail.toLowerCase()
+    ? { organizerEmail: organizer, hostEmail: sdrEmail as string | null }
+    : { organizerEmail: sdrEmail, hostEmail: null };
 }
 
 let client: JWT | null = null;
@@ -145,9 +146,9 @@ export async function insertEvent(input: InsertEventInput) {
   return { id: event.id, meetLink };
 }
 
-export function buildMeetingTitle(empresa: string) {
+// initial: do SDR da vez (fila) ou CLOSER_INITIAL no fallback.
+export function buildMeetingTitle(empresa: string, initial: string) {
   const prefix = process.env.MEETING_TITLE_PREFIX || "Consultoria";
-  const initial = process.env.CLOSER_INITIAL || "";
   // O sufixo " - <data> GMT-03:00 - Recording" é adicionado pelo Google na gravação do Meet.
   return initial ? `${prefix}: ${initial} | ${empresa}` : `${prefix}: ${empresa}`;
 }

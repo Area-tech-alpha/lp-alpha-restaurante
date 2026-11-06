@@ -3,14 +3,8 @@ import { z } from "zod";
 import { agendamentoConfig } from "@/lib/agendamento-config";
 import { formatSlot, isGridSlot, meetingEnd } from "@/lib/agendamento";
 import { readAgendamentoToken, type LeadAgendamento } from "@/lib/agendamento-token";
-import {
-  EventAlreadyExistsError,
-  buildMeetingTitle,
-  findLeadEvent,
-  getAgendaOrganizer,
-  getCloserEmail,
-  insertEvent,
-} from "@/lib/google-calendar";
+import { EventAlreadyExistsError, buildMeetingTitle, getAgendaOrganizer, insertEvent } from "@/lib/google-calendar";
+import { confirmAgendaSdr, findLeadEventInAgendas, resolveAgendaSdr, type AgendaSdr } from "@/lib/sdr-queue";
 import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
 import { buildAgendamentoWebhookPayload, sendAgendamentoWebhook } from "@/lib/agendamento-webhook";
 import { checkAgendamentoRateLimit, clientIp } from "@/lib/rate-limit";
@@ -51,8 +45,8 @@ async function sendMeetingScheduledEvent(lead: LeadAgendamento, metaEventId: str
 }
 
 // Sem banco: o lead vem do token (lib/agendamento-token.ts) e a trava "já agendou"
-// é checada no Google Agenda do organizer (getAgendaOrganizer). Horário ocupado NÃO é checado: vários
-// leads podem marcar o mesmo horário.
+// é checada no Google Agenda (findLeadEventInAgendas). A agenda é a do próximo SDR da fila
+// (lib/sdr-queue.ts). Horário ocupado NÃO é checado: vários leads podem marcar o mesmo horário.
 const bodySchema = z.object({
   token: z.string().min(1),
   start: z.iso.datetime({ offset: true }),
@@ -95,18 +89,18 @@ export async function POST(req: NextRequest) {
   if (!isGridSlot(start, new Date())) return error("invalid_slot", 400);
   const end = meetingEnd(start);
 
-  const titulo = buildMeetingTitle(lead.empresa);
-  let closer: string;
+  let sdr: AgendaSdr;
   let event: Awaited<ReturnType<typeof insertEvent>>;
   try {
-    closer = getCloserEmail();
-    const { organizerEmail, hostEmail } = getAgendaOrganizer();
-    if (await findLeadEvent(organizerEmail, lead.leadKey)) return error("already_scheduled", 409);
+    // Antes da fila: lead que já agendou não pode girar a fila de novo.
+    if (await findLeadEventInAgendas(lead.leadKey)) return error("already_scheduled", 409);
 
+    sdr = await resolveAgendaSdr(lead);
+    const { organizerEmail, hostEmail } = getAgendaOrganizer(sdr.email);
     event = await insertEvent({
       organizerEmail,
       hostEmail,
-      summary: titulo,
+      summary: buildMeetingTitle(lead.empresa, sdr.initial),
       description: buildDescription(lead),
       start,
       end,
@@ -118,6 +112,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     if (err instanceof EventAlreadyExistsError) return error("already_scheduled", 409);
     console.error("[agendamento] Falha ao criar evento:", err);
+    // O SDR continua reservado para o lead: o retry cai na mesma agenda, sem girar a fila.
     return error("calendar_unavailable", 502);
   }
 
@@ -130,7 +125,7 @@ export async function POST(req: NextRequest) {
   // já criou no CRM da Matriz (ou cria o lead, se aquele envio tiver falhado).
   after(async () => {
     const result = await sendLeadToCrm(
-      buildCrmLeadPayload(lead, closer, {
+      buildCrmLeadPayload(lead, sdr.email, {
         scheduled_at: start.toISOString(),
         meeting_link: event.meetLink,
         google_event_id: event.id,
@@ -140,7 +135,12 @@ export async function POST(req: NextRequest) {
 
     // Token emitido antes deste deploy não tem crmLeadId: cai no id do envio acima.
     const crmLeadId = lead.crmLeadId ?? (result.status === "sent" ? result.crmLeadId : undefined) ?? null;
-    const payload = buildAgendamentoWebhookPayload(crmLeadId, lead.empresa, lead.faturamento, start);
+    await confirmAgendaSdr(sdr, lead.leadKey, {
+      googleEventId: event.id,
+      meetingAt: start.toISOString(),
+      crmLeadId,
+    });
+    const payload = buildAgendamentoWebhookPayload(crmLeadId, lead.empresa, lead.faturamento, start, sdr);
     const webhook = await sendAgendamentoWebhook(payload);
     console.log("[agendamento] Webhook", { leadKey: lead.leadKey, eventId: event.id, payload, webhook });
   });

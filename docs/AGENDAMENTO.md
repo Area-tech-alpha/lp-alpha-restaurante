@@ -5,12 +5,12 @@ Fluxo: o lead preenche o formulário em `/lp-09`.
 - **Desqualificado** (até 30 mil respondendo "Não" para investir): segue o fluxo de
   todas as LPs, `CRM_WEBHOOK_URL` → n8n → Growth Hub.
 - **Qualificado:** **nunca passa pelo Growth Hub.** No envio do form ele entra no CRM
-  da Matriz (`POST {CRM_API_URL}/external/leads`, `destination: "hq"`) com o SDR de
-  `CLOSER_CALENDAR_EMAIL` (enviado como `sdr_email`) como dono, e vai para
-  `/lp-09/agendamento?t=<token>`. Ao escolher o horário, a reunião é criada **na agenda
-  do SDR**, com Google Meet e o lead como convidado, e anexada ao mesmo lead no CRM:
-  estágio "Reunião agendada", o SDR como SDR do lead e call pendente. Quem não agenda
-  fica no CRM com o SDR como dono, em "Novo Lead", e **5 minutos depois é enviado ao
+  da Matriz (`POST {CRM_API_URL}/external/leads`, `destination: "hq"`) **sem dono**, e
+  vai para `/lp-09/agendamento?t=<token>`. Ao escolher o horário, a LP pede o SDR à
+  **fila de SDRs** (ver abaixo), a reunião é criada **na agenda desse SDR**, com Google
+  Meet e o lead como convidado, e anexada ao mesmo lead no CRM (`sdr_email`): estágio
+  "Reunião agendada", o SDR como dono e SDR do lead, e call pendente. Quem não agenda
+  fica na Matriz sem dono, em "Novo Lead", e **5 minutos depois é enviado ao
   comercial** (ver "Follow-up: lead que não agendou").
 - **Closer:** a LP não define. O closer é escolhido no CRM quando o SDR passa o lead
   para "Reunião Realizada". Até 03/11/2026 a LP mandava a agenda em `closer_email`, e o
@@ -18,6 +18,29 @@ Fluxo: o lead preenche o formulário em `/lp-09`.
 
 O lead do form e a reunião se juntam no CRM pelo e-mail/telefone (até 7 dias, a
 validade do link). Se o envio do form tiver falhado, o do agendamento cria o lead.
+
+## Fila de SDRs (06/11/2026)
+
+Até 06/11 toda reunião caía na agenda fixa de `CLOSER_CALENDAR_EMAIL` (Yoshio). Agora:
+
+- O admin da Matriz monta a fila no CRM: **Admin → Gestão & Criação → Fila de SDRs da
+  LP** (`/admin/lp-sdr-queue`). Lá ele inclui SDRs da Matriz (papel SDR), define a
+  ordem, pausa, tira da fila, muda a inicial do título e acompanha os agendamentos
+  (próximo da vez, contagem de hoje/7 dias e os 50 últimos).
+- Cada agendamento vai para o **primeiro SDR ativo** da fila, que passa para o **fim**.
+  Com 3 SDRs: A, B, C → agendou com A → B, C, A. Pausado fica no lugar e é pulado.
+- O SDR do lead fica guardado (`lp_sdr_assignments`, uma linha por lead): retry e
+  link reaberto caem no mesmo SDR, sem girar a fila de novo. A fila só gira quando a
+  LP pede um SDR para um lead que ainda não tem.
+- A fila mora no Dashcom (Dashboard-Comercial-Back-V2): a LP chama
+  `POST /external/lp/sdr-queue/assign` antes de criar o evento e
+  `PATCH /external/lp/sdr-queue/assignments/:leadKey` depois (mesma
+  `LP_TRACKING_API_KEY` do `/external/lp`). Código em `lib/sdr-queue.ts`.
+- **Fila vazia ou Dashcom fora do ar:** a reunião cai na agenda fixa de
+  `CLOSER_CALENDAR_EMAIL`, como antes. O lead nunca fica sem reunião.
+- Todo SDR da fila precisa ser usuário ativo do **Workspace** (a delegação da Service
+  Account vale para qualquer usuário do domínio) e do CRM com o mesmo e-mail.
+- O webhook do agendamento (`AGENDAMENTO_WEBHOOK_URL`) leva `sdr_nome` e `sdr_email`.
 
 **O agendamento não usa o banco de dados.** Os dados do lead vão do formulário até a
 página de horários num token criptografado (AES-256-GCM) no `?t=` da URL; quem abre
@@ -40,8 +63,11 @@ podem marcar o mesmo horário.
 - Na página, cada dia tem três gavetas (Manhã / Tarde / Noite) com a contagem de
   horários; período sem horário aparece desabilitado como "Indisponível".
 
-Todos os agendamentos caem numa única agenda: a do `AGENDA_ORGANIZER_EMAIL`, se
-definida, ou a do `CLOSER_CALENDAR_EMAIL` (ver "Esconder o e-mail do closer").
+Cada agendamento cai na agenda do SDR da vez (ver "Fila de SDRs"). Com
+`AGENDA_ORGANIZER_EMAIL` definida, todos caem na agenda dessa conta genérica e o SDR
+entra como convidado (ver "Esconder o e-mail do closer"). A trava "lead já agendou"
+procura na conta genérica ou, sem ela, na agenda do SDR do lead e na de
+`CLOSER_CALENDAR_EMAIL`.
 
 Para o evento nascer na agenda do closer/SDR, com ele como organizador, usamos uma
 **Service Account com Domain-Wide Delegation** no Google Workspace, que se faz
@@ -56,6 +82,7 @@ passar pelo e-mail do dono da agenda. Não há OAuth nem tela de consentimento.
 | Quem vai para o agendamento depois do form | `agendamentoPathAposCadastro` em `lib/agendamento.ts` |
 | Token com os dados do lead | `lib/agendamento-token.ts` |
 | Chamadas ao Google (criação e busca do evento) | `lib/google-calendar.ts` |
+| Fila de SDRs (SDR da vez, fallback, agendas onde procurar o evento) | `lib/sdr-queue.ts` |
 | APIs | `GET /api/agendamento/slots?t=<token>`, `POST /api/agendamento` e `POST /api/agendamento/followup` (QStash) |
 | Follow-up de 5 min (QStash + webhook do comercial) | `lib/agendamento-followup.ts` |
 | Envio do lead qualificado ao CRM (SDR + reunião) | `lib/crm.ts` |
@@ -113,9 +140,11 @@ Em `.env.local` (local) e em **Vercel → Settings → Environment Variables**:
 ```bash
 GOOGLE_SA_CLIENT_EMAIL=lp-agendamento@<projeto>.iam.gserviceaccount.com   # "client_email" do JSON
 GOOGLE_SA_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"  # "private_key" do JSON
-CLOSER_CALENDAR_EMAIL=calebe.tech@assessorialpha.com
+CLOSER_CALENDAR_EMAIL=calebe.tech@assessorialpha.com   # agenda fixa: fallback da fila
 CLOSER_INITIAL=Y
+CLOSER_NAME=Yoshio                                     # nome no webhook quando cai no fallback
 MEETING_TITLE_PREFIX=Consultoria
+LP_TRACKING_API_KEY=   # do Dashcom: tracking e fila de SDRs
 CRM_API_URL=https://<api do CRM>
 CRM_EXTERNAL_LEADS_API_KEY=   # EXTERNAL_LEADS_API_KEY do Dashboard-Comercial-Back-V2
 ```
@@ -125,12 +154,13 @@ CRM_EXTERNAL_LEADS_API_KEY=   # EXTERNAL_LEADS_API_KEY do Dashboard-Comercial-Ba
 
 - A `GOOGLE_SA_PRIVATE_KEY` pode ser colada com os `\n` literais, do jeito que vem
   no JSON. O código converte para quebras de linha reais.
-- Título gerado: `{MEETING_TITLE_PREFIX}: {CLOSER_INITIAL} | {empresa}`, por
-  exemplo `Consultoria: Y | Mestre do Frango`. O sufixo
+- Título gerado: `{MEETING_TITLE_PREFIX}: {inicial do SDR} | {empresa}`, por
+  exemplo `Consultoria: Y | Mestre do Frango`. A inicial vem da fila (editável na
+  tela; vazia = 1ª letra do nome) ou, no fallback, de `CLOSER_INITIAL`. O sufixo
   `- 2026/10/21 17:05 GMT-03:00 - Recording` é adicionado pelo próprio Google
   quando a reunião é gravada no Meet. Ele não faz parte do título.
-- `CLOSER_CALENDAR_EMAIL` é ao mesmo tempo a agenda e o SDR do lead no CRM (campo
-  `sdr_email`): o e-mail precisa ser de um usuário ativo do CRM. Se não for, o lead
+- No fallback, `CLOSER_CALENDAR_EMAIL` é ao mesmo tempo a agenda e o SDR do lead no
+  CRM (campo `sdr_email`): o e-mail precisa ser de um usuário ativo do CRM. Se não for, o lead
   entra na Matriz sem responsável (log `sdr_email sem usuário ativo` no CRM).
 - O CRM precisa aceitar `sdr_email` (Dashboard-Comercial-Back-V2, 03/11/2026). Um CRM
   mais antigo ignora o campo e o lead entra sem SDR, então suba o CRM antes da LP.
