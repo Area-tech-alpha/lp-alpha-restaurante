@@ -40,7 +40,9 @@ Até 06/11 toda reunião caía na agenda fixa de `CLOSER_CALENDAR_EMAIL` (Yoshio
   `CLOSER_CALENDAR_EMAIL`, como antes. O lead nunca fica sem reunião.
 - Todo SDR da fila precisa ser usuário ativo do **Workspace** (a delegação da Service
   Account vale para qualquer usuário do domínio) e do CRM com o mesmo e-mail.
-- O webhook do agendamento (`AGENDAMENTO_WEBHOOK_URL`) leva `sdr_nome` e `sdr_email`.
+- O aviso "NOVO LEAD AGENDADO" no grupo de WhatsApp sai do CRM (Dashcom), quando a reunião
+  chega por `/external/leads` com `meeting`. O antigo webhook do n8n (`AGENDAMENTO_WEBHOOK_URL`)
+  foi removido.
 
 **O agendamento não usa o banco de dados.** Os dados do lead vão do formulário até a
 página de horários num token criptografado (AES-256-GCM) no `?t=` da URL; quem abre

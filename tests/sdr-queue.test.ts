@@ -1,7 +1,6 @@
 import { test, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { resolveAgendaSdr } from "@/lib/sdr-queue";
-import { buildAgendamentoWebhookPayload } from "@/lib/agendamento-webhook";
 import { buildCrmLeadPayload } from "@/lib/crm";
 import type { LeadAgendamento } from "@/lib/agendamento-token";
 
@@ -68,19 +67,6 @@ test("Dashcom fora do ar: cai na agenda fixa sem derrubar o agendamento", async 
     throw new TypeError("fetch failed");
   });
   assert.equal((await resolveAgendaSdr(lead)).email, "fixo@ex.com");
-});
-
-test("webhook do agendamento leva nome e e-mail do SDR", () => {
-  const payload = buildAgendamentoWebhookPayload(
-    "crm-1",
-    "Mestre do Frango",
-    "De 100 a 200 mil",
-    new Date("2026-11-10T17:00:00Z"),
-    { name: "Ana SDR", email: "ana@ex.com" }
-  );
-  assert.equal(payload.sdr_nome, "Ana SDR");
-  assert.equal(payload.sdr_email, "ana@ex.com");
-  assert.equal(payload.data_hora_reuniao, "2026-11-10T14:00:00-03:00");
 });
 
 test("CRM: envio do form vai sem sdr_email; o do agendamento vai com o SDR", () => {
