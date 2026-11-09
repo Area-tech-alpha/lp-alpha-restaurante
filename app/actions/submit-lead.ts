@@ -8,7 +8,7 @@ import { sendLeadToMetaCapi } from "@/lib/meta-capi";
 import { hasAgendamento, variantFromUrl } from "@/lib/variants";
 import { agendamentoPathAposCadastro } from "@/lib/agendamento";
 import { createAgendamentoToken, type LeadAgendamento } from "@/lib/agendamento-token";
-import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
+import { buildCrmLeadPayload, sendFormLeadToCrm, sendLeadToCrm } from "@/lib/crm";
 import { scheduleAgendamentoFollowup } from "@/lib/agendamento-followup";
 import { checkLeadRateLimit } from "@/lib/rate-limit";
 import { content } from "@/lib/content";
@@ -70,6 +70,14 @@ async function enviarAoCrm(lead: LeadAgendamento) {
     : { ok: false, status: 0, crmLeadId: null };
 }
 
+// Formulário sem agendamento: o Dashcom classifica e distribui (Matriz, leilão ou oportunidade).
+async function enviarFormularioAoCrm(payload: Record<string, unknown>) {
+  const result = await sendFormLeadToCrm(payload);
+  return result.status === "sent"
+    ? { ok: result.ok, status: result.httpStatus, crmLeadId: result.crmLeadId ?? null }
+    : { ok: false, status: 0, crmLeadId: null };
+}
+
 type ActionResult =
   | { success: true; redirectTo: string; qualified: boolean }
   | { success: false; error: string; reason: "validation" | "server" | "rate_limited" };
@@ -93,11 +101,10 @@ export async function submitLead(
   const agendamentoPath = agendamentoPathAposCadastro({ variant: formVariant, qualified });
   let redirectTo = agendamentoPath ?? qualificacao.redirectTo;
 
-  // Variação com agendamento: o qualificado vai para o CRM da Matriz com o closer
-  // (lib/crm.ts) e nunca passa pelo n8n/Growth Hub. Só o desqualificado usa o webhook.
-  const webhookUrl = process.env.CRM_WEBHOOK_URL;
-  if (!agendamentoPath && !webhookUrl) {
-    console.error("[submit-lead] CRM_WEBHOOK_URL não definida");
+  // Variação com agendamento: o qualificado vai direto para o CRM da Matriz (lib/crm.ts).
+  // O resto vai para o intake de LP do Dashcom, que decide entre Matriz, leilão e oportunidade.
+  if (!process.env.CRM_API_URL || !process.env.CRM_EXTERNAL_LEADS_API_KEY) {
+    console.error("[submit-lead] CRM_API_URL / CRM_EXTERNAL_LEADS_API_KEY não definidas");
     return { success: false, error: "Serviço indisponível. Tente mais tarde.", reason: "server" };
   }
 
@@ -224,7 +231,6 @@ export async function submitLead(
   // A captura parcial da mesma sessão (se existir) vira este lead no próprio Dashcom
   // (submitted_at preenchido), então não há "convertida" pra marcar aqui.
 
-  // Envia ao webhook n8n (inclui lead_id para a automação atualizar whatsapp_sent_at)
   const payload = {
     lead_id: leadSaved ? leadId : "unknown",
     nome: parsed.data.nome,
@@ -251,11 +257,7 @@ export async function submitLead(
   try {
     const res = leadAgendamento
       ? await enviarAoCrm(leadAgendamento)
-      : await fetch(webhookUrl as string, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+      : await enviarFormularioAoCrm(payload);
 
     const webhookStatus = res.status;
 
