@@ -27,7 +27,7 @@ export async function scheduleAgendamentoFollowup(token: string) {
   }
 }
 
-// Mesmo formato do payload que o submit-lead manda ao CRM_WEBHOOK_URL.
+// Mesmo formato do payload que o submit-lead manda ao intake de LP do CRM.
 export function buildComercialPayload(lead: LeadAgendamento) {
   return {
     lead_id: lead.leadKey,

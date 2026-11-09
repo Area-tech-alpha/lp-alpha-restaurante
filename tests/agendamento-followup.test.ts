@@ -23,7 +23,7 @@ test("followup com assinatura inválida → 401", async () => {
   assert.equal((await POST(request({ "upstash-signature": "a.b.c" }))).status, 401);
 });
 
-test("payload do comercial = payload do CRM_WEBHOOK_URL + crm_lead_id + motivo", () => {
+test("payload do comercial = payload do intake de LP + crm_lead_id + motivo", () => {
   const lead: LeadAgendamento = {
     leadKey: "lead-1",
     crmLeadId: "crm-9",

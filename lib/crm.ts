@@ -3,7 +3,8 @@ import type { LeadAgendamento } from "@/lib/agendamento-token";
 // Lead qualificado de variação com agendamento (lp-09) vai direto para o CRM da
 // Matriz e nunca para o Growth Hub (sem leilão). No envio do form vai sem SDR; ao
 // agendar, vai com o SDR da fila dono da agenda (lib/sdr-queue.ts). O
-// desqualificado continua no fluxo de sempre (CRM_WEBHOOK_URL -> n8n -> Growth Hub).
+// resto do formulário vai para POST {CRM_API_URL}/external/leads/lp, que classifica e
+// distribui (Matriz, leilão do Growth Hub ou oportunidade) — substitui o webhook do n8n.
 // Endpoint: POST {CRM_API_URL}/external/leads (Dashboard-Comercial-Back-V2).
 
 export type CrmMeeting = {
@@ -54,7 +55,16 @@ export type CrmResult =
   | { status: "sent"; httpStatus: number; ok: boolean; crmLeadId?: string; error?: string }
   | { status: "error"; error: string };
 
-export async function sendLeadToCrm(payload: ReturnType<typeof buildCrmLeadPayload>): Promise<CrmResult> {
+export function sendLeadToCrm(payload: ReturnType<typeof buildCrmLeadPayload>): Promise<CrmResult> {
+  return postToCrm("/external/leads", payload, 10_000);
+}
+
+// O Dashcom chama o Growth Hub antes de responder: teto maior que o do intake direto.
+export function sendFormLeadToCrm(payload: Record<string, unknown>): Promise<CrmResult> {
+  return postToCrm("/external/leads/lp", payload, 25_000);
+}
+
+async function postToCrm(path: string, payload: unknown, timeoutMs: number): Promise<CrmResult> {
   const baseUrl = process.env.CRM_API_URL;
   const apiKey = process.env.CRM_EXTERNAL_LEADS_API_KEY;
   if (!baseUrl || !apiKey) {
@@ -62,15 +72,15 @@ export async function sendLeadToCrm(payload: ReturnType<typeof buildCrmLeadPaylo
     return { status: "error", error: "crm_not_configured" };
   }
   try {
-    const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/external/leads`, {
+    const res = await fetch(`${baseUrl.replace(/\/+$/, "")}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-api-key": apiKey },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) {
       const error = (await res.text().catch(() => "")).slice(0, 500);
-      console.error(`[crm] Intake retornou ${res.status}: ${error}`);
+      console.error(`[crm] ${path} retornou ${res.status}: ${error}`);
       return { status: "sent", httpStatus: res.status, ok: false, error };
     }
     const body = (await res.json().catch(() => null)) as { crmLeadId?: string } | null;
