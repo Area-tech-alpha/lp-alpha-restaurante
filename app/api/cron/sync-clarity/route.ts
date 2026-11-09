@@ -37,6 +37,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ date: date.toISOString().slice(0, 10), results })
   } catch (err) {
     console.error("[cron/sync-clarity] erro:", err)
-    return NextResponse.json({ error: "sync_failed" }, { status: 500 })
+    // A rota exige CRON_SECRET; o motivo vai no corpo para aparecer no log da GitHub Action
+    // (sem ele, só os logs da Vercel mostravam a causa). As mensagens não carregam segredos.
+    const reason = err instanceof Error ? err.message.slice(0, 300) : String(err).slice(0, 300)
+    return NextResponse.json({ error: "sync_failed", reason }, { status: 500 })
   }
 }
