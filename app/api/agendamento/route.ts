@@ -3,8 +3,15 @@ import { z } from "zod";
 import { agendamentoConfig } from "@/lib/agendamento-config";
 import { formatSlot, isGridSlot, meetingEnd } from "@/lib/agendamento";
 import { readAgendamentoToken, type LeadAgendamento } from "@/lib/agendamento-token";
-import { EventAlreadyExistsError, buildMeetingTitle, getAgendaOrganizer, insertEvent } from "@/lib/google-calendar";
-import { confirmAgendaSdr, findLeadEventInAgendas, resolveAgendaSdr, type AgendaSdr } from "@/lib/sdr-queue";
+import {
+  EventAlreadyExistsError,
+  assertCalendarAccount,
+  buildMeetingTitle,
+  getAgendaOrganizer,
+  insertEvent,
+  isCalendarAccountError,
+} from "@/lib/google-calendar";
+import { bookOnAvailableAgenda, confirmAgendaSdr, findLeadEventInAgendas, type AgendaSdr } from "@/lib/sdr-queue";
 import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
 import { checkAgendamentoRateLimit, clientIp } from "@/lib/rate-limit";
 import { sendMeetingScheduledToMetaCapi } from "@/lib/meta-capi";
@@ -94,24 +101,40 @@ export async function POST(req: NextRequest) {
     // Antes da fila: lead que já agendou não pode girar a fila de novo.
     if (await findLeadEventInAgendas(lead.leadKey)) return error("already_scheduled", 409);
 
-    sdr = await resolveAgendaSdr(lead);
-    const { organizerEmail, hostEmail } = getAgendaOrganizer(sdr.email);
-    event = await insertEvent({
-      organizerEmail,
-      hostEmail,
-      summary: buildMeetingTitle(lead.empresa),
-      description: buildDescription(lead),
-      start,
-      end,
-      timezone: agendamentoConfig.timezone,
-      attendee: { email: lead.email, displayName: lead.nome },
-      leadKey: lead.leadKey,
-      sendUpdates: agendamentoConfig.sendUpdates,
+    // Agenda do SDR com erro (conta apagada/suspensa) troca de SDR em vez de derrubar o
+    // agendamento (lib/sdr-queue.ts, 11/11/2026).
+    const booked = await bookOnAvailableAgenda(lead, async (candidate) => {
+      const input = {
+        summary: buildMeetingTitle(lead.empresa),
+        description: buildDescription(lead),
+        start,
+        end,
+        timezone: agendamentoConfig.timezone,
+        attendee: { email: lead.email, displayName: lead.nome },
+        leadKey: lead.leadKey,
+        sendUpdates: agendamentoConfig.sendUpdates,
+      };
+      const { organizerEmail, hostEmail } = getAgendaOrganizer(candidate.email);
+      if (!hostEmail) return insertEvent({ ...input, organizerEmail, hostEmail });
+
+      // Com a conta genérica de organizer, o SDR é só convidado: o Google aceitaria o evento
+      // mesmo com a conta dele apagada. Confere antes, para a reunião não ficar sem ninguém.
+      await assertCalendarAccount(hostEmail);
+      try {
+        return await insertEvent({ ...input, organizerEmail, hostEmail });
+      } catch (err) {
+        // A conta genérica é que sumiu: o evento nasce na agenda do próprio SDR.
+        if (!isCalendarAccountError(err)) throw err;
+        console.error("[agendamento] AGENDA_ORGANIZER_EMAIL indisponível, criando na agenda do SDR:", err);
+        return insertEvent({ ...input, organizerEmail: hostEmail, hostEmail: null });
+      }
     });
+    sdr = booked.sdr;
+    event = booked.result;
   } catch (err) {
     if (err instanceof EventAlreadyExistsError) return error("already_scheduled", 409);
     console.error("[agendamento] Falha ao criar evento:", err);
-    // O SDR continua reservado para o lead: o retry cai na mesma agenda, sem girar a fila.
+    // Nenhuma agenda aceitou (fila e agenda fixa). O SDR reservado continua do lead no retry.
     return error("calendar_unavailable", 502);
   }
 

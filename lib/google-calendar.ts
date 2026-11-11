@@ -14,12 +14,23 @@ export class GoogleCalendarError extends Error {
   }
 }
 
+// A conta impersonada não existe mais (apagada ou suspensa no Workspace): o Google recusa o token
+// com invalid_grant. Em 11/11/2026 a conta do Yoshio foi apagada e todo agendamento da lp-09
+// passou a falhar. Quem chama troca de agenda em vez de derrubar o agendamento.
+export class GoogleCalendarAccountError extends GoogleCalendarError {
+  constructor(readonly email: string, cause: unknown) {
+    super(`Conta do Google indisponível para ${email}: ${String((cause as Error)?.message ?? cause).slice(0, 300)}`);
+  }
+}
+
+export function isCalendarAccountError(err: unknown): err is GoogleCalendarAccountError {
+  return err instanceof GoogleCalendarAccountError;
+}
+
 // Agenda fixa: fallback da fila de SDRs (fila vazia ou Dashcom fora) e agenda dos eventos de
-// antes da fila.
-export function getCloserEmail() {
-  const email = process.env.CLOSER_CALENDAR_EMAIL;
-  if (!email) throw new GoogleCalendarError("CLOSER_CALENDAR_EMAIL não definida");
-  return email;
+// antes da fila. null = sem agenda fixa (o agendamento depende só da fila).
+export function getCloserEmail(): string | null {
+  return process.env.CLOSER_CALENDAR_EMAIL?.trim() || null;
 }
 
 // Agenda onde o evento nasce (organizer). Com AGENDA_ORGANIZER_EMAIL (conta genérica
@@ -48,8 +59,30 @@ function getClient(subject: string) {
   return client;
 }
 
+function isInvalidGrant(err: unknown) {
+  const e = err as { message?: string; response?: { data?: { error?: string } } };
+  return e?.response?.data?.error === "invalid_grant" || /invalid_grant/i.test(String(e?.message ?? ""));
+}
+
+async function accessToken(subject: string) {
+  try {
+    const { token } = await getClient(subject).getAccessToken();
+    return token;
+  } catch (err) {
+    if (isInvalidGrant(err)) throw new GoogleCalendarAccountError(subject, err);
+    throw err;
+  }
+}
+
+// A conta ainda existe no Workspace? Com AGENDA_ORGANIZER_EMAIL o SDR entra só como convidado, e
+// o Google cria o evento mesmo se a conta dele tiver sido apagada (reunião sem ninguém).
+// Lança GoogleCalendarAccountError quando a conta não serve.
+export async function assertCalendarAccount(email: string) {
+  await accessToken(email);
+}
+
 async function calendarFetch<T>(subject: string, path: string, init: RequestInit): Promise<T> {
-  const { token } = await getClient(subject).getAccessToken();
+  const token = await accessToken(subject);
   const res = await fetch(`${API}${path}`, {
     ...init,
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },

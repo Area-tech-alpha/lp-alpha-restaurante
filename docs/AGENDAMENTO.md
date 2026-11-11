@@ -37,9 +37,23 @@ Até 06/11 toda reunião caía na agenda fixa de `CLOSER_CALENDAR_EMAIL` (Yoshio
   `PATCH /external/lp/sdr-queue/assignments/:leadKey` depois (mesma
   `LP_TRACKING_API_KEY` do `/external/lp`). Código em `lib/sdr-queue.ts`.
 - **Fila vazia ou Dashcom fora do ar:** a reunião cai na agenda fixa de
-  `CLOSER_CALENDAR_EMAIL`, como antes. O lead nunca fica sem reunião.
+  `CLOSER_CALENDAR_EMAIL`, como antes. A env é opcional: sem ela, o agendamento depende só
+  da fila.
 - Todo SDR da fila precisa ser usuário ativo do **Workspace** (a delegação da Service
   Account vale para qualquer usuário do domínio) e do CRM com o mesmo e-mail.
+- **Agenda que some (11/11/2026, conta do Yoshio apagada):** nenhuma agenda com erro trava o
+  agendamento.
+  - Na checagem "já agendou", agenda com erro é pulada.
+  - Na criação, se o Google recusar a agenda do SDR, a LP pede outro SDR à fila
+    (`excludeSdrEmails`). Até 3 SDRs, depois a agenda fixa.
+  - Se a conta foi apagada ou suspensa no Workspace (`invalid_grant`), o Dashcom pausa o SDR
+    na fila (`unavailableReason: calendar_account_invalid`), e o admin reativa no CRM.
+  - Com `AGENDA_ORGANIZER_EMAIL`, a LP confere a conta do SDR antes de criar o evento (como
+    convidado, o Google aceitaria até conta apagada). Se a conta genérica sumir, o evento nasce
+    na agenda do SDR.
+- **Usuário desativado no portal** (desligamento no RH, remoção na gestão de usuários) sai da
+  fila sozinho: o erp_core avisa o Dashcom (`POST /external/users/:id/offboarded`), e o Dashcom
+  também limpa a fila a cada agendamento e ao abrir a tela da fila.
 - O aviso "NOVO LEAD AGENDADO" no grupo de WhatsApp sai do CRM (Dashcom), quando a reunião
   chega por `/external/leads` com `meeting`. O antigo webhook do n8n (`AGENDAMENTO_WEBHOOK_URL`)
   foi removido.
@@ -142,7 +156,7 @@ Em `.env.local` (local) e em **Vercel → Settings → Environment Variables**:
 ```bash
 GOOGLE_SA_CLIENT_EMAIL=lp-agendamento@<projeto>.iam.gserviceaccount.com   # "client_email" do JSON
 GOOGLE_SA_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"  # "private_key" do JSON
-CLOSER_CALENDAR_EMAIL=calebe.tech@assessorialpha.com   # agenda fixa: fallback da fila
+CLOSER_CALENDAR_EMAIL=calebe.tech@assessorialpha.com   # agenda fixa: fallback da fila (opcional)
 CLOSER_NAME=Yoshio                                     # nome no webhook quando cai no fallback
 MEETING_TITLE_PREFIX=Consultoria
 LP_TRACKING_API_KEY=   # do Dashcom: tracking e fila de SDRs

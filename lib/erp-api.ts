@@ -150,8 +150,18 @@ export const erpApi = {
   ) => call<{ id: string }>("PATCH", `/leads/${encodeURIComponent(id)}`, compact(input)),
 
   // Gira a fila (ou devolve o SDR que o lead já tem). null = fila vazia ou sem SDR ativo.
-  assignSdr: (input: { leadKey: string; empresa?: string | null; site?: string }, timeoutMs?: number) =>
-    call<{ assignment: LpSdrAssignment | null }>("POST", "/sdr-queue/assign", compact(input), timeoutMs),
+  // excludeSdrEmails: SDRs cuja agenda o Google recusou agora (o lead troca de SDR).
+  // unavailableReason "calendar_account_invalid": conta apagada/suspensa, o Dashcom pausa o SDR.
+  assignSdr: (
+    input: {
+      leadKey: string;
+      empresa?: string | null;
+      site?: string;
+      excludeSdrEmails?: string[];
+      unavailableReason?: "calendar_account_invalid" | "calendar_error";
+    },
+    timeoutMs?: number
+  ) => call<{ assignment: LpSdrAssignment | null }>("POST", "/sdr-queue/assign", compact(input), timeoutMs),
 
   findSdrAssignment: (leadKey: string, timeoutMs?: number) =>
     call<{ assignment: LpSdrAssignment | null }>(
