@@ -12,7 +12,9 @@ import {
   isCalendarAccountError,
 } from "@/lib/google-calendar";
 import { bookOnAvailableAgenda, confirmAgendaSdr, findLeadEventInAgendas, type AgendaSdr } from "@/lib/sdr-queue";
-import { buildCrmLeadPayload, sendLeadToCrm } from "@/lib/crm";
+import { buildCrmLeadPayload, isRetryableCrmFailure, sendLeadToCrm, sendScheduledLeadToCrm } from "@/lib/crm";
+import { findLeilaoLeadEvent, isLeilaoLead, leilaoOrganizerEmail } from "@/lib/agendamento-leilao";
+import { buildFormPayload, scheduleScheduledLeadRetry } from "@/lib/agendamento-followup";
 import { checkAgendamentoRateLimit, clientIp } from "@/lib/rate-limit";
 import { sendMeetingScheduledToMetaCapi } from "@/lib/meta-capi";
 import { erpApi } from "@/lib/erp-api";
@@ -82,6 +84,76 @@ function buildDescription(lead: LeadAgendamento) {
   ].join("\n");
 }
 
+// Fluxo do leilão (lib/agendamento-leilao.ts): a reunião nasce na conta genérica, sem SDR, e o
+// lead vai ao CRM já com ela. O Dashcom manda ao leilão do Growth Hub (ou à Matriz com um SDR da
+// fila) e leva o evento para a agenda de quem ficar com o lead.
+async function scheduleForAuction(
+  req: NextRequest,
+  lead: LeadAgendamento,
+  token: string,
+  start: Date,
+  end: Date
+) {
+  const organizerEmail = leilaoOrganizerEmail();
+  if (!organizerEmail) {
+    console.error("[agendamento] AGENDA_ORGANIZER_EMAIL não definida (fluxo do leilão)");
+    return error("calendar_unavailable", 502);
+  }
+
+  let event: Awaited<ReturnType<typeof insertEvent>>;
+  try {
+    if (await findLeilaoLeadEvent(lead.leadKey)) return error("already_scheduled", 409);
+    event = await insertEvent({
+      organizerEmail,
+      hostEmail: null,
+      summary: buildMeetingTitle(lead.empresa),
+      description: buildDescription(lead),
+      start,
+      end,
+      timezone: agendamentoConfig.timezone,
+      attendee: { email: lead.email, displayName: lead.nome },
+      leadKey: lead.leadKey,
+      sendUpdates: agendamentoConfig.sendUpdates,
+    });
+  } catch (err) {
+    if (err instanceof EventAlreadyExistsError) return error("already_scheduled", 409);
+    console.error("[agendamento] Falha ao criar evento (leilão):", err);
+    return error("calendar_unavailable", 502);
+  }
+
+  const metaEventId = `schedule:${event.id}`;
+  after(() => sendMeetingScheduledEvent(lead, metaEventId, req));
+
+  after(async () => {
+    const meeting = {
+      scheduled_at: start.toISOString(),
+      meeting_link: event.meetLink,
+      google_event_id: event.id,
+    };
+    const result = await sendScheduledLeadToCrm(buildFormPayload(lead), meeting, lead.leadKey);
+    console.log("[agendamento] Criado (leilão)", { leadKey: lead.leadKey, eventId: event.id, crm: result });
+    // A reunião já existe: se o CRM não recebeu o lead, o QStash reenvia até aceitar.
+    if (isRetryableCrmFailure(result)) await scheduleScheduledLeadRetry(token, meeting);
+    await erpApi
+      .updateLead(lead.leadKey, {
+        webhookSentAt: new Date().toISOString(),
+        webhookStatus: result.status === "sent" ? result.httpStatus : 0,
+        crmLeadId: result.status === "sent" ? (result.crmLeadId ?? null) : null,
+      })
+      .catch(() => {});
+  });
+
+  return NextResponse.json({
+    ok: true,
+    inicio: start.toISOString(),
+    fim: end.toISOString(),
+    confirmed: formatSlot(start),
+    meetLink: event.meetLink,
+    metaEventId,
+    variant: lead.variante || null,
+  });
+}
+
 export async function POST(req: NextRequest) {
   if (!(await checkAgendamentoRateLimit(clientIp(req.headers))).ok) return error("rate_limited", 429);
 
@@ -94,6 +166,8 @@ export async function POST(req: NextRequest) {
   const start = new Date(parsed.data.start);
   if (!isGridSlot(start, new Date())) return error("invalid_slot", 400);
   const end = meetingEnd(start);
+
+  if (isLeilaoLead(lead)) return scheduleForAuction(req, lead, parsed.data.token, start, end);
 
   let sdr: AgendaSdr;
   let event: Awaited<ReturnType<typeof insertEvent>>;

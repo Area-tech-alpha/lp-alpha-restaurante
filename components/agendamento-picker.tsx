@@ -16,7 +16,7 @@ type Confirmed = { date: string; time: string };
 type State =
   | { kind: "loading" }
   | { kind: "ready"; days: AgendaDay[] }
-  | { kind: "done"; confirmed: Confirmed; already: boolean }
+  | { kind: "done"; confirmed: Confirmed | null; already: boolean }
   | { kind: "fatal"; message: string; retry: boolean };
 
 async function fetchAgenda(token: string | null): Promise<State> {
@@ -147,10 +147,17 @@ export default function AgendamentoPicker() {
         <h3 className="mt-4 text-xl font-semibold text-lp-ink">
           {state.already ? c.alreadyScheduledTitle : c.successTitle}
         </h3>
-        <p className="mt-2 font-lp-heading text-2xl font-bold text-lp-gold-1">
-          {state.confirmed.date} · {state.confirmed.time}
-        </p>
-        <p className="mt-1 text-[13px] text-lp-text-dim">{c.timezoneLabel}</p>
+        {/* Sem horário: reunião que já saiu da conta genérica (fluxo do leilão). O convite está no e-mail. */}
+        {state.confirmed ? (
+          <>
+            <p className="mt-2 font-lp-heading text-2xl font-bold text-lp-gold-1">
+              {state.confirmed.date} · {state.confirmed.time}
+            </p>
+            <p className="mt-1 text-[13px] text-lp-text-dim">{c.timezoneLabel}</p>
+          </>
+        ) : (
+          <p className="mt-2 max-w-[420px] text-sm text-lp-text-muted">{c.alreadyScheduledNoTime}</p>
+        )}
         {!state.already && <p className="mt-4 max-w-[420px] text-sm text-lp-text-muted">{c.successText}</p>}
       </div>
     );

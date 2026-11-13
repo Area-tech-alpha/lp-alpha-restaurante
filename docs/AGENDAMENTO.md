@@ -19,6 +19,32 @@ Fluxo: o lead preenche o formulário em `/lp-09`.
 O lead do form e a reunião se juntam no CRM pelo e-mail/telefone (até 7 dias, a
 validade do link). Se o envio do form tiver falhado, o do agendamento cria o lead.
 
+## Fluxo do leilão: lead "Agendamento automático" (13/11/2026)
+
+Com `AGENDAMENTO_LEILAO_ENABLED=true` (e `AGENDA_ORGANIZER_EMAIL` definida), o lead qualificado da
+lp-09 deixa de ir direto para um SDR da Matriz. Quem agenda vai ao **leilão do Growth Hub**, e o
+franqueado que comprar recebe o lead no CRM já com a reunião. O código fica em
+`lib/agendamento-leilao.ts`; o que está descrito no começo deste documento passa a ser o fluxo
+antigo, que segue valendo só para tokens emitidos antes de ligar a env (7 dias).
+
+1. **Envio do form.** O lead **não** vai ao CRM. Ele é gravado em `lp_leads`, recebe o token com
+   `flow: "auction"` e vai para `/lp-09/agendamento`. O QStash agenda a checagem de 5 min. Se o
+   QStash recusar, o lead vai na hora para `POST /external/leads/lp` (caminho normal).
+2. **Agendou.** A reunião é criada na conta genérica `AGENDA_ORGANIZER_EMAIL`, com o Meet e o lead
+   como convidado, sem SDR e sem passar pela fila. Em seguida a LP chama
+   `POST {CRM_API_URL}/external/leads/lp/scheduled` com o formulário, `meeting` e `lead_key`. O
+   Dashcom decide: leilão do Growth Hub (pago, novo, categoria A–D) ou Matriz com um SDR da fila
+   (orgânico, já conhecido, reunião próxima demais). Se o CRM não responder, o QStash reenvia.
+3. **Não agendou em 5 min.** O follow-up manda o lead para `POST /external/leads/lp`, como as
+   outras LPs, e depois chama `COMERCIAL_WEBHOOK_URL`. Se ele agendar depois (o token vale 7
+   dias), a reunião é anexada ao lead onde ele estiver.
+4. **Depois do leilão.** O Dashcom leva o evento da conta genérica para a agenda de quem ficou com
+   o lead: o franqueado comprador ou, sem comprador, um SDR da fila. Por isso o evento some da conta
+   genérica; a LP trata evento cancelado nessa conta como "já agendou".
+
+Rollback: `AGENDAMENTO_LEILAO_ENABLED=false`. Tokens com `flow: "auction"` já emitidos continuam no
+fluxo do leilão até expirar.
+
 ## Fila de SDRs (06/11/2026)
 
 Até 06/11 toda reunião caía na agenda fixa de `CLOSER_CALENDAR_EMAIL` (Yoshio). Agora:
@@ -74,8 +100,8 @@ podem marcar o mesmo horário.
 - Dias de seg a sáb (domingo nunca). **Hoje entra** e conta como um dos 3 dias
   (hoje qui → QUI, SEX, SÁB; num domingo → SEG, TER, QUA). Se hoje não tiver mais
   nenhum horário (ex.: 21:45), a grade pula para os 3 próximos dias úteis.
-- Antecedência mínima de 30 min (`minNoticeMinutes`): só aparece slot que começa em
-  `>= agora + 30 min`, e o `POST` recusa (`invalid_slot`) qualquer outro.
+- Antecedência mínima de 1 hora (`minNoticeMinutes`, era 30 min até 13/11/2026): só aparece slot
+  que começa em `>= agora + 1 h`, e o `POST` recusa (`invalid_slot`) qualquer outro.
 - Na página, cada dia tem três gavetas (Manhã / Tarde / Noite) com a contagem de
   horários; período sem horário aparece desabilitado como "Indisponível".
 

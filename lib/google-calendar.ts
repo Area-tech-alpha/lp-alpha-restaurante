@@ -128,13 +128,22 @@ export class EventAlreadyExistsError extends Error {}
 
 // Reunião já marcada por esse lead (se houver), para a página mostrar
 // "você já tem uma reunião" em vez da grade.
-export async function findLeadEvent(organizerEmail: string, leadKey: string) {
+// `includeCancelled`: no fluxo do leilão (lib/agendamento-leilao.ts) o evento sai da conta genérica
+// quando a reunião vai para a agenda de quem ficou com o lead, e ainda conta como agendado.
+export async function findLeadEvent(
+  organizerEmail: string,
+  leadKey: string,
+  options: { includeCancelled?: boolean } = {}
+): Promise<{ id: string; start: Date | null } | null> {
   try {
     const event = await calendarFetch<CalendarEvent>(
       organizerEmail,
       `/calendars/primary/events/${eventIdFor(leadKey)}`,
       { method: "GET" }
     );
+    if (event.status === "cancelled" && options.includeCancelled) {
+      return { id: event.id, start: event.start?.dateTime ? new Date(event.start.dateTime) : null };
+    }
     if (event.status === "cancelled" || !event.start?.dateTime) return null;
     return { id: event.id, start: new Date(event.start.dateTime) };
   } catch (err) {

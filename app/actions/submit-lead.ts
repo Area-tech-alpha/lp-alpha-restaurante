@@ -10,6 +10,7 @@ import { agendamentoPathAposCadastro } from "@/lib/agendamento";
 import { createAgendamentoToken, type LeadAgendamento } from "@/lib/agendamento-token";
 import { buildCrmLeadPayload, sendFormLeadToCrm, sendLeadToCrm } from "@/lib/crm";
 import { scheduleAgendamentoFollowup } from "@/lib/agendamento-followup";
+import { isAgendamentoLeilaoEnabled } from "@/lib/agendamento-leilao";
 import { checkLeadRateLimit } from "@/lib/rate-limit";
 import { content } from "@/lib/content";
 import { randomUUID } from "node:crypto";
@@ -225,8 +226,37 @@ export async function submitLead(
         referrer: utmFields.referrer ?? null,
         ...metaIds,
         sessionId: sessionId ?? null,
+        ...(isAgendamentoLeilaoEnabled() && { flow: "auction" as const }),
       }
     : null;
+
+  const capiInput = {
+    eventId: eventId ?? "",
+    eventSourceUrl: headersList.get("referer") ?? undefined,
+    email: parsed.data.email,
+    phone: parsed.data.telefone,
+    name: parsed.data.nome,
+    ip,
+    userAgent: headersList.get("user-agent"),
+    fbp: metaIds.fbp ?? undefined,
+    fbc: metaIds.fbc ?? undefined,
+    externalId: sessionId,
+    variant,
+  };
+  // Todo lead aceito gera uma linha "meta_capi_lead" (inclusive os pulados), para o
+  // dashboard conseguir conciliar leads do banco com o que chegou no Meta.
+  const logMetaLead = async () => {
+    const result =
+      !qualified
+        ? { status: "not_qualified" }
+        : !eventId
+          ? { status: "no_event_id" }
+          : await sendLeadToMetaCapi(capiInput);
+    if (!sessionId) return;
+    await erpApi
+      .trackEvent(sessionId, "meta_capi_lead", { ...result, eventId: eventId ?? null, leadId, qualified })
+      .catch((err) => console.error("[submit-lead] Falha ao gravar log da CAPI:", err));
+  };
 
   // A captura parcial da mesma sessão (se existir) vira este lead no próprio Dashcom
   // (submitted_at preenchido), então não há "convertida" pra marcar aqui.
@@ -253,6 +283,40 @@ export async function submitLead(
     fbc: metaIds.fbc,
     fbp: metaIds.fbp,
   };
+
+  // Fluxo do leilão (lib/agendamento-leilao.ts): o lead qualificado da variação com agendamento
+  // não vai ao CRM agora. Vai quando agendar (com a reunião, para o leilão do Growth Hub) ou, se
+  // não agendar em 5 min, pelo caminho normal das outras LPs (follow-up do QStash). Se o QStash
+  // não aceitar a checagem, o lead segue na hora pelo caminho normal, para não se perder.
+  if (leadAgendamento?.flow === "auction" && agendamentoPath) {
+    try {
+      const token = createAgendamentoToken(leadAgendamento);
+      redirectTo = `${agendamentoPath}?t=${token}`;
+      after(async () => {
+        if (await scheduleAgendamentoFollowup(token)) return;
+        const res = await enviarFormularioAoCrm(payload);
+        console.error("[submit-lead] Follow-up não agendado; lead enviado direto ao CRM", { leadId, res });
+        if (!leadSaved) return;
+        await erpApi
+          .updateLead(leadId, {
+            webhookSentAt: new Date().toISOString(),
+            webhookStatus: res.status,
+            crmLeadId: res.crmLeadId,
+          })
+          .catch((err) => console.error("[submit-lead] Falha ao gravar retorno do webhook:", err));
+      });
+    } catch (err) {
+      // Sem token não há como agendar: o lead segue o caminho normal, agora.
+      console.error("[submit-lead] Falha ao gerar token de agendamento (leilão):", err);
+      const res = await enviarFormularioAoCrm(payload);
+      if (!res.ok) {
+        return { success: false, error: "Erro ao enviar. Tente novamente em instantes.", reason: "server" };
+      }
+      redirectTo = qualificacao.redirectTo;
+    }
+    after(() => logMetaLead());
+    return { success: true, redirectTo, qualified };
+  }
 
   try {
     const res = leadAgendamento
@@ -288,33 +352,7 @@ export async function submitLead(
       }
     }
 
-    const capiInput = {
-      eventId: eventId ?? "",
-      eventSourceUrl: headersList.get("referer") ?? undefined,
-      email: parsed.data.email,
-      phone: parsed.data.telefone,
-      name: parsed.data.nome,
-      ip,
-      userAgent: headersList.get("user-agent"),
-      fbp: metaIds.fbp ?? undefined,
-      fbc: metaIds.fbc ?? undefined,
-      externalId: sessionId,
-      variant,
-    };
-    // Todo lead aceito gera uma linha "meta_capi_lead" (inclusive os pulados), para o
-    // dashboard conseguir conciliar leads do banco com o que chegou no Meta.
-    after(async () => {
-      const result =
-        !qualified
-          ? { status: "not_qualified" }
-          : !eventId
-            ? { status: "no_event_id" }
-            : await sendLeadToMetaCapi(capiInput);
-      if (!sessionId) return;
-      await erpApi
-        .trackEvent(sessionId, "meta_capi_lead", { ...result, eventId: eventId ?? null, leadId, qualified })
-        .catch((err) => console.error("[submit-lead] Falha ao gravar log da CAPI:", err));
-    });
+    after(() => logMetaLead());
 
     return { success: true, redirectTo, qualified };
   } catch (err) {

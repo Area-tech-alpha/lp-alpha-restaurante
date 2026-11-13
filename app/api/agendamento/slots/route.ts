@@ -3,6 +3,7 @@ import { agendamentoConfig } from "@/lib/agendamento-config";
 import { buildAgenda, formatSlot } from "@/lib/agendamento";
 import { readAgendamentoToken } from "@/lib/agendamento-token";
 import { findLeadEventInAgendas } from "@/lib/sdr-queue";
+import { findLeilaoLeadEvent, isLeilaoLead } from "@/lib/agendamento-leilao";
 
 export const dynamic = "force-dynamic";
 
@@ -11,9 +12,15 @@ export async function GET(req: NextRequest) {
   if (!lead) return NextResponse.json({ error: "lead_not_found" }, { status: 404 });
 
   try {
-    const existing = await findLeadEventInAgendas(lead.leadKey);
+    const existing = isLeilaoLead(lead)
+      ? await findLeilaoLeadEvent(lead.leadKey)
+      : await findLeadEventInAgendas(lead.leadKey);
     if (existing) {
-      return NextResponse.json({ alreadyScheduled: true, confirmed: formatSlot(existing.start) });
+      // `start` null: reunião do fluxo do leilão que já saiu da conta genérica sem o horário.
+      return NextResponse.json({
+        alreadyScheduled: true,
+        confirmed: existing.start ? formatSlot(existing.start) : null,
+      });
     }
 
     return NextResponse.json(

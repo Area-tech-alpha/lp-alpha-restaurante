@@ -64,6 +64,21 @@ export function sendFormLeadToCrm(payload: Record<string, unknown>): Promise<Crm
   return postToCrm("/external/leads/lp", payload, 25_000);
 }
 
+// Lead "Agendamento automático": o lead agendou e vai ao leilão do Growth Hub com a reunião. O
+// Dashcom decide o destino (leilão, ou Matriz com SDR da fila) e leva a reunião junto.
+export function sendScheduledLeadToCrm(
+  form: Record<string, unknown>,
+  meeting: CrmMeeting,
+  leadKey: string
+): Promise<CrmResult> {
+  return postToCrm("/external/leads/lp/scheduled", { ...form, meeting, lead_key: leadKey }, 25_000);
+}
+
+// Vale reenviar? Só quando o CRM não chegou a responder ou respondeu 5xx.
+export function isRetryableCrmFailure(result: CrmResult) {
+  return result.status === "error" || (!result.ok && result.httpStatus >= 500);
+}
+
 async function postToCrm(path: string, payload: unknown, timeoutMs: number): Promise<CrmResult> {
   const baseUrl = process.env.CRM_API_URL;
   const apiKey = process.env.CRM_EXTERNAL_LEADS_API_KEY;

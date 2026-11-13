@@ -32,6 +32,9 @@ export type LeadAgendamento = {
   // Sessão do tracker no envio do form: vira o external_id do "Reuniao Agendada" na CAPI (o
   // mesmo do "Lead") e liga o log do evento à sessão. Tokens antigos não têm.
   sessionId?: string | null;
+  // "auction" = lead que vai ao leilão do Growth Hub depois de agendar (lib/agendamento-leilao.ts).
+  // Sem o campo (token antigo, ou fluxo desligado) = SDR da Matriz direto.
+  flow?: "auction";
 };
 
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;

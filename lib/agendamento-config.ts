@@ -14,7 +14,9 @@ export const agendamentoConfig = {
   // Hoje conta como um dos dias mostrados (se ainda tiver horário).
   daysToShow: 3,
   // Só aparece (e só é aceito no POST) horário que começa em >= agora + isso.
-  minNoticeMinutes: 30,
+  // 1 hora: o lead agendado vai ao leilão do Growth Hub (5 min, mais prorrogação por lance) e
+  // quem comprar precisa de tempo para se preparar.
+  minNoticeMinutes: 60,
   // 0 = domingo ... 6 = sábado (Date#getUTCDay). Seg a sáb; domingo (0) nunca entra.
   businessDays: [1, 2, 3, 4, 5, 6],
   // Dias bloqueados (YYYY-MM-DD). Vazio a pedido: feriado aparece como um dia normal.

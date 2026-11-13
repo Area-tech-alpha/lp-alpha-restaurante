@@ -322,6 +322,7 @@ export const content = {
       successText:
         "Enviamos o convite com o link do Google Meet para o seu e-mail. Até lá!",
       alreadyScheduledTitle: "Você já tem uma reunião agendada",
+      alreadyScheduledNoTime: "O horário e o link do Google Meet estão no convite enviado para o seu e-mail.",
       errors: {
         generic: "Não foi possível concluir o agendamento. Tente novamente.",
         load: "Não foi possível carregar os horários. Tente novamente.",
