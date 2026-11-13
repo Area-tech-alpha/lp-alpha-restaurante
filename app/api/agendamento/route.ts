@@ -14,7 +14,7 @@ import {
 import { bookOnAvailableAgenda, confirmAgendaSdr, findLeadEventInAgendas, type AgendaSdr } from "@/lib/sdr-queue";
 import { buildCrmLeadPayload, isRetryableCrmFailure, sendLeadToCrm, sendScheduledLeadToCrm } from "@/lib/crm";
 import { findLeilaoLeadEvent, isLeilaoLead, leilaoOrganizerEmail } from "@/lib/agendamento-leilao";
-import { buildFormPayload, scheduleScheduledLeadRetry } from "@/lib/agendamento-followup";
+import { buildFormPayload } from "@/lib/agendamento-followup";
 import { checkAgendamentoRateLimit, clientIp } from "@/lib/rate-limit";
 import { sendMeetingScheduledToMetaCapi } from "@/lib/meta-capi";
 import { erpApi } from "@/lib/erp-api";
@@ -90,7 +90,6 @@ function buildDescription(lead: LeadAgendamento) {
 async function scheduleForAuction(
   req: NextRequest,
   lead: LeadAgendamento,
-  token: string,
   start: Date,
   end: Date
 ) {
@@ -130,10 +129,21 @@ async function scheduleForAuction(
       meeting_link: event.meetLink,
       google_event_id: event.id,
     };
-    const result = await sendScheduledLeadToCrm(buildFormPayload(lead), meeting, lead.leadKey);
-    console.log("[agendamento] Criado (leilão)", { leadKey: lead.leadKey, eventId: event.id, crm: result });
-    // A reunião já existe: se o CRM não recebeu o lead, o QStash reenvia até aceitar.
-    if (isRetryableCrmFailure(result)) await scheduleScheduledLeadRetry(token, meeting);
+    // A reunião já existe: o lead não pode ficar fora do CRM. O envio é idempotente pelo id do
+    // evento, então dá para repetir. Se nada passar, o Dashcom ainda manda o lead (sem a reunião)
+    // como quem não agendou.
+    let result = await sendScheduledLeadToCrm(buildFormPayload(lead), meeting, lead.leadKey);
+    for (let attempt = 1; attempt <= 2 && isRetryableCrmFailure(result); attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, attempt * 2000));
+      result = await sendScheduledLeadToCrm(buildFormPayload(lead), meeting, lead.leadKey);
+    }
+    const failed = isRetryableCrmFailure(result) || (result.status === "sent" && !result.ok);
+    console[failed ? "error" : "log"]("[agendamento] Criado (leilão)", {
+      leadKey: lead.leadKey,
+      eventId: event.id,
+      crm: result,
+    });
+    if (failed) return;
     await erpApi
       .updateLead(lead.leadKey, {
         webhookSentAt: new Date().toISOString(),
@@ -167,7 +177,7 @@ export async function POST(req: NextRequest) {
   if (!isGridSlot(start, new Date())) return error("invalid_slot", 400);
   const end = meetingEnd(start);
 
-  if (isLeilaoLead(lead)) return scheduleForAuction(req, lead, parsed.data.token, start, end);
+  if (isLeilaoLead(lead)) return scheduleForAuction(req, lead, start, end);
 
   let sdr: AgendaSdr;
   let event: Awaited<ReturnType<typeof insertEvent>>;

@@ -171,6 +171,8 @@ export async function submitLead(
   // Salva o lead em lp_leads. O id nasce aqui: o POST é idempotente e o mesmo id vai pro
   // webhook, pro token do agendamento e pro log da CAPI mesmo se a gravação falhar.
   const leadId = randomUUID();
+  // Fluxo do leilão: só o lead qualificado de variação com agendamento, com a env ligada.
+  const leilao = !!agendamentoPath && isAgendamentoLeilaoEnabled();
   let leadSaved = false;
   if (dbOk) {
     try {
@@ -190,6 +192,7 @@ export async function submitLead(
           sessionId: sessionId ?? null,
           ...utmFields,
           ...metaIds,
+          ...(leilao && { awaitScheduling: true }),
       }, 3000), 3000);
       leadSaved = true;
     } catch (err) {
@@ -226,7 +229,7 @@ export async function submitLead(
         referrer: utmFields.referrer ?? null,
         ...metaIds,
         sessionId: sessionId ?? null,
-        ...(isAgendamentoLeilaoEnabled() && { flow: "auction" as const }),
+        ...(leilao && { flow: "auction" as const }),
       }
     : null;
 
@@ -285,33 +288,23 @@ export async function submitLead(
   };
 
   // Fluxo do leilão (lib/agendamento-leilao.ts): o lead qualificado da variação com agendamento
-  // não vai ao CRM agora. Vai quando agendar (com a reunião, para o leilão do Growth Hub) ou, se
-  // não agendar em 5 min, pelo caminho normal das outras LPs (follow-up do QStash). Se o QStash
-  // não aceitar a checagem, o lead segue na hora pelo caminho normal, para não se perder.
-  if (leadAgendamento?.flow === "auction" && agendamentoPath) {
-    try {
-      const token = createAgendamentoToken(leadAgendamento);
-      redirectTo = `${agendamentoPath}?t=${token}`;
-      after(async () => {
-        if (await scheduleAgendamentoFollowup(token)) return;
-        const res = await enviarFormularioAoCrm(payload);
-        console.error("[submit-lead] Follow-up não agendado; lead enviado direto ao CRM", { leadId, res });
-        if (!leadSaved) return;
-        await erpApi
-          .updateLead(leadId, {
-            webhookSentAt: new Date().toISOString(),
-            webhookStatus: res.status,
-            crmLeadId: res.crmLeadId,
-          })
-          .catch((err) => console.error("[submit-lead] Falha ao gravar retorno do webhook:", err));
-      });
-    } catch (err) {
-      // Sem token não há como agendar: o lead segue o caminho normal, agora.
-      console.error("[submit-lead] Falha ao gerar token de agendamento (leilão):", err);
+  // não vai ao CRM agora. Ele ficou gravado em lp_leads como "aguardando a reunião": se agendar,
+  // vai com a reunião para o leilão do Growth Hub; se não agendar em 5 min, o Dashcom manda pelo
+  // caminho normal das outras LPs. Sem a gravação em lp_leads ninguém faria esse envio, então o
+  // lead vai ao CRM agora mesmo.
+  if (leilao && leadAgendamento && agendamentoPath) {
+    if (!leadSaved) {
       const res = await enviarFormularioAoCrm(payload);
+      console.error("[submit-lead] lp_leads fora do ar; lead enviado direto ao CRM", { leadId, res });
       if (!res.ok) {
         return { success: false, error: "Erro ao enviar. Tente novamente em instantes.", reason: "server" };
       }
+    }
+    try {
+      redirectTo = `${agendamentoPath}?t=${createAgendamentoToken(leadAgendamento)}`;
+    } catch (err) {
+      // Sem token não há agendamento: o lead segue pelo Dashcom como quem não agendou.
+      console.error("[submit-lead] Falha ao gerar token de agendamento (leilão):", err);
       redirectTo = qualificacao.redirectTo;
     }
     after(() => logMetaLead());

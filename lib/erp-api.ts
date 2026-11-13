@@ -91,6 +91,9 @@ export type LpLeadInput = {
   fbclid?: string | null;
   fbc?: string | null;
   fbp?: string | null;
+  // Fluxo do leilão (lib/agendamento-leilao.ts): o lead espera a reunião antes de ir ao CRM. Se
+  // não agendar em 5 min, o próprio Dashcom manda pelo intake normal.
+  awaitScheduling?: boolean;
 };
 
 // Fila de SDRs da lp-09 (Dashcom, /external/lp/sdr-queue). O admin da Matriz monta a fila no CRM.

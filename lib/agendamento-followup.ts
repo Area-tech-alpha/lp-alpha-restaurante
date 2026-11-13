@@ -7,40 +7,24 @@ import type { LeadAgendamento } from "@/lib/agendamento-token";
 
 export const FOLLOWUP_DELAY_SECONDS = 300;
 
-// Reunião já criada cujo envio ao CRM falhou: o follow-up reenvia até o CRM aceitar.
-export type ScheduledRetry = { scheduled_at: string; meeting_link: string | null; google_event_id: string };
-
-async function publishFollowup(body: Record<string, unknown>, delay: number) {
+// Best-effort: sem env ou com erro, só loga — nunca quebra o envio do form.
+export async function scheduleAgendamentoFollowup(token: string) {
   const qstashToken = process.env.QSTASH_TOKEN;
   const siteUrl = process.env.SITE_URL;
   if (!qstashToken || !siteUrl) {
     console.error("[agendamento-followup] QSTASH_TOKEN / SITE_URL não definidas");
-    return false;
+    return;
   }
   try {
     const { messageId } = await new Client({ token: qstashToken }).publishJSON({
       url: `${siteUrl.replace(/\/+$/, "")}/api/agendamento/followup`,
-      body,
-      delay,
+      body: { token },
+      delay: FOLLOWUP_DELAY_SECONDS,
     });
     console.log("[agendamento-followup] Checagem agendada", { messageId });
-    return true;
   } catch (err) {
     console.error("[agendamento-followup] Falha ao agendar no QStash:", err);
-    return false;
   }
-}
-
-// Sem env ou com erro, só loga e devolve false: nunca quebra o envio do form. No fluxo do leilão
-// quem chama usa o false para mandar o lead ao CRM na hora (ele não foi enviado no form).
-export function scheduleAgendamentoFollowup(token: string) {
-  return publishFollowup({ token }, FOLLOWUP_DELAY_SECONDS);
-}
-
-// Fluxo do leilão: a reunião existe no Google mas o CRM não recebeu o lead. O QStash chama o
-// follow-up, que reenvia e devolve 5xx enquanto o CRM não aceitar (o QStash repete).
-export function scheduleScheduledLeadRetry(token: string, scheduled: ScheduledRetry) {
-  return publishFollowup({ token, scheduled }, 30);
 }
 
 // Formulário do lead como o intake de LP do CRM espera (POST /external/leads/lp e /lp/scheduled).

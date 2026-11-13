@@ -3,23 +3,12 @@ import { Receiver } from "@upstash/qstash";
 import { z } from "zod";
 import { readAgendamentoToken } from "@/lib/agendamento-token";
 import { findLeadEventInAgendas } from "@/lib/sdr-queue";
-import { buildComercialPayload, buildFormPayload, sendLeadToComercial } from "@/lib/agendamento-followup";
-import { findLeilaoLeadEvent, isLeilaoLead } from "@/lib/agendamento-leilao";
-import { isRetryableCrmFailure, sendFormLeadToCrm, sendScheduledLeadToCrm } from "@/lib/crm";
+import { buildComercialPayload, sendLeadToComercial } from "@/lib/agendamento-followup";
+import { isLeilaoLead } from "@/lib/agendamento-leilao";
 
 // Chamado pelo QStash 5 min depois do envio do form (lib/agendamento-followup.ts).
 // QStash repete em qualquer resposta não-2xx: só a falha no Google devolve 5xx.
-// `scheduled`: reunião do fluxo do leilão cujo envio ao CRM falhou (reenvio).
-const bodySchema = z.object({
-  token: z.string().min(1),
-  scheduled: z
-    .object({
-      scheduled_at: z.string().min(1),
-      meeting_link: z.string().nullable(),
-      google_event_id: z.string().min(1),
-    })
-    .optional(),
-});
+const bodySchema = z.object({ token: z.string().min(1) });
 
 async function verifySignature(req: NextRequest, body: string) {
   const currentSigningKey = process.env.QSTASH_CURRENT_SIGNING_KEY;
@@ -55,34 +44,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, action: "lead_not_found" });
   }
 
-  // Fluxo do leilão (lib/agendamento-leilao.ts): o lead ainda não foi ao CRM. 5xx faz o QStash
-  // repetir até o CRM aceitar.
-  if (isLeilaoLead(lead)) {
-    const scheduled = parsed.success ? parsed.data.scheduled : undefined;
-    if (scheduled) {
-      const result = await sendScheduledLeadToCrm(buildFormPayload(lead), scheduled, lead.leadKey);
-      console.log("[agendamento/followup] Reenvio do lead agendado ao CRM", { leadKey: lead.leadKey, result });
-      if (isRetryableCrmFailure(result)) return NextResponse.json({ error: "crm_unavailable" }, { status: 503 });
-      return NextResponse.json({ ok: true, action: "scheduled_resent" });
-    }
-
-    try {
-      if (await findLeilaoLeadEvent(lead.leadKey)) {
-        return NextResponse.json({ ok: true, action: "scheduled" });
-      }
-    } catch (err) {
-      console.error("[agendamento/followup] Falha ao consultar agenda (leilão):", err);
-      return NextResponse.json({ error: "calendar_unavailable" }, { status: 503 });
-    }
-
-    // Não agendou em 5 min: segue o caminho normal das outras LPs (Matriz, leilão comum ou
-    // oportunidade, decidido pelo Dashcom).
-    const result = await sendFormLeadToCrm(buildFormPayload(lead));
-    console.log("[agendamento/followup] Lead não agendou, enviado ao intake de LP", { leadKey: lead.leadKey, result });
-    if (isRetryableCrmFailure(result)) return NextResponse.json({ error: "crm_unavailable" }, { status: 503 });
-    await sendLeadToComercial(buildComercialPayload(lead));
-    return NextResponse.json({ ok: true, action: "sent_to_lp_intake" });
-  }
+  // Fluxo do leilão (lib/agendamento-leilao.ts): quem manda o lead que não agendou é o Dashcom.
+  if (isLeilaoLead(lead)) return NextResponse.json({ ok: true, action: "handled_by_crm" });
 
   try {
     if (await findLeadEventInAgendas(lead.leadKey)) {

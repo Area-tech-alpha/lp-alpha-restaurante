@@ -27,17 +27,18 @@ franqueado que comprar recebe o lead no CRM já com a reunião. O código fica e
 `lib/agendamento-leilao.ts`; o que está descrito no começo deste documento passa a ser o fluxo
 antigo, que segue valendo só para tokens emitidos antes de ligar a env (7 dias).
 
-1. **Envio do form.** O lead **não** vai ao CRM. Ele é gravado em `lp_leads`, recebe o token com
-   `flow: "auction"` e vai para `/lp-09/agendamento`. O QStash agenda a checagem de 5 min. Se o
-   QStash recusar, o lead vai na hora para `POST /external/leads/lp` (caminho normal).
+1. **Envio do form.** O lead **não** vai ao CRM. Ele é gravado em `lp_leads` com
+   `awaitScheduling: true`, recebe o token com `flow: "auction"` e vai para `/lp-09/agendamento`.
+   Se a gravação em `lp_leads` falhar, o lead vai na hora para `POST /external/leads/lp`.
 2. **Agendou.** A reunião é criada na conta genérica `AGENDA_ORGANIZER_EMAIL`, com o Meet e o lead
    como convidado, sem SDR e sem passar pela fila. Em seguida a LP chama
    `POST {CRM_API_URL}/external/leads/lp/scheduled` com o formulário, `meeting` e `lead_key`. O
    Dashcom decide: leilão do Growth Hub (pago, novo, categoria A–D) ou Matriz com um SDR da fila
-   (orgânico, já conhecido, reunião próxima demais). Se o CRM não responder, o QStash reenvia.
-3. **Não agendou em 5 min.** O follow-up manda o lead para `POST /external/leads/lp`, como as
-   outras LPs, e depois chama `COMERCIAL_WEBHOOK_URL`. Se ele agendar depois (o token vale 7
-   dias), a reunião é anexada ao lead onde ele estiver.
+   (orgânico, já conhecido, reunião próxima demais). Falha de rede ou 5xx é repetida 2 vezes.
+3. **Não agendou em 5 min.** Quem manda o lead é o **Dashcom**, por um cron sobre `lp_leads`, pelo
+   mesmo caminho das outras LPs. A LP não usa o QStash nesse fluxo (as variáveis do QStash não
+   existem na Vercel, e o follow-up antigo nunca rodou em produção). Se o lead agendar depois (o
+   token vale 7 dias), a reunião é anexada ao lead onde ele estiver.
 4. **Depois do leilão.** O Dashcom leva o evento da conta genérica para a agenda de quem ficou com
    o lead: o franqueado comprador ou, sem comprador, um SDR da fila. Por isso o evento some da conta
    genérica; a LP trata evento cancelado nessa conta como "já agendou".
