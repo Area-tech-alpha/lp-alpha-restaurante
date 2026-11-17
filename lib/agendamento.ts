@@ -84,16 +84,22 @@ function periodSlots(config: AgendamentoConfig) {
   });
 }
 
-// Dias candidatos (seg a sáb), a partir de HOJE.
+function isBusinessDay(day: CivilDate, config: AgendamentoConfig) {
+  return (config.businessDays as readonly number[]).includes(weekday(day)) && !config.holidays.includes(dateKey(day));
+}
+
+// Janela fixa: hoje (se for dia útil) + os `nextBusinessDays` próximos dias úteis.
+// A janela não anda quando hoje já não tem horário: seg 19h → só TER, nunca QUA.
 function candidateDays(now: Date, config: AgendamentoConfig): CivilDate[] {
   const p = zonedParts(now, config.timezone);
   const today: CivilDate = { y: p.y, m: p.m, d: p.d };
-  const out: CivilDate[] = [];
-  for (let i = 0; i <= config.maxLookaheadDays; i++) {
+  const out: CivilDate[] = isBusinessDay(today, config) ? [today] : [];
+  let found = 0;
+  for (let i = 1; i <= config.maxLookaheadDays && found < config.nextBusinessDays; i++) {
     const day = addDays(today, i);
-    if (!(config.businessDays as readonly number[]).includes(weekday(day))) continue;
-    if (config.holidays.includes(dateKey(day))) continue;
+    if (!isBusinessDay(day, config)) continue;
     out.push(day);
+    found++;
   }
   return out;
 }
@@ -120,21 +126,20 @@ export function buildAgenda(now: Date, config: AgendamentoConfig = agendamentoCo
         return [{ start: start.toISOString(), label: `${pad(Math.floor(m / 60))}:${pad(m % 60)}` }];
       }),
     }));
-    // Hoje sem nenhum horário restante (ex.: 21:45) não ocupa uma das abas.
+    // Hoje sem nenhum horário restante (ex.: 19:00) some, sem puxar outro dia no lugar.
     if (periods.every((p) => p.slots.length === 0)) continue;
     days.push({
       date: dateKey(day),
       label: `${WEEKDAYS[weekday(day)]} ${pad(day.d)}/${MONTHS[day.m - 1]}`,
       periods,
     });
-    if (days.length === config.daysToShow) break;
   }
 
   return days;
 }
 
-// Validação do POST: o horário pertence à grade de um dia de seg a sáb dentro da
-// janela e começa em >= agora + minNoticeMinutes?
+// Validação do POST: o horário pertence à grade de hoje ou do próximo dia útil
+// (a mesma janela do GET) e começa em >= agora + minNoticeMinutes?
 export function isGridSlot(start: Date, now: Date, config: AgendamentoConfig = agendamentoConfig) {
   if (Number.isNaN(start.getTime()) || start < earliestStart(now, config)) return false;
   const grid = periodSlots(config).flatMap((p) => p.minutes);

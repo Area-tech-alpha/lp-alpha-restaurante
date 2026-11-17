@@ -313,7 +313,7 @@ export const content = {
       empty: "Nenhum horário disponível nos próximos dias. Nosso time vai entrar em contato com você.",
       selectedLabel: "Horário selecionado:",
       // Chaves = ids de agendamentoConfig.periods.
-      periodos: { manha: "Manhã", tarde: "Tarde", noite: "Noite" },
+      periodos: { manha: "Manhã", tarde: "Tarde" },
       periodoIndisponivel: "Indisponível",
       periodoHorario: { singular: "horário", plural: "horários" },
       confirm: "Confirmar agendamento",
