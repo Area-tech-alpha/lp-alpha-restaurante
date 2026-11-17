@@ -174,7 +174,7 @@ export default function AgendamentoPicker() {
         </p>
       )}
 
-      <div role="tablist" aria-label={c.cardTitle} className="grid grid-cols-3 gap-2">
+      <div role="tablist" aria-label={c.cardTitle} className="grid grid-cols-2 gap-2">
         {days.map((d, i) => {
           const active = d.date === day.date;
           return (

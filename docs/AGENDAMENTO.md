@@ -69,14 +69,20 @@ podem marcar o mesmo horário.
 
 ## Grade de horários
 
-- Slots de 1 em 1 hora (`:00`), em três períodos `[início, fim)`:
-  **Manhã** 08:00–11:00, **Tarde** 13:00–17:00, **Noite** 18:00–21:00.
-- Dias de seg a sáb (domingo nunca). **Hoje entra** e conta como um dos 3 dias
-  (hoje qui → QUI, SEX, SÁB; num domingo → SEG, TER, QUA). Se hoje não tiver mais
-  nenhum horário (ex.: 21:45), a grade pula para os 3 próximos dias úteis.
+- Slots de 1 em 1 hora (`:00`), reunião de 30 min, em dois períodos `[início, fim)`:
+  **Manhã** 08:00–11:00 e **Tarde** 13:00–18:00 (almoço 12–13 sem horário). A
+  última reunião começa às 18:00; nenhuma passa das 19:00.
+- **Só hoje e o próximo dia útil** (seg a sáb; domingo nunca), uma janela fixa
+  (`nextBusinessDays: 1`), nunca um terceiro dia:
+  - seg 10h → SEG e TER; sáb 10h → SÁB e SEG;
+  - hoje sem horário restante (ex.: seg 19h) → só o próximo dia útil (TER), sem
+    puxar a quarta no lugar;
+  - domingo → só SEG.
+- O `POST` usa a mesma janela: horário de um 3º dia, às 19:00 ou fora da grade
+  recebe `invalid_slot`.
 - Antecedência mínima de 30 min (`minNoticeMinutes`): só aparece slot que começa em
   `>= agora + 30 min`, e o `POST` recusa (`invalid_slot`) qualquer outro.
-- Na página, cada dia tem três gavetas (Manhã / Tarde / Noite) com a contagem de
+- Na página, cada dia tem duas gavetas (Manhã / Tarde) com a contagem de
   horários; período sem horário aparece desabilitado como "Indisponível".
 
 Cada agendamento cai na agenda do SDR da vez (ver "Fila de SDRs"). Com
@@ -93,7 +99,7 @@ passar pelo e-mail do dono da agenda. Não há OAuth nem tela de consentimento.
 
 | O quê | Onde |
 |---|---|
-| Regras (duração do slot, períodos manhã/tarde/noite, antecedência mínima, nº de dias, dias da semana (seg a sáb), dias bloqueados, timezone, `sendUpdates`) | `lib/agendamento-config.ts` |
+| Regras (duração do slot, períodos manhã/tarde, antecedência mínima, janela de dias (hoje + próximo dia útil), dias da semana (seg a sáb), dias bloqueados, timezone, `sendUpdates`) | `lib/agendamento-config.ts` |
 | Montagem da grade de dias e slots (lógica pura) | `lib/agendamento.ts` |
 | Quem vai para o agendamento depois do form | `agendamentoPathAposCadastro` em `lib/agendamento.ts` |
 | Token com os dados do lead | `lib/agendamento-token.ts` |
