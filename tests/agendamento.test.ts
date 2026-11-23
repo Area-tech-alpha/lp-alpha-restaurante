@@ -36,8 +36,8 @@ test("segunda 18:00 (último horário já passou da antecedência) → só TER",
   assert.deepEqual(labels(at("2026-11-16T17:30")), ["SEG 16/Nov", "TER 17/Nov"]);
 });
 
-test("sábado 10h → SÁB e SEG", () => {
-  assert.deepEqual(labels(at("2026-11-21T10:00")), ["SÁB 21/Nov", "SEG 23/Nov"]);
+test("sábado 10h → só SEG", () => {
+  assert.deepEqual(labels(at("2026-11-21T10:00")), ["SEG 23/Nov"]);
 });
 
 test("sábado 19h → só SEG", () => {
@@ -81,6 +81,7 @@ test("isGridSlot aceita horários de hoje e do próximo dia útil", () => {
   assert.equal(isGridSlot(at("2026-11-17T18:00"), now), true);
   assert.equal(isGridSlot(at("2026-11-23T08:00"), at("2026-11-21T10:00")), true);
   assert.equal(isGridSlot(at("2026-11-23T08:00"), at("2026-11-22T10:00")), true);
+  assert.equal(isGridSlot(at("2026-11-21T10:00"), at("2026-11-20T10:00")), false);
 });
 
 test("isGridSlot recusa o 3º dia, mesmo quando hoje já não tem horário", () => {
@@ -98,7 +99,7 @@ test("isGridSlot recusa 19:00, noite, almoço, antes das 8h, fora de :00, doming
   assert.equal(isGridSlot(at("2026-11-17T12:00"), now), false);
   assert.equal(isGridSlot(at("2026-11-17T07:00"), now), false);
   assert.equal(isGridSlot(at("2026-11-17T09:15"), now), false);
-  assert.equal(isGridSlot(at("2026-11-22T10:00"), at("2026-11-21T10:00")), false);
+  assert.equal(isGridSlot(at("2026-11-22T10:00"), at("2026-11-20T10:00")), false);
   assert.equal(isGridSlot(at("2026-11-16T10:00"), now), false);
   assert.equal(isGridSlot(at("2026-11-16T11:00"), at("2026-11-16T10:31")), false);
   assert.equal(isGridSlot(new Date("invalid"), now), false);
