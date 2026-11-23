@@ -72,9 +72,9 @@ podem marcar o mesmo horário.
 - Slots de 1 em 1 hora (`:00`), reunião de 30 min, em dois períodos `[início, fim)`:
   **Manhã** 08:00–11:00 e **Tarde** 13:00–18:00 (almoço 12–13 sem horário). A
   última reunião começa às 18:00; nenhuma passa das 19:00.
-- **Só hoje e o próximo dia útil** (seg a sáb; domingo nunca), uma janela fixa
+- **Só hoje e o próximo dia útil** (seg a sex; sábado e domingo nunca), uma janela fixa
   (`nextBusinessDays: 1`), nunca um terceiro dia:
-  - seg 10h → SEG e TER; sáb 10h → SÁB e SEG;
+  - seg 10h → SEG e TER; sex 10h → SEX e SEG;
   - hoje sem horário restante (ex.: seg 19h) → só o próximo dia útil (TER), sem
     puxar a quarta no lugar;
   - domingo → só SEG.
@@ -99,7 +99,7 @@ passar pelo e-mail do dono da agenda. Não há OAuth nem tela de consentimento.
 
 | O quê | Onde |
 |---|---|
-| Regras (duração do slot, períodos manhã/tarde, antecedência mínima, janela de dias (hoje + próximo dia útil), dias da semana (seg a sáb), dias bloqueados, timezone, `sendUpdates`) | `lib/agendamento-config.ts` |
+| Regras (duração do slot, períodos manhã/tarde, antecedência mínima, janela de dias (hoje + próximo dia útil), dias da semana (seg a sex), dias bloqueados, timezone, `sendUpdates`) | `lib/agendamento-config.ts` |
 | Montagem da grade de dias e slots (lógica pura) | `lib/agendamento.ts` |
 | Quem vai para o agendamento depois do form | `agendamentoPathAposCadastro` em `lib/agendamento.ts` |
 | Token com os dados do lead | `lib/agendamento-token.ts` |

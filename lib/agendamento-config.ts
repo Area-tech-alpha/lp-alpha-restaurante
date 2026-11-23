@@ -11,13 +11,13 @@ export const agendamentoConfig = {
     { id: "tarde", start: "13:00", end: "19:00" },
   ],
   // Janela fixa: hoje (se for dia útil e ainda tiver horário) + este nº de próximos
-  // dias úteis. Com 1: seg → SEG e TER; seg 19h → só TER; sáb → SÁB e SEG; dom → só SEG.
+  // dias úteis. Com 1: seg → SEG e TER; seg 19h → só TER; sex → SEX e SEG; dom → só SEG.
   // Nunca um terceiro dia, mesmo quando hoje já não tem horário.
   nextBusinessDays: 1,
   // Só aparece (e só é aceito no POST) horário que começa em >= agora + isso.
   minNoticeMinutes: 30,
-  // 0 = domingo ... 6 = sábado (Date#getUTCDay). Seg a sáb; domingo (0) nunca entra.
-  businessDays: [1, 2, 3, 4, 5, 6],
+  // 0 = domingo ... 6 = sábado (Date#getUTCDay). Seg a sex; fim de semana nunca entra.
+  businessDays: [1, 2, 3, 4, 5],
   // Dias bloqueados (YYYY-MM-DD). Vazio a pedido: feriado aparece como um dia normal.
   holidays: [] as readonly string[],
   // Teto de dias corridos para achar os `nextBusinessDays` dias úteis.
