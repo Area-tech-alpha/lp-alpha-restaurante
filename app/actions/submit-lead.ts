@@ -300,6 +300,7 @@ export async function submitLead(
       fbc: metaIds.fbc ?? undefined,
       externalId: sessionId,
       variant,
+      pixelVariant: formVariant ?? variant,
     };
     // Todo lead aceito gera uma linha "meta_capi_lead" (inclusive os pulados), para o
     // dashboard conseguir conciliar leads do banco com o que chegou no Meta.

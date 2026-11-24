@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { getMetaCapiToken, META_PIXEL_ID, type CapiTokenInfo } from "@/lib/meta-pixels";
+import { getMetaCapiToken, pixelIdForVariant, type CapiTokenInfo } from "@/lib/meta-pixels";
 import { metaOriginParams, pathFromUrl } from "@/lib/meta-event-origin";
 
 const GRAPH_API_VERSION = "v21.0";
@@ -25,6 +25,9 @@ export type CapiLeadInput = {
   fbc?: string;
   externalId?: string;
   variant?: string | null;
+  // Variante que escolhe o pixel (a da página onde o evento saiu no navegador).
+  // Sem ela, usa variant.
+  pixelVariant?: string | null;
 };
 
 export type CapiResult = {
@@ -61,13 +64,13 @@ export function sendMeetingScheduledToMetaCapi(input: CapiLeadInput): Promise<Ca
 
 async function sendMetaCapiEvent(eventName: CapiEventName, input: CapiLeadInput): Promise<CapiResult> {
   const base = { hasFbp: !!input.fbp, hasFbc: !!input.fbc };
-  const credentials = getMetaCapiToken();
+  const pixelId = pixelIdForVariant(input.pixelVariant ?? input.variant);
+  const credentials = getMetaCapiToken(pixelId);
   if (!credentials) {
-    console.warn(`[meta-capi] META_CAPI_TOKEN não definido — ${eventName} não enviado pelo servidor`);
+    console.warn(`[meta-capi:${pixelId}] Token da CAPI não definido — ${eventName} não enviado pelo servidor`);
     return { ...base, status: "no_token" };
   }
   const { token, info: tokenInfo } = credentials;
-  const pixelId = META_PIXEL_ID;
   const [firstName, ...rest] = input.name.trim().split(/\s+/);
   const lastName = rest.length ? rest[rest.length - 1] : undefined;
   const email = normalize(input.email);
