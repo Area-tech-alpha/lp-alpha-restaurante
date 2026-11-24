@@ -68,6 +68,12 @@ export const variants = {
       "Seu restaurante precisa de uma assessoria que *nasceu dentro do food service*",
     layout: "agendamento",
   },
+  "lp-10": {
+    theme: "black",
+    headline:
+      "Seu restaurante precisa de uma assessoria que *nasceu dentro do food service*",
+    layout: "agendamento",
+  },
 } as const satisfies Record<string, Variant>;
 
 export type VariantSlug = keyof typeof variants;

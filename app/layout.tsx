@@ -4,7 +4,7 @@ import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { OrganizationJsonLd } from "@/components/json-ld";
-import { META_PIXEL_ID } from "@/lib/meta-pixels";
+import { LP_PIXEL_IDS, META_PIXEL_ID } from "@/lib/meta-pixels";
 import { META_EVENT_ORIGIN } from "@/lib/meta-event-origin";
 import "./globals.css";
 
@@ -143,7 +143,8 @@ export default function RootLayout({
               t.src=v;s=b.getElementsByTagName(e)[0];
               s.parentNode.insertBefore(t,s)}(window, document,'script',
               'https://connect.facebook.net/en_US/fbevents.js');
-              fbq('init', '${META_PIXEL_ID}');
+              var lpPixels=${JSON.stringify(LP_PIXEL_IDS)};
+              fbq('init', lpPixels[location.pathname.split('/')[1]] || '${META_PIXEL_ID}');
               fbq('track', 'PageView', {origem: '${META_EVENT_ORIGIN}', canal: 'navegador', pagina: location.pathname});
             `,
           }}

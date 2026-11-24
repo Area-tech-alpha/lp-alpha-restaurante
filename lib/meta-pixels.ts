@@ -3,6 +3,15 @@
 // Vercel volte a espalhar eventos para os outros.
 export const META_PIXEL_ID = "348950488264714";
 
+// LPs com pixel próprio. Todo o resto do site usa META_PIXEL_ID.
+export const LP_PIXEL_IDS: Record<string, string> = {
+  "lp-10": "2273129966864397",
+};
+
+export function pixelIdForVariant(variant: string | null | undefined): string {
+  return (variant && LP_PIXEL_IDS[variant]) || META_PIXEL_ID;
+}
+
 export type CapiTokenInfo = {
   source: string;
   length: number;
@@ -13,9 +22,13 @@ export type CapiTokenInfo = {
 // Token colado na Vercel com espaço, quebra de linha ou aspas faz o Meta responder
 // "Cannot parse access token". Limpa isso e devolve um diagnóstico (sem o token)
 // para o log do dashboard mostrar o que veio de errado.
-export function getMetaCapiToken(): { token: string; info: CapiTokenInfo } | undefined {
-  const specificKey = `META_CAPI_TOKEN_${META_PIXEL_ID}`;
-  const source = process.env[specificKey] ? specificKey : "META_CAPI_TOKEN";
+// O META_CAPI_TOKEN genérico é do pixel META_PIXEL_ID: pixel próprio de LP só usa
+// META_CAPI_TOKEN_<pixelId>.
+export function getMetaCapiToken(
+  pixelId: string = META_PIXEL_ID
+): { token: string; info: CapiTokenInfo } | undefined {
+  const specificKey = `META_CAPI_TOKEN_${pixelId}`;
+  const source = process.env[specificKey] || pixelId !== META_PIXEL_ID ? specificKey : "META_CAPI_TOKEN";
   const raw = process.env[source];
   if (!raw) return undefined;
 
