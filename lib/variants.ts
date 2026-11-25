@@ -1,3 +1,5 @@
+import { content } from "@/lib/content";
+
 export type Theme = "gold" | "black";
 
 export type Variant = {
@@ -13,8 +15,9 @@ export type Variant = {
   // Galeria de fotos do palestrante logo após o hero.
   palestrante?: boolean;
   // "agendamento": composição estilo Laquila (components/sections/agendamento-*)
-  // + página /[variant]/agendamento. Sem layout, usa a composição padrão.
-  layout?: "agendamento";
+  // + página /[variant]/agendamento. "black-friday": components/black-friday-landing.
+  // Sem layout, usa a composição padrão.
+  layout?: "agendamento" | "black-friday";
 };
 
 
@@ -73,6 +76,12 @@ export const variants = {
     headline:
       "Seu restaurante precisa de uma assessoria que *nasceu dentro do food service*",
     layout: "agendamento",
+  },
+  "lp-11": {
+    theme: "black",
+    headline: content.blackFriday.hero.title,
+    countdown: { label: content.blackFriday.hero.chapeu, endsAt: "2026-11-27T23:59:59-03:00" },
+    layout: "black-friday",
   },
 } as const satisfies Record<string, Variant>;
 

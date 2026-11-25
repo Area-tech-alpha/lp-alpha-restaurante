@@ -13,6 +13,7 @@ import Clarity from "@/components/analytics/clarity";
 import StickyCta from "@/components/ui/sticky-cta";
 import CountdownBar from "@/components/ui/countdown-bar";
 import AgendamentoLanding from "@/components/agendamento-landing";
+import BlackFridayLanding from "@/components/black-friday-landing";
 import { content } from "@/lib/content";
 import { isVariantSlug, variants, variantSlugs, type Variant } from "@/lib/variants";
 
@@ -32,6 +33,17 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { variant } = await params;
   if (!isVariantSlug(variant)) return {};
+  if ((variants[variant] as Variant).layout === "black-friday") {
+    const { title, description, ogImage } = content.blackFriday.meta;
+    return {
+      title,
+      description,
+      openGraph: { title, description, siteName: "Alpha Assessoria", locale: "pt_BR", images: [ogImage] },
+      twitter: { card: "summary_large_image", title, description, images: [ogImage.url] },
+      alternates: { canonical: "https://assessorialpha.com" },
+      robots: { index: false, follow: false },
+    };
+  }
   const title = "Alpha Assessoria: Marketing para Restaurantes";
   const description =
     "A maior assessoria de marketing gastronômico da América Latina, com estrutura 100% presencial.";
@@ -53,6 +65,10 @@ export default async function VariantPage({
   const { variant } = await params;
   if (!isVariantSlug(variant)) notFound();
   const config: Variant = variants[variant];
+
+  if (config.layout === "black-friday" && config.countdown) {
+    return <BlackFridayLanding variant={variant} theme={config.theme} countdown={config.countdown} />;
+  }
 
   if (config.layout === "agendamento") {
     return (

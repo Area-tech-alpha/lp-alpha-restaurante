@@ -4,6 +4,8 @@ interface LpCtaButtonProps {
   href?: string;
   className?: string;
   "data-cta"?: string;
+  // id do campo que recebe o foco depois da rolagem (ex.: primeiro input do form).
+  focusId?: string;
   children: React.ReactNode;
 }
 
@@ -11,6 +13,7 @@ export default function LpCtaButton({
   href = "#contato",
   className = "",
   "data-cta": dataCta,
+  focusId,
   children,
 }: LpCtaButtonProps) {
   const base =
@@ -28,6 +31,7 @@ export default function LpCtaButton({
           ? (e) => {
               e.preventDefault();
               document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+              if (focusId) document.getElementById(focusId)?.focus({ preventScroll: true });
             }
           : undefined
       }
