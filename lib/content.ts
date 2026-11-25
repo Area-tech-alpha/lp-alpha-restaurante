@@ -358,6 +358,8 @@ export const content = {
       submitLabel: "QUERO MEUS 40% DE DESCONTO",
       formNote:
         "Preencha o formulário e o nosso time chama você em menos de 1 minuto. Condição válida até 27/11, às 23h59 (horário de Brasília).",
+      // false: o bloco "Os 3 bônus" sai da página (não renderiza); texto mantido para voltar depois.
+      bonusVisible: false as boolean,
       bonusTitle: "Os 3 bônus:",
       bonus: [
         "Mentoria individual semanal com Alexandre Matos, o Fast Food Milionário, ex-gerente do McDonald's",
