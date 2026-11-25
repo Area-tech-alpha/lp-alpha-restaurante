@@ -385,10 +385,10 @@ export const content = {
       closing: "A Alpha cuida do marketing. O Alexandre prepara a sua cozinha para a demanda que vem com ele.",
       cta: "QUERO O DESCONTO E OS 3 BÔNUS",
       photos: [
-        { src: "/lp-11/alexandre-palco.jpg", alt: "Alexandre Matos no palco", width: 1200, height: 800 },
-        { src: "/lp-11/alexandre-retrato-preto.jpg", alt: "Retrato de Alexandre Matos de camiseta preta", width: 800, height: 1000 },
-        { src: "/lp-11/alexandre-retrato-camisa.jpg", alt: "Retrato de Alexandre Matos de camisa", width: 800, height: 1000 },
-        { src: "/lp-11/alexandre-palestra.jpg", alt: "Alexandre Matos durante uma palestra", width: 1200, height: 800 },
+        { src: "/lp-11/alexandre-palco.jpg", alt: "Alexandre Matos no palco, falando ao microfone", width: 1280, height: 1134 },
+        { src: "/lp-11/alexandre-retrato-preto.jpg", alt: "Retrato de Alexandre Matos de camiseta preta", width: 853, height: 1280 },
+        { src: "/lp-11/alexandre-retrato-camisa.jpg", alt: "Retrato de Alexandre Matos de terno e camisa branca", width: 853, height: 1280 },
+        { src: "/lp-11/alexandre-palestra.jpg", alt: "Alexandre Matos durante uma palestra para um auditório", width: 853, height: 1280 },
       ],
     },
     cardapio: {
@@ -400,7 +400,7 @@ export const content = {
         { title: "Você ganha um canal próprio de delivery.", text: "Se hoje os seus pedidos vêm só do iFood, você passa a vender também direto para o cliente e fica com mais margem em cada pedido." },
         { title: "Ainda não tem cardápio digital?", text: "Você já começa com o melhor do mercado, com 30 dias gratuitos." },
       ],
-      logo: { src: "/lp-11/cardapio-web-logo.png", alt: "Cardápio Web", width: 600, height: 200 },
+      logo: { src: "/lp-11/cardapio-web-logo.jpg", alt: "Cardápio Web", width: 810, height: 525 },
       cta: "QUERO ESSA ESTRUTURA COM 40% DE DESCONTO",
     },
     depoimentos: {
