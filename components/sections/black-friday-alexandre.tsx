@@ -8,17 +8,22 @@ const photos = c.photos.filter((p) => p.visible);
 export default function BlackFridayAlexandre() {
   return (
     <section aria-labelledby="bf-alexandre" className="bg-lp-off px-4 py-16 sm:px-6 md:py-24">
-      <div className="mx-auto grid max-w-[1180px] grid-cols-1 items-center gap-10 md:grid-cols-2 md:gap-14">
+      {/* Desktop: a foto estica até a altura do texto (stretch + fill/cover).
+          Celular: proporção fixa da foto, em cima do texto. */}
+      <div className="mx-auto grid max-w-[1180px] grid-cols-1 items-stretch gap-10 md:grid-cols-2 md:gap-14">
         <div className="flex flex-col gap-3">
           {photos.map((p) => (
-            <div key={p.src} className="overflow-hidden rounded-2xl border border-lp-border">
+            <div
+              key={p.src}
+              style={{ aspectRatio: `${p.width} / ${p.height}` }}
+              className="relative overflow-hidden rounded-2xl border border-lp-border md:aspect-auto! md:min-h-[320px] md:flex-1"
+            >
               <Image
                 src={p.src}
                 alt={p.alt}
-                width={p.width}
-                height={p.height}
-                sizes="(min-width: 768px) 560px, 100vw"
-                className="h-auto w-full"
+                fill
+                sizes="(min-width: 768px) 45vw, 100vw"
+                className="object-cover object-[center_30%]"
               />
             </div>
           ))}

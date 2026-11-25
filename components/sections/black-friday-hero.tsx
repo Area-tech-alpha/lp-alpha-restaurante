@@ -23,14 +23,14 @@ export default function BlackFridayHero({ variant }: { variant: string }) {
         className="pointer-events-none absolute -top-40 left-1/2 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-lp-gold-2/15 blur-3xl"
       />
       <div className="relative mx-auto grid max-w-[1180px] grid-cols-1 gap-5 md:grid-cols-[1.1fr_1fr] md:gap-x-14 md:gap-y-8">
-        <div className="md:col-start-1 md:row-start-1">
+        <div className={`md:col-start-1 md:row-start-1 md:self-center ${hero.bonusVisible ? "" : "md:row-span-2"}`}>
           <h1
             id="bf-titulo"
-            className="font-lp-display text-[24px] leading-[1.15] font-semibold text-lp-ink sm:text-[34px] md:text-[44px]"
+            className="font-lp-display text-[26px] leading-[1.15] font-semibold text-lp-ink sm:text-[36px] md:text-[clamp(2.6rem,3.6vw,3.9rem)] md:leading-[1.1]"
           >
             {renderHeadline(hero.title)}
           </h1>
-          <h2 className="mt-3 text-[15px] leading-[1.5] font-normal text-lp-text-muted md:mt-5 md:text-lg">
+          <h2 className="mt-3 max-w-[560px] text-[15.5px] leading-[1.5] font-normal text-lp-text-muted md:mt-5 md:text-[20px]">
             {hero.subtitle}
           </h2>
         </div>
