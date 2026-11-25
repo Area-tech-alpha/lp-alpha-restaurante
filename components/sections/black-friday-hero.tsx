@@ -10,7 +10,7 @@ const fields = {
   faturamento: { options: [...content.form.fields.faturamento.options].reverse() },
 };
 
-// Mobile: título → form → bônus (o form precisa aparecer na primeira tela).
+// Mobile: título → bônus (compactos, para o form não descer demais) → form.
 // Desktop: título e bônus à esquerda, form à direita.
 export default function BlackFridayHero({ variant }: { variant: string }) {
   return (
@@ -35,6 +35,23 @@ export default function BlackFridayHero({ variant }: { variant: string }) {
           </h2>
         </div>
 
+        <div className="md:col-start-1 md:row-start-2">
+          <h3 className="font-lp-heading text-xs font-bold tracking-[.08em] text-lp-gold-2 uppercase md:text-sm">
+            {hero.bonusTitle}
+          </h3>
+          <ul className="mt-2 flex flex-col gap-1.5 md:mt-3 md:gap-3">
+            {hero.bonus.map((b) => (
+              <li
+                key={b}
+                className="flex gap-2 rounded-xl border border-lp-border bg-lp-white px-3 py-2 text-[13px] leading-[1.35] text-lp-ink md:gap-3 md:rounded-2xl md:p-4 md:text-[15px] md:leading-[1.45]"
+              >
+                <Check aria-hidden="true" className="mt-px h-4 w-4 shrink-0 text-lp-gold-2 md:mt-0.5 md:h-5 md:w-5" />
+                {b}
+              </li>
+            ))}
+          </ul>
+        </div>
+
         <div
           id="formulario"
           data-section="form"
@@ -42,23 +59,6 @@ export default function BlackFridayHero({ variant }: { variant: string }) {
         >
           <LeadForm variant={variant} fields={fields} submitLabel={hero.submitLabel} />
           <p className="mt-3 text-center text-[12.5px] leading-[1.5] text-lp-text-dim">{hero.formNote}</p>
-        </div>
-
-        <div className="md:col-start-1 md:row-start-2">
-          <h3 className="font-lp-heading text-sm font-bold tracking-[.08em] text-lp-gold-2 uppercase">
-            {hero.bonusTitle}
-          </h3>
-          <ul className="mt-3 flex flex-col gap-3">
-            {hero.bonus.map((b) => (
-              <li
-                key={b}
-                className="flex gap-3 rounded-2xl border border-lp-border bg-lp-white p-4 text-[15px] leading-[1.45] text-lp-ink"
-              >
-                <Check aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-lp-gold-2" />
-                {b}
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
     </section>
