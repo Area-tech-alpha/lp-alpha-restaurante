@@ -384,11 +384,12 @@ export const content = {
       ],
       closing: "A Alpha cuida do marketing. O Alexandre prepara a sua cozinha para a demanda que vem com ele.",
       cta: "QUERO O DESCONTO E OS 3 BÔNUS",
+      // visible: false tira a foto da página (não renderiza nem baixa); o arquivo fica em public/lp-11.
       photos: [
-        { src: "/lp-11/alexandre-palco.jpg", alt: "Alexandre Matos no palco, falando ao microfone", width: 1280, height: 1134 },
-        { src: "/lp-11/alexandre-retrato-preto.jpg", alt: "Retrato de Alexandre Matos de camiseta preta", width: 853, height: 1280 },
-        { src: "/lp-11/alexandre-retrato-camisa.jpg", alt: "Retrato de Alexandre Matos de terno e camisa branca", width: 853, height: 1280 },
-        { src: "/lp-11/alexandre-palestra.jpg", alt: "Alexandre Matos durante uma palestra para um auditório", width: 853, height: 1280 },
+        { src: "/lp-11/alexandre-palco.jpg", alt: "Alexandre Matos no palco, falando ao microfone", width: 1280, height: 1134, visible: true },
+        { src: "/lp-11/alexandre-retrato-preto.jpg", alt: "Retrato de Alexandre Matos de camiseta preta", width: 853, height: 1280, visible: false },
+        { src: "/lp-11/alexandre-retrato-camisa.jpg", alt: "Retrato de Alexandre Matos de terno e camisa branca", width: 853, height: 1280, visible: false },
+        { src: "/lp-11/alexandre-palestra.jpg", alt: "Alexandre Matos durante uma palestra para um auditório", width: 853, height: 1280, visible: false },
       ],
     },
     cardapio: {

@@ -3,26 +3,22 @@ import BlackFridayCta from "@/components/sections/black-friday-cta";
 import { content } from "@/lib/content";
 
 const c = content.blackFriday.alexandre;
+const photos = c.photos.filter((p) => p.visible);
 
 export default function BlackFridayAlexandre() {
   return (
     <section aria-labelledby="bf-alexandre" className="bg-lp-off px-4 py-16 sm:px-6 md:py-24">
       <div className="mx-auto grid max-w-[1180px] grid-cols-1 items-center gap-10 md:grid-cols-2 md:gap-14">
-        <div className="grid grid-cols-3 gap-3">
-          {c.photos.map((p, i) => (
-            <div
-              key={p.src}
-              className={`relative overflow-hidden rounded-2xl border border-lp-border ${
-                i === 0 ? "col-span-3 aspect-[8/7]" : "aspect-[2/3]"
-              }`}
-            >
+        <div className="flex flex-col gap-3">
+          {photos.map((p) => (
+            <div key={p.src} className="overflow-hidden rounded-2xl border border-lp-border">
               <Image
                 src={p.src}
                 alt={p.alt}
                 width={p.width}
                 height={p.height}
-                sizes={i === 0 ? "(min-width: 768px) 560px, 100vw" : "(min-width: 768px) 190px, 33vw"}
-                className="h-full w-full object-cover object-top"
+                sizes="(min-width: 768px) 560px, 100vw"
+                className="h-auto w-full"
               />
             </div>
           ))}
