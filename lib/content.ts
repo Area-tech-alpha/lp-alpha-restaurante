@@ -1,3 +1,10 @@
+export type BlackFridayDepoimento = {
+  nome: string;
+  restaurante: string;
+  cidade: string;
+  resultado: string;
+};
+
 export const content = {
   hero: {
     logoAlt: "Alpha Assessoria",
@@ -330,6 +337,82 @@ export const content = {
         rateLimited: "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.",
         retry: "Tentar novamente",
       },
+    },
+  },
+
+  // lp-11 (layout "black-friday"). Copy literal do documento do Max: *asteriscos*
+  // só marcam destaque dourado (renderHeadline), não mudam o texto.
+  blackFriday: {
+    meta: {
+      title: "Black Friday da Alpha: 40% de desconto até 27/11",
+      description:
+        "40% de desconto em qualquer plano da Alpha e mais de R$ 20 mil em bônus para o seu restaurante. Só até 27/11.",
+      ogImage: { url: "/lp-11/black-friday.png", alt: "Black Friday da Alpha" },
+    },
+    hero: {
+      chapeu: "BLACK FRIDAY DA ALPHA · 40% DE DESCONTO · SÓ ATÉ 27/11",
+      title:
+        "Dono de restaurante: *40% de desconto* em qualquer plano da Alpha e *mais de R$ 20 mil em bônus*. Só até 27/11.",
+      subtitle:
+        "Nesta Black Friday, você coloca o nosso marketing para trabalhar pelo seu restaurante com 40% de desconto e leva 3 bônus para a sua operação dar conta dos pedidos.",
+      submitLabel: "QUERO MEUS 40% DE DESCONTO",
+      formNote:
+        "Preencha o formulário e o nosso time chama você em menos de 1 minuto. Condição válida até 27/11, às 23h59 (horário de Brasília).",
+      bonusTitle: "Os 3 bônus:",
+      bonus: [
+        "Mentoria individual semanal com Alexandre Matos, o Fast Food Milionário, ex-gerente do McDonald's",
+        "Ingresso para um dia presencial com ele na Universidade Fast Food Milionário",
+        "30 dias gratuitos do Cardápio Web, o cardápio digital da Alpha's Pizzaria",
+      ],
+    },
+    alexandre: {
+      title: "Mais pedido só vira mais lucro se a sua cozinha der conta.",
+      paragraphs: [
+        "É por isso que esta Black Friday não é só desconto. Quem vai arrumar a sua operação aprendeu dentro do McDonald's.",
+        "Alexandre Matos entrou lá aos 17 anos e aos 21 já era gerente geral. Foram 12 anos à frente de uma operação que vendia 2 mil lanches por dia e entregava o delivery em até 20 minutos. Hoje ele é o Fast Food Milionário, e mais de mil restaurantes já passaram pelo trabalho dele.",
+      ],
+      accessTitle: "Você leva os dois acessos a ele:",
+      access: [
+        {
+          title: "Mentoria individual semanal.",
+          text: "Toda semana, você e o Alexandre trabalham os processos da sua cozinha para ela fazer mais pedidos em menos tempo.",
+        },
+        {
+          title: "Ingresso para a Universidade Fast Food Milionário.",
+          text: "Um dia presencial com ele, dentro de uma estrutura de restaurante montada para ensinar. Você não fica só na explicação da aula: vê o processo funcionando, conhece o Alexandre pessoalmente e volta sabendo o que mudar na sua operação.",
+        },
+      ],
+      closing: "A Alpha cuida do marketing. O Alexandre prepara a sua cozinha para a demanda que vem com ele.",
+      cta: "QUERO O DESCONTO E OS 3 BÔNUS",
+      photos: [
+        { src: "/lp-11/alexandre-palco.jpg", alt: "Alexandre Matos no palco", width: 1200, height: 800 },
+        { src: "/lp-11/alexandre-retrato-preto.jpg", alt: "Retrato de Alexandre Matos de camiseta preta", width: 800, height: 1000 },
+        { src: "/lp-11/alexandre-retrato-camisa.jpg", alt: "Retrato de Alexandre Matos de camisa", width: 800, height: 1000 },
+        { src: "/lp-11/alexandre-palestra.jpg", alt: "Alexandre Matos durante uma palestra", width: 1200, height: 800 },
+      ],
+    },
+    cardapio: {
+      title: "O cardápio digital da nossa pizzaria, 30 dias por nossa conta.",
+      text: "A Alpha's Pizzaria é o nosso laboratório. Em 6 meses, ela chegou a cerca de R$ 400 mil de faturamento por mês, e é lá que testamos tudo antes de levar para os clientes. O cardápio digital que usamos lá é o Cardápio Web. Para nós, é o melhor do Brasil, e por isso recomendamos a todos os nossos clientes.",
+      items: [
+        { title: "Você sabe de onde vem cada venda.", text: "O rastreamento mostra qual canal trouxe o pedido, e o seu marketing para de ser chute." },
+        { title: "A sua operação ganha tempo.", text: "O recebimento e a gestão dos pedidos ficam automatizados." },
+        { title: "Você ganha um canal próprio de delivery.", text: "Se hoje os seus pedidos vêm só do iFood, você passa a vender também direto para o cliente e fica com mais margem em cada pedido." },
+        { title: "Ainda não tem cardápio digital?", text: "Você já começa com o melhor do mercado, com 30 dias gratuitos." },
+      ],
+      logo: { src: "/lp-11/cardapio-web-logo.png", alt: "Cardápio Web", width: 600, height: 200 },
+      cta: "QUERO ESSA ESTRUTURA COM 40% DE DESCONTO",
+    },
+    depoimentos: {
+      title: "Quem já colocou a Alpha no restaurante conta o que mudou.",
+      cta: "QUERO MEUS 40% DE DESCONTO",
+      // SÓ depoimentos reais (enviados pelo Gabriel). Lista vazia = seção oculta.
+      items: [] as readonly BlackFridayDepoimento[],
+    },
+    fechamento: {
+      title: "Você já acompanha a Alpha. Até 27/11, começar custa 40% menos.",
+      text: "A Alpha nunca fez Black Friday. Esta é a primeira. Às 23h59 do dia 27/11, o desconto de 40% e os 3 bônus deixam de valer, e contratar a Alpha volta a custar o preço cheio. Clique no botão, preencha o formulário e o nosso time chama você em menos de 1 minuto para garantir a sua condição.",
+      cta: "GARANTIR MINHA CONDIÇÃO DE BLACK FRIDAY",
     },
   },
 
