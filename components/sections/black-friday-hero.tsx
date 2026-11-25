@@ -5,6 +5,11 @@ import { content } from "@/lib/content";
 
 const { hero } = content.blackFriday;
 
+// Faturamento do maior para o menor, como na lp-09.
+const fields = {
+  faturamento: { options: [...content.form.fields.faturamento.options].reverse() },
+};
+
 // Mobile: título → form → bônus (o form precisa aparecer na primeira tela).
 // Desktop: título e bônus à esquerda, form à direita.
 export default function BlackFridayHero({ variant }: { variant: string }) {
@@ -35,7 +40,7 @@ export default function BlackFridayHero({ variant }: { variant: string }) {
           data-section="form"
           className="scroll-mt-28 rounded-[22px] border border-lp-border-gold bg-lp-panel p-4 shadow-[0_20px_60px_rgba(245,166,35,0.12)] sm:p-[26px] md:col-start-2 md:row-span-2 md:row-start-1"
         >
-          <LeadForm variant={variant} submitLabel={hero.submitLabel} />
+          <LeadForm variant={variant} fields={fields} submitLabel={hero.submitLabel} />
           <p className="mt-3 text-center text-[12.5px] leading-[1.5] text-lp-text-dim">{hero.formNote}</p>
         </div>
 

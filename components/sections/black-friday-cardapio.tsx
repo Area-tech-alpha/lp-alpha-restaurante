@@ -15,7 +15,7 @@ export default function BlackFridayCardapio() {
           width={c.logo.width}
           height={c.logo.height}
           sizes="240px"
-          className="mx-auto h-auto w-[200px] sm:w-[240px]"
+          className="mx-auto h-auto w-[200px] rounded-2xl sm:w-[240px]"
         />
         <h2
           id="bf-cardapio"
